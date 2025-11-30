@@ -11,14 +11,6 @@ providers:
     type: anthropic
     api_key_env: ANTHROPIC_API_KEY
 
-  - name: openai
-    type: openai
-    api_key_env: OPENAI_API_KEY
-
-  - name: google
-    type: google
-    api_key_env: GOOGLE_API_KEY
-
 # Profile-based model definitions
 routing_models:
   # CHEAP PROFILE MODELS (Ollama - Free)
@@ -40,18 +32,6 @@ routing_models:
     profile_cost_per_1k_input: 0.25
     profile_cost_per_1k_output: 1.25
 
-  - id: cheap-openai-mini
-    provider: openai
-    model: gpt-4o-mini
-    profile_cost_per_1k_input: 0.15
-    profile_cost_per_1k_output: 0.60
-
-  - id: cheap-google-flash
-    provider: google
-    model: gemini-1.5-flash
-    profile_cost_per_1k_input: 0.10
-    profile_cost_per_1k_output: 0.40
-
   # BALANCED PROFILE MODELS (Ollama - Free)
   - id: balanced-ollama-qwen
     provider: ollama
@@ -71,36 +51,18 @@ routing_models:
     profile_cost_per_1k_input: 0.80
     profile_cost_per_1k_output: 4.00
 
-  - id: balanced-openai-gpt4o
-    provider: openai
-    model: gpt-4o
-    profile_cost_per_1k_input: 0.50
-    profile_cost_per_1k_output: 1.50
-
-  - id: balanced-google-pro
-    provider: google
-    model: gemini-1.5-pro
-    profile_cost_per_1k_input: 0.50
-    profile_cost_per_1k_output: 1.50
-
   # PREMIUM PROFILE MODELS
-  - id: premium-anthropic
+  - id: premium-anthropic-sonnet
     provider: anthropic
     model: claude-3-5-sonnet-20241022
     profile_cost_per_1k_input: 0.80
     profile_cost_per_1k_output: 4.00
 
-  - id: premium-openai
-    provider: openai
-    model: gpt-4o
-    profile_cost_per_1k_input: 0.50
-    profile_cost_per_1k_output: 1.50
-
-  - id: premium-google
-    provider: google
-    model: gemini-1.5-pro
-    profile_cost_per_1k_input: 0.50
-    profile_cost_per_1k_output: 1.50
+  - id: premium-anthropic-opus
+    provider: anthropic
+    model: claude-3-opus-20240229
+    profile_cost_per_1k_input: 15.00
+    profile_cost_per_1k_output: 75.00
 
 routing_profiles:
   cheap:
@@ -108,23 +70,18 @@ routing_profiles:
       - cheap-ollama-qwen
       - cheap-ollama-llama
       - cheap-anthropic-haiku
-      - cheap-openai-mini
-      - cheap-google-flash
 
   balanced:
     candidate_models:
       - balanced-ollama-qwen
       - balanced-ollama-coder
       - balanced-anthropic-sonnet
-      - balanced-openai-gpt4o
-      - balanced-google-pro
 
   premium:
     candidate_models:
-      - premium-anthropic
-      - premium-openai
-      - premium-google
+      - premium-anthropic-sonnet
+      - premium-anthropic-opus
 
 cost_simulation:
-  premium_model_id: premium-anthropic
-  cheap_model_id: cheap-google-flash
+  premium_model_id: premium-anthropic-sonnet
+  cheap_model_id: cheap-ollama-qwen

@@ -1,0 +1,78 @@
+name: hello-orchestration
+version: 1.0.0
+description: Simple test of orchestration with parallel phases
+type: orchestrated
+
+phases:
+  # Phase 1: Greet the user
+  - id: greet
+    name: Greet User
+    task_type: generation
+    prompt_template: |
+      Generate a friendly greeting for: {{request}}
+      Make it warm and welcoming, 1-2 sentences.
+    output_key: greeting
+    max_tokens: 100
+    temperature: 0.7
+    routing:
+      preferred_models:
+        - ollama/qwen2.5:14b
+
+  # Phase 2: Generate a tip (depends on greet)
+  - id: tip
+    name: Generate Tip
+    task_type: generation
+    depends_on:
+      - greet
+    prompt_template: |
+      Based on this greeting: {{greet}}
+
+      Generate a helpful tip for the person being greeted.
+      Keep it brief, 1-2 sentences.
+    output_key: tip
+    max_tokens: 100
+    temperature: 0.7
+    routing:
+      preferred_models:
+        - ollama/qwen2.5:14b
+
+  # Phase 3: Generate a quote (depends on greet, runs parallel with tip)
+  - id: quote
+    name: Generate Quote
+    task_type: generation
+    depends_on:
+      - greet
+    prompt_template: |
+      Based on this greeting: {{greet}}
+
+      Generate an inspiring quote relevant to the greeting.
+      Keep it brief, 1-2 sentences.
+    output_key: quote
+    max_tokens: 100
+    temperature: 0.8
+    routing:
+      preferred_models:
+        - ollama/qwen2.5:14b
+
+  # Phase 4: Combine everything
+  - id: combine
+    name: Combine All
+    task_type: generation
+    depends_on:
+      - greet
+      - tip
+      - quote
+    prompt_template: |
+      Combine the following into a nice message:
+
+      Greeting: {{greet}}
+      Tip: {{tip}}
+      Quote: {{quote}}
+
+      Format it nicely with proper spacing.
+    output_key: final_message
+    max_tokens: 200
+    temperature: 0.5
+    routing:
+      preferred_models:
+        - ollama/qwen2.5:14b

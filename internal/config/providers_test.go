@@ -58,8 +58,7 @@ func TestBackwardsCompatibility(t *testing.T) {
 api_keys:
   anthropic: sk-ant-old-key
 router:
-  ollama_url: http://localhost:18433
-  litellm_url: http://localhost:18432
+  ollama_url: http://localhost:11434
 `
 
 	var cfg Config
@@ -72,8 +71,8 @@ router:
 	if cfg.APIKeys.Anthropic != "sk-ant-old-key" {
 		t.Errorf("expected Anthropic API key 'sk-ant-old-key', got '%s'", cfg.APIKeys.Anthropic)
 	}
-	if cfg.Router.OllamaURL != "http://localhost:18433" {
-		t.Errorf("expected Ollama URL 'http://localhost:18433', got '%s'", cfg.Router.OllamaURL)
+	if cfg.Router.OllamaURL != "http://localhost:11434" {
+		t.Errorf("expected Ollama URL 'http://localhost:11434', got '%s'", cfg.Router.OllamaURL)
 	}
 
 	// Providers section should be nil for old config
@@ -95,7 +94,7 @@ providers:
 api_keys:
   anthropic: sk-fallback-key
 router:
-  ollama_url: http://localhost:18433
+  ollama_url: http://localhost:11434
 `
 
 	var cfg Config
@@ -116,8 +115,8 @@ router:
 	if cfg.APIKeys.Anthropic != "sk-fallback-key" {
 		t.Errorf("expected Anthropic API key 'sk-fallback-key', got '%s'", cfg.APIKeys.Anthropic)
 	}
-	if cfg.Router.OllamaURL != "http://localhost:18433" {
-		t.Errorf("expected Ollama URL 'http://localhost:18433', got '%s'", cfg.Router.OllamaURL)
+	if cfg.Router.OllamaURL != "http://localhost:11434" {
+		t.Errorf("expected Ollama URL 'http://localhost:11434', got '%s'", cfg.Router.OllamaURL)
 	}
 }
 
@@ -212,7 +211,7 @@ func TestOmittedProvidersSection(t *testing.T) {
 	// Test that config works without providers section
 	noProvidersYAML := `
 router:
-  ollama_url: http://localhost:18433
+  ollama_url: http://localhost:11434
 api_keys:
   anthropic: sk-test-key
 `
@@ -229,8 +228,8 @@ api_keys:
 	}
 
 	// Old config should still work
-	if cfg.Router.OllamaURL != "http://localhost:18433" {
-		t.Errorf("expected Ollama URL 'http://localhost:18433', got '%s'", cfg.Router.OllamaURL)
+	if cfg.Router.OllamaURL != "http://localhost:11434" {
+		t.Errorf("expected Ollama URL 'http://localhost:11434', got '%s'", cfg.Router.OllamaURL)
 	}
 	if cfg.APIKeys.Anthropic != "sk-test-key" {
 		t.Errorf("expected Anthropic API key 'sk-test-key', got '%s'", cfg.APIKeys.Anthropic)

@@ -102,9 +102,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	if !configExists {
 		// Set default router settings
-		cfg.Router.LiteLLMURL = "http://localhost:18432"
-		cfg.Router.OllamaURL = "http://localhost:18433"
-		cfg.Router.AutoStart = false // User must explicitly enable auto-start
+		cfg.Router.OllamaURL = "http://localhost:11434" // Standard Ollama port
 
 		// Set default model defaults
 		cfg.ModelDefaults = config.DefaultModelDefaults()
@@ -164,11 +162,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("Initialization complete!")
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Println("  1. Start Ollama: ollama serve")
-	fmt.Println("  2. Pull a model: ollama pull qwen2.5-coder:14b")
-	fmt.Println("  3. Try a skill: sr run code-review 'func add(a, b int) { return a + b }'")
+	fmt.Println("  1. Check available skills: sr list")
+	fmt.Println("  2. Check system status: sr status")
+	fmt.Println("  3. Try a skill: sr run code-review \"func add(a, b int) { return a + b }\"")
 	fmt.Println()
-	fmt.Println("List available skills with: sr list")
+	fmt.Println("Optional: Configure Ollama for local model support:")
+	fmt.Println("  • Install: https://ollama.ai")
+	fmt.Println("  • Pull a model: ollama pull qwen2.5-coder:14b")
 	fmt.Println()
 
 	return nil

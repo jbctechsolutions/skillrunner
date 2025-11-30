@@ -12,9 +12,8 @@ import (
 type Config struct {
 	APIKeys       APIKeys        `yaml:"api_keys"`
 	Router        Router         `yaml:"router"`
-	Docker        Docker         `yaml:"docker"`
 	ModelDefaults *ModelDefaults `yaml:"model_defaults,omitempty"`
-	Providers     *Providers     `yaml:"providers,omitempty"` // NEW unified provider configuration
+	Providers     *Providers     `yaml:"providers,omitempty"` // Unified provider configuration
 	Paths         *Paths         `yaml:"paths,omitempty"`     // Paths configuration
 }
 
@@ -30,15 +29,7 @@ type APIKeys struct {
 
 // Router contains router-specific settings
 type Router struct {
-	LiteLLMURL string `yaml:"litellm_url,omitempty"`
-	OllamaURL  string `yaml:"ollama_url,omitempty"`
-	AutoStart  bool   `yaml:"auto_start,omitempty"`
-}
-
-// Docker contains Docker-specific settings
-type Docker struct {
-	ComposeFile string `yaml:"compose_file,omitempty"`
-	ProjectDir  string `yaml:"project_dir,omitempty"`
+	OllamaURL string `yaml:"ollama_url,omitempty"`
 }
 
 // Manager handles configuration loading and saving
@@ -86,9 +77,7 @@ func NewManager(configPath string) (*Manager, error) {
 		// Create default config
 		manager.config = &Config{
 			Router: Router{
-				LiteLLMURL: "http://localhost:18432",
-				OllamaURL:  "http://localhost:18433",
-				AutoStart:  false, // User must explicitly enable auto-start
+				OllamaURL: "http://localhost:11434",
 			},
 			ModelDefaults: DefaultModelDefaults(),
 		}

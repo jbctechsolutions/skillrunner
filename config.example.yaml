@@ -40,18 +40,6 @@ router:
   # Ollama URL (falls back to this if providers.ollama.url is not set)
   ollama_url: http://localhost:11434
 
-  # Auto-start Docker services if not running (default: false)
-  # Set to true if you want Skillrunner to automatically start Ollama/LiteLLM containers
-  auto_start: false
-
-# Docker settings (optional)
-docker:
-  # Path to docker-compose.yml (default: auto-detect)
-  compose_file: ""
-
-  # Project directory for docker-compose (default: auto-detect)
-  project_dir: ""
-
 # ============================================================================
 # NOTES
 # ============================================================================

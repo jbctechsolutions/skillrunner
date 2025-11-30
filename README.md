@@ -21,28 +21,26 @@ sudo ln -sf /usr/local/bin/skillrunner /usr/local/bin/sr
 The CLI is available as `skillrunner` or `sr` for short:
 
 ```bash
-skillrunner run code-review --input "$(cat main.go)"
-# or
-sr run code-review --input "$(cat main.go)"
+sr run code-review "$(cat main.go)"
+# or with a simple prompt
+sr run code-review "Review this code for issues"
 ```
 
 ## Quick Start
 
 ```bash
-# 1. Install Ollama (required for local models)
-brew install ollama
-ollama serve
-
-# 2. Pull a model
-ollama pull qwen2.5:14b
-
-# 3. Initialize config
+# 1. Initialize config
 sr init
 
-# 4. Run a skill
-sr run code-review "Review this code for issues"
+# 2. (Optional) Install Ollama for local models
+brew install ollama
+ollama serve
+ollama pull qwen2.5:14b
 
-# 5. See usage metrics
+# 3. Run a skill
+sr run code-review "func add(a, b int) { return a + b }"
+
+# 4. See usage metrics
 sr metrics
 ```
 
@@ -57,26 +55,20 @@ sr metrics
 ## Commands
 
 ```bash
-skillrunner run <skill> <request>   # Run a skill
-skillrunner ask <skill> <question>  # Quick single-phase query
-skillrunner list                    # Show available skills
-skillrunner status                  # System health check
-skillrunner metrics                 # Usage and cost metrics
-skillrunner init                    # Initialize configuration
-
-# Or use the short alias:
-sr run <skill> <request>
-sr list
+sr run <skill> <request>   # Run a skill
+sr ask <skill> <question>  # Quick single-phase query
+sr list                    # Show available skills
+sr status                  # System health check
+sr metrics                 # Usage and cost metrics
+sr init                    # Initialize configuration
 ```
 
 ## Supported Providers
 
 | Provider | Type | Status |
 |----------|------|--------|
-| Ollama | Local | ✅ Ready |
-| Anthropic | Cloud | ✅ Ready |
-| OpenAI | Cloud | ✅ Ready |
-| OpenRouter | Cloud | ✅ Ready |
+| Ollama | Local | Ready |
+| Anthropic | Cloud | Ready |
 
 ## Configuration
 
@@ -91,11 +83,7 @@ providers:
 
   anthropic:
     api_key: ${ANTHROPIC_API_KEY}
-    enabled: true
-
-  openai:
-    api_key: ${OPENAI_API_KEY}
-    enabled: false
+    enabled: false  # Set to true when you have an API key
 ```
 
 See [config.example.yaml](config.example.yaml) for all options.

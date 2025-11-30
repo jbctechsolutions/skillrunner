@@ -11,7 +11,6 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/cache"
 	"github.com/jbctechsolutions/skillrunner/internal/config"
 	"github.com/jbctechsolutions/skillrunner/internal/converter"
-	"github.com/jbctechsolutions/skillrunner/internal/docker"
 	"github.com/jbctechsolutions/skillrunner/internal/engine"
 	"github.com/jbctechsolutions/skillrunner/internal/importer"
 	"github.com/jbctechsolutions/skillrunner/internal/llm"
@@ -311,37 +310,8 @@ func createSkillrunner(workspace string) (*engine.Skillrunner, error) {
 		return nil, err
 	}
 
-	// Load configuration
-	cfgManager, err := config.NewManager("")
-	if err != nil {
-		// If config fails to load, continue without auto_start
-		fmt.Fprintf(os.Stderr, "Warning: Failed to load config: %v\n", err)
-	} else {
-		cfg := cfgManager.Get()
-
-		// Auto-start Docker services if enabled
-		if cfg.Router.AutoStart {
-			projectDir := cfg.Docker.ProjectDir
-			if projectDir == "" {
-				// Try to find project root with docker-compose.yml
-				if wd, err := os.Getwd(); err == nil {
-					projectDir = wd
-				}
-			}
-
-			sm, err := docker.NewServiceManager(projectDir, cfgManager.GetEnvVars())
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: Docker auto-start failed: %v\n", err)
-				fmt.Fprintf(os.Stderr, "You may need to manually start services: docker-compose up -d\n")
-			} else {
-				// Try to ensure services are running
-				if err := sm.EnsureServicesRunning(true, cfg.Router.LiteLLMURL); err != nil {
-					fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
-					fmt.Fprintf(os.Stderr, "Continuing without Docker services...\n")
-				}
-			}
-		}
-	}
+	// Load configuration (optional - don't fail if config doesn't exist)
+	_, _ = config.NewManager("")
 
 	return engine.NewSkillrunner(workspace, policy), nil
 }
