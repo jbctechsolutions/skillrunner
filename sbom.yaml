@@ -1,0 +1,171 @@
+# Software Bill of Materials (SBOM) for Skillrunner
+# Format: SPDX-Lite
+# Generated: November 2025
+# Version: 1.0.0
+
+spdxVersion: SPDX-2.3
+dataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+name: Skillrunner SBOM
+documentNamespace: https://github.com/jbctechsolutions/skillrunner/sbom-v1.0.0
+creationInfo:
+  created: 2025-11-18T00:00:00Z
+  creators:
+    - Organization: JBC Tech Solutions
+  licenseListVersion: 3.21
+
+# Primary Package
+packages:
+  - name: skillrunner
+    SPDXID: SPDXRef-Package-Skillrunner
+    version: 1.0.0
+    supplier: Organization: JBC Tech Solutions
+    downloadLocation: https://github.com/jbctechsolutions/skillrunner
+    filesAnalyzed: false
+    licenseConcluded: MIT
+    licenseDeclared: MIT
+    copyrightText: Copyright (c) 2025 JBC Tech Solutions
+    externalRefs:
+      - referenceCategory: PACKAGE-MANAGER
+        referenceType: purl
+        referenceLocator: pkg:golang/github.com/jbctechsolutions/skillrunner@v1.0.0
+    description: Multi-LLM orchestration system for AI-powered development workflows
+
+  # Direct Dependencies
+  - name: spf13/cobra
+    SPDXID: SPDXRef-Package-Cobra
+    version: v1.10.1
+    supplier: Organization: spf13
+    downloadLocation: https://github.com/spf13/cobra
+    filesAnalyzed: false
+    licenseConcluded: Apache-2.0
+    licenseDeclared: Apache-2.0
+    copyrightText: Copyright 2013-2023 The Cobra Authors
+    externalRefs:
+      - referenceCategory: PACKAGE-MANAGER
+        referenceType: purl
+        referenceLocator: pkg:golang/github.com/spf13/cobra@v1.10.1
+    description: CLI library for Go
+
+  - name: gopkg.in/yaml.v3
+    SPDXID: SPDXRef-Package-Yaml
+    version: v3.0.1
+    supplier: Organization: Canonical Ltd
+    downloadLocation: https://gopkg.in/yaml.v3
+    filesAnalyzed: false
+    licenseConcluded: MIT AND Apache-2.0
+    licenseDeclared: MIT AND Apache-2.0
+    copyrightText: |
+      Copyright (c) 2006-2011 Kirill Simonov
+      Copyright (c) 2011-2019 Canonical Ltd
+    externalRefs:
+      - referenceCategory: PACKAGE-MANAGER
+        referenceType: purl
+        referenceLocator: pkg:golang/gopkg.in/yaml.v3@v3.0.1
+    description: YAML support for the Go language
+
+  # Indirect Dependencies
+  - name: spf13/pflag
+    SPDXID: SPDXRef-Package-Pflag
+    version: v1.0.10
+    supplier: Organization: spf13
+    downloadLocation: https://github.com/spf13/pflag
+    filesAnalyzed: false
+    licenseConcluded: BSD-3-Clause
+    licenseDeclared: BSD-3-Clause
+    copyrightText: |
+      Copyright (c) 2012 The Go Authors
+      Copyright (c) 2012-2017 The pflag Authors
+    externalRefs:
+      - referenceCategory: PACKAGE-MANAGER
+        referenceType: purl
+        referenceLocator: pkg:golang/github.com/spf13/pflag@v1.0.10
+    description: Drop-in replacement for Go's flag package
+
+  - name: inconshreveable/mousetrap
+    SPDXID: SPDXRef-Package-Mousetrap
+    version: v1.1.0
+    supplier: Individual: Alan Shreve
+    downloadLocation: https://github.com/inconshreveable/mousetrap
+    filesAnalyzed: false
+    licenseConcluded: Apache-2.0
+    licenseDeclared: Apache-2.0
+    copyrightText: Copyright 2014 Alan Shreve
+    externalRefs:
+      - referenceCategory: PACKAGE-MANAGER
+        referenceType: purl
+        referenceLocator: pkg:golang/github.com/inconshreveable/mousetrap@v1.1.0
+    description: Detect starting from Windows Explorer
+
+# Relationships
+relationships:
+  - spdxElementId: SPDXRef-DOCUMENT
+    relatedSpdxElement: SPDXRef-Package-Skillrunner
+    relationshipType: DESCRIBES
+
+  - spdxElementId: SPDXRef-Package-Skillrunner
+    relatedSpdxElement: SPDXRef-Package-Cobra
+    relationshipType: DEPENDS_ON
+
+  - spdxElementId: SPDXRef-Package-Skillrunner
+    relatedSpdxElement: SPDXRef-Package-Yaml
+    relationshipType: DEPENDS_ON
+
+  - spdxElementId: SPDXRef-Package-Cobra
+    relatedSpdxElement: SPDXRef-Package-Pflag
+    relationshipType: DEPENDS_ON
+
+  - spdxElementId: SPDXRef-Package-Cobra
+    relatedSpdxElement: SPDXRef-Package-Mousetrap
+    relationshipType: DEPENDS_ON
+
+# External Services (Runtime Dependencies)
+externalServices:
+  - name: Ollama
+    description: Local LLM runtime
+    license: MIT
+    optional: false
+    url: https://ollama.ai
+
+  - name: Anthropic Claude API
+    description: Cloud LLM provider
+    license: Proprietary (Terms of Service)
+    optional: true
+    url: https://www.anthropic.com
+
+  - name: OpenAI API
+    description: Cloud LLM provider
+    license: Proprietary (Terms of Service)
+    optional: true
+    url: https://openai.com
+
+  - name: Google AI (Gemini) API
+    description: Cloud LLM provider
+    license: Proprietary (Terms of Service)
+    optional: true
+    url: https://ai.google.dev
+
+# Security Information
+securityInfo:
+  - type: dependency-check
+    timestamp: 2025-11-18T00:00:00Z
+    tool: go mod
+    result: No known vulnerabilities
+
+  - type: license-scan
+    timestamp: 2025-11-18T00:00:00Z
+    result: All licenses compatible with MIT
+
+# Build Information
+buildInfo:
+  goVersion: "1.21+"
+  platform: "darwin/amd64, darwin/arm64, linux/amd64, linux/arm64, windows/amd64"
+  compiler: "gc"
+
+# Additional Metadata
+metadata:
+  intendedUse: "Development tool for AI-powered workflows"
+  dataProcessed: "User prompts, code, and LLM responses"
+  dataStorage: "Local filesystem (~/.skillrunner/)"
+  networkRequirements: "Internet access for cloud LLM APIs (optional)"
+  cryptographicFunctions: "TLS for API communications"

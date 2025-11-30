@@ -1,0 +1,24 @@
+name: code-review
+version: "1.0.0"
+description: Review code for bugs, style issues, and improvements
+type: orchestrated
+
+phases:
+  - id: review
+    name: Code Review
+    task_type: review
+    prompt_template: |
+      Review the following code for potential issues, bugs, style problems, and improvement opportunities.
+
+      Provide a structured review covering:
+      1. **Bugs & Issues**: Any logic errors or potential runtime problems
+      2. **Style & Conventions**: Code formatting and naming conventions
+      3. **Performance**: Any obvious performance concerns
+      4. **Security**: Potential security issues
+      5. **Suggestions**: Improvements and best practices
+
+      Code to review:
+      {{.request}}
+    output_key: review
+    max_tokens: 4096
+    temperature: 0.3

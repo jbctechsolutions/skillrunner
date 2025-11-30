@@ -1,0 +1,103 @@
+# Skillrunner Configuration Example
+# Copy this file to ~/.skillrunner/config.yaml and customize for your setup
+
+# ============================================================================
+# UNIFIED PROVIDER CONFIGURATION (Recommended)
+# ============================================================================
+# This is the new way to configure providers with per-provider settings
+# and automatic model discovery.
+
+providers:
+  # Ollama - Local models (free, privacy-friendly)
+  ollama:
+    url: http://localhost:11434
+    enabled: true
+    # Models are auto-discovered from your Ollama installation
+    # No need to list them manually!
+
+  # OpenRouter - Access to 100+ models via single API
+  openrouter:
+    api_key: ${OPENROUTER_API_KEY}  # Reads from environment variable
+    enabled: true
+    base_url: https://openrouter.ai/api/v1  # optional, this is the default
+    # Auto-discovers all available models via OpenRouter API
+    # Includes models from Anthropic, OpenAI, Google, Meta, and more
+
+  # Anthropic - Claude models
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}
+    enabled: true
+    # Known models: claude-3-5-sonnet-20241022, claude-3-opus, etc.
+    # Auto-discovered via Anthropic API
+
+  # OpenAI - GPT models
+  openai:
+    api_key: ${OPENAI_API_KEY}
+    enabled: false  # Disabled by default (set to true to enable)
+    # Known models: gpt-4, gpt-4-turbo, gpt-3.5-turbo, etc.
+    # Auto-discovered via OpenAI API
+
+  # Groq - Fast inference for open models
+  groq:
+    api_key: ${GROQ_API_KEY}
+    enabled: true
+    # Known models: llama-3.1-70b-versatile, mixtral-8x7b-32768, etc.
+    # Auto-discovered via Groq API
+
+# ============================================================================
+# LEGACY CONFIGURATION (Backwards Compatibility)
+# ============================================================================
+# You can still use these sections, but the providers section above is
+# recommended for new configurations.
+
+# API Keys for cloud providers (legacy)
+api_keys:
+  anthropic: ""  # Can also be set here instead of providers.anthropic.api_key
+  openai: ""
+  google: ""
+
+# Router settings
+router:
+  # LiteLLM proxy URL (default: http://localhost:18432)
+  litellm_url: http://localhost:18432
+
+  # Ollama URL (default: http://localhost:18433)
+  # Falls back to this if providers.ollama.url is not set
+  ollama_url: http://localhost:18433
+
+  # Auto-start Docker services if not running (default: true)
+  auto_start: true
+
+# Docker settings
+docker:
+  # Path to docker-compose.yml (default: auto-detect)
+  compose_file: ""
+
+  # Project directory for docker-compose (default: auto-detect)
+  project_dir: ""
+
+# ============================================================================
+# MODEL DEFAULTS (Optional)
+# ============================================================================
+# Configure default behavior for all models
+
+# model_defaults:
+#   timeout_seconds: 300
+#   max_retries: 3
+#   fallback_enabled: true
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# Environment Variable Expansion:
+#   Use ${VAR_NAME} or $VAR_NAME to reference environment variables
+#   This keeps sensitive API keys out of the config file
+#
+# Provider Priority:
+#   1. New providers section (recommended)
+#   2. Legacy api_keys section (backwards compatible)
+#   3. Environment variables (final fallback)
+#
+# Model Discovery:
+#   All providers with enabled: true will auto-discover their available
+#   models. No need to maintain manual model lists!

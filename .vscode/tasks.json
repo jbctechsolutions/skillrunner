@@ -1,0 +1,61 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Skillrunner",
+      "type": "shell",
+      "command": "make build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "make test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Run Tests with Coverage",
+      "type": "shell",
+      "command": "make test-coverage",
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Format Code",
+      "type": "shell",
+      "command": "make fmt",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Linter",
+      "type": "shell",
+      "command": "make lint",
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Quick Check (fmt + lint + test)",
+      "type": "shell",
+      "command": "make fmt && make lint && make test",
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Clean Build Artifacts",
+      "type": "shell",
+      "command": "make clean",
+      "problemMatcher": []
+    },
+    {
+      "label": "Install Skillrunner",
+      "type": "shell",
+      "command": "make install",
+      "problemMatcher": ["$go"]
+    }
+  ]
+}

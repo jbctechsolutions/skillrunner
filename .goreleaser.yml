@@ -1,0 +1,338 @@
+# GoReleaser configuration for Skillrunner v1.0
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # Ensure dependencies are up to date
+    - go mod tidy
+    # Run tests before building
+    - go test ./...
+
+builds:
+  - id: skillrunner
+    binary: skillrunner
+    main: ./cmd/skillrunner
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "7"
+    ignore:
+      # Skip combinations that don't make sense
+      - goos: windows
+        goarch: arm
+      - goos: darwin
+        goarch: arm
+      - goos: freebsd
+        goarch: arm
+
+    ldflags:
+      # Strip debug info for smaller binaries
+      - -s -w
+      # Embed version info
+      - -X main.version={{.Version}}
+      - -X main.buildTime={{.Date}}
+      - -X main.commit={{.FullCommit}}
+
+    # Build tags for different features
+    tags:
+      - netgo
+      - osusergo
+
+archives:
+  - id: skillrunner
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+    # Override format for Windows
+    format_overrides:
+      - goos: windows
+        format: zip
+
+    # Include documentation and config
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - config.example.yaml
+      - src: docs/*
+        dst: docs
+        strip_parent: true
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - 'typo'
+  groups:
+    - title: 'New Features'
+      regexp: '^feat:'
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: '^fix:'
+      order: 1
+    - title: 'Performance Improvements'
+      regexp: '^perf:'
+      order: 2
+    - title: 'Refactoring'
+      regexp: '^refactor:'
+      order: 3
+    - title: 'Documentation'
+      regexp: '^docs:'
+      order: 4
+    - title: 'Other'
+      order: 999
+
+release:
+  github:
+    owner: jbctechsolutions
+    name: skillrunner
+  draft: false
+  prerelease: auto
+  make_latest: false
+  name_template: "Skillrunner {{.Version}}"
+  header: |
+    ## Skillrunner {{.Version}}
+
+    Local-first AI workflow orchestration. Run multi-phase AI tasks with intelligent model routing.
+
+    ### Installation
+
+    **macOS (Homebrew):**
+    ```bash
+    brew tap jbctechsolutions/tap
+    brew install skillrunner
+    ```
+
+    **Linux (Binary):**
+    ```bash
+    curl -sSL https://github.com/jbctechsolutions/skillrunner/releases/download/{{.Tag}}/skillrunner_{{.Version}}_Linux_x86_64.tar.gz | tar xz
+    sudo mv skillrunner /usr/local/bin/
+    sudo ln -sf /usr/local/bin/skillrunner /usr/local/bin/sr
+    ```
+
+    **Windows (Binary):**
+    Download `skillrunner_{{.Version}}_Windows_x86_64.zip` and extract to your PATH.
+
+    **Docker:**
+    ```bash
+    docker pull ghcr.io/jbctechsolutions/skillrunner:{{.Version}}
+    ```
+
+  footer: |
+    ---
+
+    **Full Changelog**: https://github.com/jbctechsolutions/skillrunner/compare/{{.PreviousTag}}...{{.Tag}}
+
+    ### Verify Your Download
+
+    All binaries are checksummed. Verify with:
+    ```bash
+    sha256sum -c checksums.txt
+    ```
+
+    ### Next Steps
+
+    1. Install Ollama: https://ollama.ai
+    2. Pull models: `ollama pull qwen2.5:14b`
+    3. Run: `skillrunner list` (or `sr list`)
+
+    **Support:** https://github.com/jbctechsolutions/skillrunner/issues
+
+# Homebrew tap
+brews:
+  - name: skillrunner
+    repository:
+      owner: jbctechsolutions
+      name: homebrew-skillrunner
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+
+    homepage: https://github.com/jbctechsolutions/skillrunner
+    description: "Local-first AI workflow orchestration with intelligent model routing"
+    license: MIT
+
+    # Install the binary and create sr alias
+    install: |
+      bin.install "skillrunner"
+      bin.install_symlink "skillrunner" => "sr"
+
+      # Install shell completions
+      bash_completion.install "completions/skillrunner.bash" => "skillrunner"
+      zsh_completion.install "completions/skillrunner.zsh" => "_skillrunner"
+      fish_completion.install "completions/skillrunner.fish"
+
+      # Install man page if exists
+      # man1.install "manpages/skillrunner.1.gz"
+
+    # Test the installation
+    test: |
+      system "#{bin}/skillrunner", "--version"
+      system "#{bin}/sr", "--version"
+
+    # Caveats shown after install
+    caveats: |
+      Skillrunner requires Ollama for local models.
+      Install with: brew install ollama
+
+      Then pull models:
+        ollama pull qwen2.5:14b
+
+      Get started:
+        skillrunner list   # or: sr list
+        skillrunner status # or: sr status
+
+# Debian/RPM packages
+nfpms:
+  - id: skillrunner
+    package_name: skillrunner
+    vendor: JBC Tech Solutions
+    homepage: https://github.com/jbctechsolutions/skillrunner
+    maintainer: Joel B Castillo Tech Solutions, LLC <support@jbctechsolutions.com>
+    description: |
+      Local-first AI workflow orchestration with intelligent model routing.
+      Execute complex, multi-phase tasks with cost optimization using
+      local models for most work, cloud only when needed.
+      Available as both 'skillrunner' and 'sr' commands.
+    license: MIT
+
+    formats:
+      - deb
+      - rpm
+      - apk
+
+    # Dependencies
+    dependencies:
+      - curl
+
+    # Recommended packages
+    recommends:
+      - ollama
+
+    # Files to include
+    contents:
+      # Config example
+      - src: ./config.example.yaml
+        dst: /etc/skillrunner/config.example.yaml
+        type: config|noreplace
+
+      # Documentation
+      - src: ./README.md
+        dst: /usr/share/doc/skillrunner/README.md
+
+      - src: ./CHANGELOG.md
+        dst: /usr/share/doc/skillrunner/CHANGELOG.md
+
+      - src: ./LICENSE
+        dst: /usr/share/doc/skillrunner/LICENSE
+
+      # Create sr symlink
+      - src: /usr/bin/skillrunner
+        dst: /usr/bin/sr
+        type: symlink
+
+      # Man page (if created)
+      # - src: ./manpages/skillrunner.1.gz
+      #   dst: /usr/share/man/man1/skillrunner.1.gz
+
+    # Scripts
+    scripts:
+      postinstall: "scripts/postinstall.sh"
+      preremove: "scripts/preremove.sh"
+
+    # Package metadata
+    section: default
+    priority: optional
+
+# Docker images
+dockers:
+  - image_templates:
+      - "ghcr.io/jbctechsolutions/skillrunner:{{ .Version }}-amd64"
+      - "ghcr.io/jbctechsolutions/skillrunner:latest-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+    extra_files:
+      - config.example.yaml
+
+  - image_templates:
+      - "ghcr.io/jbctechsolutions/skillrunner:{{ .Version }}-arm64"
+      - "ghcr.io/jbctechsolutions/skillrunner:latest-arm64"
+    dockerfile: Dockerfile
+    use: buildx
+    goarch: arm64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+    extra_files:
+      - config.example.yaml
+
+docker_manifests:
+  - name_template: "ghcr.io/jbctechsolutions/skillrunner:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/jbctechsolutions/skillrunner:{{ .Version }}-amd64"
+      - "ghcr.io/jbctechsolutions/skillrunner:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/jbctechsolutions/skillrunner:latest"
+    image_templates:
+      - "ghcr.io/jbctechsolutions/skillrunner:latest-amd64"
+      - "ghcr.io/jbctechsolutions/skillrunner:latest-arm64"
+
+# SBOM generation disabled for now - causes duplicate file upload issues
+# sboms:
+#   - artifacts: binary
+#     documents:
+#       - "{{ .ProjectName }}_{{ .Version }}_sbom.spdx.json"
+
+# Announce releases
+announce:
+  skip: "{{gt .Patch 0}}" # Skip patch releases
+
+  # Discord webhook (optional)
+  # discord:
+  #   enabled: true
+  #   message_template: 'Skillrunner {{ .Tag }} is out! Check it out: {{ .ReleaseURL }}'
+
+# Metadata
+metadata:
+  mod_timestamp: '{{ .CommitTimestamp }}'

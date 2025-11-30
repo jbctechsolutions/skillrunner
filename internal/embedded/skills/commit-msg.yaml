@@ -1,0 +1,30 @@
+name: commit-msg
+version: "1.0.0"
+description: Generate conventional commit messages from code changes
+type: orchestrated
+
+phases:
+  - id: generate
+    name: Generate Commit Message
+    task_type: generation
+    prompt_template: |
+      Generate a conventional commit message for the following code changes.
+
+      Use the conventional commit format:
+      - type(scope): subject
+      - blank line
+      - body (optional, explain what and why)
+
+      Common types: feat, fix, docs, style, refactor, test, chore
+
+      Guidelines:
+      - Subject should be imperative mood ("add feature" not "added feature")
+      - Subject should be under 72 characters
+      - Include scope when changes are limited to a specific area
+      - Body should explain motivation for the change if not obvious
+
+      Changes to summarize:
+      {{.request}}
+    output_key: commit_message
+    max_tokens: 512
+    temperature: 0.3

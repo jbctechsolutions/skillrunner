@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "golang.go",
+    "redhat.vscode-yaml",
+    "davidanson.vscode-markdownlint",
+    "eamodio.gitlens",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}

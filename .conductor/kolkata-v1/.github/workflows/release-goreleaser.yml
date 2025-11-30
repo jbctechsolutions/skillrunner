@@ -1,0 +1,196 @@
+name: Release with GoReleaser
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  goreleaser:
+    name: Release with GoReleaser
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
+
+      # Optional: Code signing for macOS (requires secrets)
+      # - name: Import macOS certificate
+      #   if: runner.os == 'macOS'
+      #   env:
+      #     MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      #     MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+      #   run: |
+      #     echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+      #     security create-keychain -p actions build.keychain
+      #     security default-keychain -s build.keychain
+      #     security unlock-keychain -p actions build.keychain
+      #     security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          # Optional: Discord webhook for announcements
+          # DISCORD_WEBHOOK_ID: ${{ secrets.DISCORD_WEBHOOK_ID }}
+          # DISCORD_WEBHOOK_TOKEN: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
+
+      - name: Upload artifacts for verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.version.outputs.version }}
+          path: dist/
+          retention-days: 90
+
+  verify-release:
+    name: Verify Release
+    runs-on: ${{ matrix.os }}
+    needs: goreleaser
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Download Linux binary
+        if: runner.os == 'Linux'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          wget -q "https://github.com/${{ github.repository }}/releases/download/${VERSION}/sr_${VERSION#v}_Linux_x86_64.tar.gz"
+          tar xzf "sr_${VERSION#v}_Linux_x86_64.tar.gz"
+          chmod +x sr
+          ./sr --version
+          ./sr status || true
+
+      - name: Download macOS binary
+        if: runner.os == 'macOS'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          wget -q "https://github.com/${{ github.repository }}/releases/download/${VERSION}/sr_${VERSION#v}_Darwin_x86_64.tar.gz"
+          tar xzf "sr_${VERSION#v}_Darwin_x86_64.tar.gz"
+          chmod +x sr
+          ./sr --version
+          ./sr status || true
+
+      - name: Download Windows binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = "${{ steps.version.outputs.version }}"
+          $VERSION_NUM = $VERSION.TrimStart('v')
+          Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/${VERSION}/sr_${VERSION_NUM}_Windows_x86_64.zip" -OutFile "sr.zip"
+          Expand-Archive -Path "sr.zip" -DestinationPath .
+          ./sr.exe --version
+          ./sr.exe status
+
+  # Optional: Test Docker images
+  verify-docker:
+    name: Verify Docker Images
+    runs-on: ubuntu-latest
+    needs: goreleaser
+    timeout-minutes: 10
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Test Docker image (amd64)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          docker pull "ghcr.io/${{ github.repository }}:${VERSION}"
+          docker run --rm "ghcr.io/${{ github.repository }}:${VERSION}" --version
+
+      - name: Test Docker image (latest)
+        run: |
+          docker pull "ghcr.io/${{ github.repository }}:latest"
+          docker run --rm "ghcr.io/${{ github.repository }}:latest" --version
+
+  # Optional: Notify on release
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [goreleaser, verify-release]
+    if: success()
+
+    steps:
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create summary
+        run: |
+          echo "## Release ${{ steps.version.outputs.version }} Published! 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Binaries for macOS, Linux, Windows, FreeBSD" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker images (amd64, arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "- Homebrew formula" >> $GITHUB_STEP_SUMMARY
+          echo "- Debian/RPM packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [Release Notes](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Changelog](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All verification checks passed ✅" >> $GITHUB_STEP_SUMMARY

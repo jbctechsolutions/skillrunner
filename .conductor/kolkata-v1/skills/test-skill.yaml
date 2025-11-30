@@ -1,0 +1,4 @@
+name: test-skill
+version: 1.0.0
+description: A test skill for development and testing purposes
+default_model: gpt-4

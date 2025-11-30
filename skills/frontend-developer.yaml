@@ -1,0 +1,4 @@
+name: frontend-developer
+version: 1.2.0
+description: Develop modern frontend applications with best practices
+default_model: claude-3

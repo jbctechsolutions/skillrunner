@@ -1,0 +1,11 @@
+name: hello-orchestration
+version: "1.0.0"
+description: Test orchestration skill for unit tests
+type: orchestrated
+
+phases:
+  - id: greet
+    name: Greet User
+    task_type: generation
+    prompt_template: "Respond with a friendly greeting: {{.request}}"
+    output_key: greeting

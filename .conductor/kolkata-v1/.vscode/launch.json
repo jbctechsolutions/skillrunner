@@ -1,0 +1,45 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Skillrunner CLI",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/skillrunner",
+      "args": ["--help"],
+      "env": {},
+      "showLog": true
+    },
+    {
+      "name": "Debug Current Test",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/${relativeFileDirname}",
+      "env": {},
+      "args": ["-test.v", "-test.run", "^${selectedText}$"],
+      "showLog": true
+    },
+    {
+      "name": "Debug All Tests",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/${relativeFileDirname}",
+      "env": {},
+      "args": ["-test.v"],
+      "showLog": true
+    },
+    {
+      "name": "Run Hello Orchestration",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/skillrunner",
+      "args": ["run", "hello-orchestration", "test input"],
+      "env": {},
+      "showLog": true
+    }
+  ]
+}

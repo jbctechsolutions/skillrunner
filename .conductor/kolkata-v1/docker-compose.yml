@@ -1,0 +1,22 @@
+# Docker Compose configuration for Skillrunner
+# Note: Currently using local Ollama installation.
+# This file is kept for future optional Docker-based deployments.
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: skillrunner-ollama
+    ports:
+      - "18433:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/bin/ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  ollama-data:

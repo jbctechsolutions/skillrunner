@@ -1,0 +1,130 @@
+# Model Registry Configuration
+# Profile-based routing with cost simulation support
+
+# Multi-Provider Routing Configuration
+providers:
+  - name: ollama
+    type: ollama
+    api_key_env: ""  # Ollama doesn't need API keys
+
+  - name: anthropic
+    type: anthropic
+    api_key_env: ANTHROPIC_API_KEY
+
+  - name: openai
+    type: openai
+    api_key_env: OPENAI_API_KEY
+
+  - name: google
+    type: google
+    api_key_env: GOOGLE_API_KEY
+
+# Profile-based model definitions
+routing_models:
+  # CHEAP PROFILE MODELS (Ollama - Free)
+  - id: cheap-ollama-qwen
+    provider: ollama
+    model: qwen2.5:14b
+    profile_cost_per_1k_input: 0.00
+    profile_cost_per_1k_output: 0.00
+
+  - id: cheap-ollama-llama
+    provider: ollama
+    model: llama3.2:3b
+    profile_cost_per_1k_input: 0.00
+    profile_cost_per_1k_output: 0.00
+
+  - id: cheap-anthropic-haiku
+    provider: anthropic
+    model: claude-3-haiku-20240307
+    profile_cost_per_1k_input: 0.25
+    profile_cost_per_1k_output: 1.25
+
+  - id: cheap-openai-mini
+    provider: openai
+    model: gpt-4o-mini
+    profile_cost_per_1k_input: 0.15
+    profile_cost_per_1k_output: 0.60
+
+  - id: cheap-google-flash
+    provider: google
+    model: gemini-1.5-flash
+    profile_cost_per_1k_input: 0.10
+    profile_cost_per_1k_output: 0.40
+
+  # BALANCED PROFILE MODELS (Ollama - Free)
+  - id: balanced-ollama-qwen
+    provider: ollama
+    model: qwen2.5:14b
+    profile_cost_per_1k_input: 0.00
+    profile_cost_per_1k_output: 0.00
+
+  - id: balanced-ollama-coder
+    provider: ollama
+    model: qwen2.5-coder:32b
+    profile_cost_per_1k_input: 0.00
+    profile_cost_per_1k_output: 0.00
+
+  - id: balanced-anthropic-sonnet
+    provider: anthropic
+    model: claude-3-5-sonnet-20241022
+    profile_cost_per_1k_input: 0.80
+    profile_cost_per_1k_output: 4.00
+
+  - id: balanced-openai-gpt4o
+    provider: openai
+    model: gpt-4o
+    profile_cost_per_1k_input: 0.50
+    profile_cost_per_1k_output: 1.50
+
+  - id: balanced-google-pro
+    provider: google
+    model: gemini-1.5-pro
+    profile_cost_per_1k_input: 0.50
+    profile_cost_per_1k_output: 1.50
+
+  # PREMIUM PROFILE MODELS
+  - id: premium-anthropic
+    provider: anthropic
+    model: claude-3-5-sonnet-20241022
+    profile_cost_per_1k_input: 0.80
+    profile_cost_per_1k_output: 4.00
+
+  - id: premium-openai
+    provider: openai
+    model: gpt-4o
+    profile_cost_per_1k_input: 0.50
+    profile_cost_per_1k_output: 1.50
+
+  - id: premium-google
+    provider: google
+    model: gemini-1.5-pro
+    profile_cost_per_1k_input: 0.50
+    profile_cost_per_1k_output: 1.50
+
+routing_profiles:
+  cheap:
+    candidate_models:
+      - cheap-ollama-qwen
+      - cheap-ollama-llama
+      - cheap-anthropic-haiku
+      - cheap-openai-mini
+      - cheap-google-flash
+
+  balanced:
+    candidate_models:
+      - balanced-ollama-qwen
+      - balanced-ollama-coder
+      - balanced-anthropic-sonnet
+      - balanced-openai-gpt4o
+      - balanced-google-pro
+
+  premium:
+    candidate_models:
+      - premium-anthropic
+      - premium-openai
+      - premium-google
+
+cost_simulation:
+  premium_model_id: premium-anthropic
+  cheap_model_id: cheap-google-flash

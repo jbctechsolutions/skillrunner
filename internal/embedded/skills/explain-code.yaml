@@ -1,0 +1,23 @@
+name: explain-code
+version: "1.0.0"
+description: Explain what code does in plain language
+type: orchestrated
+
+phases:
+  - id: explain
+    name: Code Explanation
+    task_type: analysis
+    prompt_template: |
+      Explain the following code in clear, plain language. Break down:
+      1. **Purpose**: What the code is designed to accomplish
+      2. **How it works**: Step-by-step explanation of the logic
+      3. **Key components**: Important functions, classes, or patterns used
+      4. **Dependencies**: External libraries or systems it relies on
+
+      Keep the explanation accessible to developers who may be unfamiliar with this codebase.
+
+      Code to explain:
+      {{.request}}
+    output_key: explanation
+    max_tokens: 4096
+    temperature: 0.5

@@ -1,0 +1,183 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: make test
+
+      - name: Build all platforms
+        run: make build-all
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Create release archive
+        run: |
+          mkdir -p release
+          cp dist/* release/
+          cp README.md LICENSE install.sh release/ 2>/dev/null || true
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          # Generate changelog
+          if [ -n "$PREV_TAG" ]; then
+            echo "## What's Changed" > release_notes.md
+            echo "" >> release_notes.md
+            git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" >> release_notes.md
+            echo "" >> release_notes.md
+          else
+            echo "## Initial Release" > release_notes.md
+            echo "" >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo "## Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Quick Install" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo 'curl -sSL https://raw.githubusercontent.com/jbctechsolutions/skillrunner/main/install.sh | bash' >> release_notes.md
+          echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Manual Download" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "Download the appropriate binary for your platform:" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- **macOS (ARM64)**: sr-darwin-arm64" >> release_notes.md
+          echo "- **macOS (Intel)**: sr-darwin-amd64" >> release_notes.md
+          echo "- **Linux (x64)**: sr-linux-amd64" >> release_notes.md
+          echo "- **Linux (ARM64)**: sr-linux-arm64" >> release_notes.md
+          echo "- **Windows (x64)**: sr-windows-amd64.exe" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Checksums" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "Verify your download with SHA256 checksums (see checksums.txt)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "---" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/jbctechsolutions/skillrunner/compare/${PREV_TAG}...${VERSION}" >> release_notes.md
+
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Skillrunner ${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, 'rc') || contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
+          files: |
+            dist/sr-darwin-amd64
+            dist/sr-darwin-arm64
+            dist/sr-linux-amd64
+            dist/sr-linux-arm64
+            dist/sr-windows-amd64.exe
+            dist/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts for verification
+        uses: actions/upload-artifact@v5
+        with:
+          name: release-${{ steps.version.outputs.version }}
+          path: dist/
+          retention-days: 90
+
+  verify-release:
+    name: Verify Release
+    runs-on: ${{ matrix.os }}
+    needs: build-and-release
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: release-*
+          merge-multiple: true
+
+      - name: Verify checksums (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          sha256sum -c checksums.txt --ignore-missing
+
+      - name: Test binary execution (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x sr-linux-amd64
+          ./sr-linux-amd64 --version
+          ./sr-linux-amd64 status
+
+      - name: Test binary execution (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          chmod +x sr-darwin-arm64
+          ./sr-darwin-arm64 --version || true
+          chmod +x sr-darwin-amd64
+          ./sr-darwin-amd64 --version
+          ./sr-darwin-amd64 status
+
+      - name: Test binary execution (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          ./sr-windows-amd64.exe --version
+          ./sr-windows-amd64.exe status

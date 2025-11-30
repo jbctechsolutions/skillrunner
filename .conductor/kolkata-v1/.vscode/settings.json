@@ -1,0 +1,83 @@
+{
+  // Go specific settings
+  "go.useLanguageServer": true,
+  "go.lintTool": "golangci-lint",
+  "go.lintOnSave": "workspace",
+  "go.formatTool": "goimports",
+  "go.buildOnSave": "workspace",
+  "go.testOnSave": false,
+  "go.coverOnSave": false,
+  "go.coverageDecorator": {
+    "type": "gutter",
+    "coveredHighlightColor": "rgba(64,128,64,0.5)",
+    "uncoveredHighlightColor": "rgba(128,64,64,0.25)",
+    "coveredGutterStyle": "blockgreen",
+    "uncoveredGutterStyle": "blockred"
+  },
+
+  // Editor settings
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "editor.rulers": [100, 120],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // File associations
+  "files.associations": {
+    "*.yaml": "yaml",
+    "*.yml": "yaml",
+    "Makefile": "makefile"
+  },
+
+  // Exclude files from explorer
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/bin": true,
+    "**/dist": true,
+    "**/*.exe": true,
+    "**/*.test": true,
+    "coverage.out": true,
+    "coverage.html": true
+  },
+
+  // Test settings
+  "go.testFlags": ["-v", "-race"],
+  "go.testTimeout": "30s",
+
+  // Go tools
+  "go.toolsManagement.autoUpdate": true,
+
+  // Terminal
+  "terminal.integrated.env.osx": {
+    "GO111MODULE": "on"
+  },
+  "terminal.integrated.env.linux": {
+    "GO111MODULE": "on"
+  },
+
+  // Recommended extensions
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": false
+  },
+
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    }
+  }
+}

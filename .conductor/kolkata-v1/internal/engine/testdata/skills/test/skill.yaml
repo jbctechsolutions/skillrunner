@@ -1,0 +1,11 @@
+name: test
+version: "1.0.0"
+description: Test skill for unit tests
+type: orchestrated
+
+phases:
+  - id: process
+    name: Process Request
+    task_type: generation
+    prompt_template: "Process the request: {{.request}}"
+    output_key: result

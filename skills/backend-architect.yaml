@@ -1,0 +1,4 @@
+name: backend-architect
+version: 1.0.0
+description: Architect and implement backend systems with comprehensive planning
+default_model: gpt-4

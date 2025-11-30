@@ -1,0 +1,74 @@
+# Skillrunner Configuration Example
+# Copy this file to ~/.skillrunner/config.yaml and customize for your setup
+
+# ============================================================================
+# PROVIDER CONFIGURATION
+# ============================================================================
+# Skillrunner supports two providers for model orchestration:
+# - Ollama: Local models (free, privacy-friendly, recommended)
+# - Anthropic: Claude models (cloud-based, requires API key)
+
+providers:
+  # Ollama - Local models (recommended for most use cases)
+  # Install: https://ollama.ai
+  # Pull models: ollama pull qwen2.5:14b
+  ollama:
+    url: http://localhost:11434
+    enabled: true
+    # Models are auto-discovered from your Ollama installation
+    # No need to list them manually!
+
+  # Anthropic - Claude models (optional, requires API key)
+  # Get API key: https://console.anthropic.com
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}  # Reads from environment variable
+    enabled: false  # Set to true when you have an API key
+    # Known models: claude-3-5-sonnet-20241022, claude-3-opus, etc.
+
+# ============================================================================
+# LEGACY CONFIGURATION (Backwards Compatibility)
+# ============================================================================
+# You can still use these sections, but the providers section above is
+# recommended for new configurations.
+
+# API Keys for cloud providers (legacy)
+api_keys:
+  anthropic: ""  # Can also be set here instead of providers.anthropic.api_key
+
+# Router settings
+router:
+  # Ollama URL (falls back to this if providers.ollama.url is not set)
+  ollama_url: http://localhost:11434
+
+  # Auto-start Docker services if not running (default: false)
+  # Set to true if you want Skillrunner to automatically start Ollama/LiteLLM containers
+  auto_start: false
+
+# Docker settings (optional)
+docker:
+  # Path to docker-compose.yml (default: auto-detect)
+  compose_file: ""
+
+  # Project directory for docker-compose (default: auto-detect)
+  project_dir: ""
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# Environment Variable Expansion:
+#   Use ${VAR_NAME} or $VAR_NAME to reference environment variables
+#   This keeps sensitive API keys out of the config file
+#
+# Provider Priority:
+#   1. New providers section (recommended)
+#   2. Legacy api_keys section (backwards compatible)
+#   3. Environment variables (final fallback)
+#
+# Model Discovery:
+#   All providers with enabled: true will auto-discover their available
+#   models. No need to maintain manual model lists!
+#
+# Getting Started:
+#   1. Install Ollama: https://ollama.ai
+#   2. Pull models: ollama pull qwen2.5:14b
+#   3. Run: skillrunner list (or: sr list)

@@ -1,0 +1,4 @@
+name: api-designer
+version: 2.0.0
+description: Design and document RESTful APIs with OpenAPI specifications
+default_model: gpt-4
