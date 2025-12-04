@@ -281,6 +281,8 @@ func (p *OpenAIProvider) Generate(ctx context.Context, model, prompt string, str
 		request.Temperature = temp
 	} else if temp, ok := opts["temperature"].(float32); ok {
 		request.Temperature = float64(temp)
+	} else if temp, ok := opts["temperature"].(int); ok {
+		request.Temperature = float64(temp)
 	}
 
 	body, err := json.Marshal(request)
