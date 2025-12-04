@@ -17,6 +17,7 @@ import (
 // Supported providers:
 // - Ollama (local models, default enabled)
 // - Anthropic (Claude models)
+// - Groq (ultra-fast inference with Llama 3.1, Mixtral)
 func NewProvidersFromConfig(cfg *config.Config) ([]ModelProvider, error) {
 	var providers []ModelProvider
 
@@ -30,6 +31,12 @@ func NewProvidersFromConfig(cfg *config.Config) ([]ModelProvider, error) {
 	anthropicProvider, err := createAnthropicProvider(cfg)
 	if err == nil && anthropicProvider != nil {
 		providers = append(providers, anthropicProvider)
+	}
+
+	// Groq provider
+	groqProvider, err := createGroqProvider(cfg)
+	if err == nil && groqProvider != nil {
+		providers = append(providers, groqProvider)
 	}
 
 	if len(providers) == 0 {
@@ -106,6 +113,38 @@ func createAnthropicProvider(cfg *config.Config) (ModelProvider, error) {
 	provider, err := NewAnthropicProvider(apiKey, "", &http.Client{Timeout: 30 * time.Second})
 	if err != nil {
 		return nil, fmt.Errorf("create anthropic provider: %w", err)
+	}
+
+	return provider, nil
+}
+
+// createGroqProvider creates a Groq provider for ultra-fast inference.
+func createGroqProvider(cfg *config.Config) (ModelProvider, error) {
+	var apiKey string
+	enabled := false
+
+	// Check new config format first
+	if cfg.Providers != nil && cfg.Providers.Groq != nil {
+		enabled = cfg.Providers.Groq.Enabled
+		apiKey = expandEnvVar(cfg.Providers.Groq.APIKey)
+	}
+
+	// Check environment variable as final fallback
+	if apiKey == "" {
+		apiKey = os.Getenv("GROQ_API_KEY")
+		if apiKey != "" {
+			enabled = true
+		}
+	}
+
+	// Skip if not enabled or no API key
+	if !enabled || apiKey == "" {
+		return nil, nil
+	}
+
+	provider, err := NewGroqProvider(apiKey, "", &http.Client{Timeout: 5 * time.Minute})
+	if err != nil {
+		return nil, fmt.Errorf("create groq provider: %w", err)
 	}
 
 	return provider, nil

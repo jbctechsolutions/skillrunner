@@ -62,6 +62,8 @@ func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*Completi
 		return c.completeOllama(ctx, req)
 	case types.ModelProviderAnthropic:
 		return c.completeAnthropic(ctx, req)
+	case types.ModelProviderGroq:
+		return c.completeGroq(ctx, req)
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
@@ -424,14 +426,120 @@ func (c *Client) completeAnthropic(ctx context.Context, req CompletionRequest) (
 	}, nil
 }
 
+// completeGroq calls Groq API for ultra-fast inference
+func (c *Client) completeGroq(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	startTime := time.Now()
+
+	// Get API key
+	apiKey := os.Getenv("GROQ_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("GROQ_API_KEY environment variable not set")
+	}
+
+	// Extract model name (remove "groq/" prefix)
+	modelName := strings.TrimPrefix(req.Model, "groq/")
+
+	// Build Groq API request (OpenAI-compatible format)
+	groqReq := map[string]interface{}{
+		"model": modelName,
+		"messages": []map[string]string{
+			{
+				"role":    "user",
+				"content": req.Prompt,
+			},
+		},
+	}
+
+	if req.MaxTokens > 0 {
+		groqReq["max_tokens"] = req.MaxTokens
+	}
+
+	if req.Temperature > 0 {
+		groqReq["temperature"] = req.Temperature
+	}
+
+	reqBody, err := json.Marshal(groqReq)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	// Call Groq API
+	endpoint := "https://api.groq.com/openai/v1/chat/completions"
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("groq request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		// Handle rate limiting specifically
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("groq rate limit exceeded: %s", string(body))
+		}
+		return nil, fmt.Errorf("groq API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	// Parse OpenAI-compatible response
+	var groqResp struct {
+		ID      string `json:"id"`
+		Object  string `json:"object"`
+		Created int64  `json:"created"`
+		Model   string `json:"model"`
+		Choices []struct {
+			Index   int `json:"index"`
+			Message struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"message"`
+			FinishReason string `json:"finish_reason"`
+		} `json:"choices"`
+		Usage struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+			TotalTokens      int `json:"total_tokens"`
+		} `json:"usage"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&groqResp); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	// Extract content from first choice
+	var content string
+	if len(groqResp.Choices) > 0 {
+		content = groqResp.Choices[0].Message.Content
+	}
+
+	return &CompletionResponse{
+		Content:      content,
+		InputTokens:  groqResp.Usage.PromptTokens,
+		OutputTokens: groqResp.Usage.CompletionTokens,
+		Model:        req.Model,
+		Provider:     string(types.ModelProviderGroq),
+		Duration:     time.Since(startTime),
+	}, nil
+}
+
 // getProvider determines the provider from model name.
-// Supported providers: Ollama (local), Anthropic (cloud).
+// Supported providers: Ollama (local), Anthropic (cloud), Groq (cloud, ultra-fast).
 func getProvider(model string) types.ModelProvider {
 	if strings.HasPrefix(model, "ollama/") {
 		return types.ModelProviderOllama
 	}
 	if strings.HasPrefix(model, "anthropic/") {
 		return types.ModelProviderAnthropic
+	}
+	if strings.HasPrefix(model, "groq/") {
+		return types.ModelProviderGroq
 	}
 	// Default to Ollama for bare model names (local-first approach)
 	return types.ModelProviderOllama

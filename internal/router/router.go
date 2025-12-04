@@ -183,13 +183,15 @@ func (mr *ModelRouter) isHealthy(ctx context.Context, modelName string) bool {
 	}
 
 	// Perform health check based on provider
-	// Supported providers: Ollama (local), Anthropic (cloud)
+	// Supported providers: Ollama (local), Anthropic (cloud), Groq (cloud, ultra-fast)
 	healthy := false
 	switch model.Provider {
 	case types.ModelProviderOllama:
 		healthy = mr.checkOllamaHealth(ctx, model)
 	case types.ModelProviderAnthropic:
 		healthy = mr.checkAnthropicHealth(model)
+	case types.ModelProviderGroq:
+		healthy = mr.checkGroqHealth(model)
 	default:
 		// Unknown provider, assume unhealthy
 		healthy = false
@@ -283,6 +285,20 @@ func (mr *ModelRouter) checkOpenAIHealth(model *types.ModelInfo) bool {
 		return false
 	}
 	apiKey := os.Getenv(model.APIKeyEnv)
+	return apiKey != ""
+}
+
+// checkGroqHealth checks if Groq API key is configured
+func (mr *ModelRouter) checkGroqHealth(model *types.ModelInfo) bool {
+	// Check model's configured API key env first
+	if model.APIKeyEnv != "" {
+		apiKey := os.Getenv(model.APIKeyEnv)
+		if apiKey != "" {
+			return true
+		}
+	}
+	// Fall back to default GROQ_API_KEY
+	apiKey := os.Getenv("GROQ_API_KEY")
 	return apiKey != ""
 }
 
