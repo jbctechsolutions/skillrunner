@@ -354,11 +354,8 @@ func (c *Client) completeAnthropic(ctx context.Context, req CompletionRequest) (
 				"content": req.Prompt,
 			},
 		},
-		"max_tokens": req.MaxTokens,
-	}
-
-	if req.Temperature > 0 {
-		anthropicReq["temperature"] = req.Temperature
+		"max_tokens":  req.MaxTokens,
+		"temperature": req.Temperature, // Always include - temperature=0 is valid for deterministic responses
 	}
 
 	reqBody, err := json.Marshal(anthropicReq)
@@ -453,9 +450,8 @@ func (c *Client) completeOpenAI(ctx context.Context, req CompletionRequest) (*Co
 	if req.MaxTokens > 0 {
 		openaiReq["max_tokens"] = req.MaxTokens
 	}
-	if req.Temperature > 0 {
-		openaiReq["temperature"] = req.Temperature
-	}
+	// Always include temperature for OpenAI - temperature=0 is valid for deterministic responses
+	openaiReq["temperature"] = req.Temperature
 
 	reqBody, err := json.Marshal(openaiReq)
 	if err != nil {
