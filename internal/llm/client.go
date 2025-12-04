@@ -16,7 +16,8 @@ import (
 
 // Client provides a unified interface for calling different LLM providers
 type Client struct {
-	httpClient *http.Client
+	httpClient   *http.Client
+	groqProvider *GroqProvider // Cached Groq provider (lazily initialized)
 }
 
 // NewClient creates a new LLM client
@@ -26,6 +27,18 @@ func NewClient() *Client {
 			Timeout: 15 * time.Minute, // Long timeout for complex tasks with large models
 		},
 	}
+}
+
+// getGroqProvider returns a cached Groq provider, creating it on first use
+func (c *Client) getGroqProvider() (*GroqProvider, error) {
+	if c.groqProvider == nil {
+		provider, err := NewGroqProvider("")
+		if err != nil {
+			return nil, err
+		}
+		c.groqProvider = provider
+	}
+	return c.groqProvider, nil
 }
 
 // CompletionRequest represents a request to generate text
@@ -430,8 +443,8 @@ func (c *Client) completeAnthropic(ctx context.Context, req CompletionRequest) (
 func (c *Client) completeGroq(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
 	startTime := time.Now()
 
-	// Create Groq provider (uses GROQ_API_KEY env var by default)
-	provider, err := NewGroqProvider("")
+	// Get cached Groq provider (lazily initialized)
+	provider, err := c.getGroqProvider()
 	if err != nil {
 		return nil, err
 	}

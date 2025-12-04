@@ -272,19 +272,29 @@ func (mr *ModelRouter) checkOllamaHealth(ctx context.Context, model *types.Model
 
 // checkAnthropicHealth checks if Anthropic API key is configured
 func (mr *ModelRouter) checkAnthropicHealth(model *types.ModelInfo) bool {
-	if model.APIKeyEnv == "" {
-		return false
+	// Check model's configured API key env first
+	if model.APIKeyEnv != "" {
+		apiKey := os.Getenv(model.APIKeyEnv)
+		if apiKey != "" {
+			return true
+		}
 	}
-	apiKey := os.Getenv(model.APIKeyEnv)
+	// Fall back to default ANTHROPIC_API_KEY
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	return apiKey != ""
 }
 
 // checkOpenAIHealth checks if OpenAI API key is configured
 func (mr *ModelRouter) checkOpenAIHealth(model *types.ModelInfo) bool {
-	if model.APIKeyEnv == "" {
-		return false
+	// Check model's configured API key env first
+	if model.APIKeyEnv != "" {
+		apiKey := os.Getenv(model.APIKeyEnv)
+		if apiKey != "" {
+			return true
+		}
 	}
-	apiKey := os.Getenv(model.APIKeyEnv)
+	// Fall back to default OPENAI_API_KEY
+	apiKey := os.Getenv("OPENAI_API_KEY")
 	return apiKey != ""
 }
 
