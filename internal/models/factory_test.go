@@ -248,6 +248,132 @@ func TestCreateAnthropicProvider(t *testing.T) {
 	}
 }
 
+func TestCreateOpenAIProvider(t *testing.T) {
+	// Save and clear environment variable
+	originalKey := os.Getenv("OPENAI_API_KEY")
+	os.Unsetenv("OPENAI_API_KEY")
+	defer func() {
+		if originalKey != "" {
+			os.Setenv("OPENAI_API_KEY", originalKey)
+		} else {
+			os.Unsetenv("OPENAI_API_KEY")
+		}
+	}()
+
+	// Set test environment variable
+	os.Setenv("TEST_OPENAI_KEY", "sk-test-openai")
+	defer os.Unsetenv("TEST_OPENAI_KEY")
+
+	tests := []struct {
+		name        string
+		config      *config.Config
+		envKey      string
+		expectNil   bool
+		expectError bool
+	}{
+		{
+			name: "new config format with direct key",
+			config: &config.Config{
+				Providers: &config.Providers{
+					OpenAI: &config.OpenAIConfig{
+						APIKey:  "sk-openai-direct",
+						Enabled: true,
+					},
+				},
+			},
+			expectNil:   false,
+			expectError: false,
+		},
+		{
+			name: "new config format with env var",
+			config: &config.Config{
+				Providers: &config.Providers{
+					OpenAI: &config.OpenAIConfig{
+						APIKey:  "${TEST_OPENAI_KEY}",
+						Enabled: true,
+					},
+				},
+			},
+			expectNil:   false,
+			expectError: false,
+		},
+		{
+			name:        "environment variable fallback",
+			config:      &config.Config{},
+			envKey:      "sk-openai-env",
+			expectNil:   false,
+			expectError: false,
+		},
+		{
+			name: "disabled in new config",
+			config: &config.Config{
+				Providers: &config.Providers{
+					OpenAI: &config.OpenAIConfig{
+						APIKey:  "sk-openai-test",
+						Enabled: false,
+					},
+				},
+			},
+			expectNil:   true,
+			expectError: false,
+		},
+		{
+			name: "no api key configured",
+			config: &config.Config{
+				Providers: &config.Providers{
+					OpenAI: &config.OpenAIConfig{
+						Enabled: true,
+					},
+				},
+			},
+			expectNil:   true,
+			expectError: false,
+		},
+		{
+			name:        "empty config no env",
+			config:      &config.Config{},
+			expectNil:   true,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set environment variable if specified
+			if tt.envKey != "" {
+				os.Setenv("OPENAI_API_KEY", tt.envKey)
+				defer os.Unsetenv("OPENAI_API_KEY")
+			} else {
+				os.Unsetenv("OPENAI_API_KEY")
+			}
+
+			provider, err := createOpenAIProvider(tt.config)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if tt.expectNil && provider != nil {
+				t.Error("expected nil provider but got non-nil")
+			}
+			if !tt.expectNil && provider == nil {
+				t.Error("expected non-nil provider but got nil")
+			}
+
+			// Verify provider type if created
+			if provider != nil && !tt.expectNil {
+				_, ok := provider.(*OpenAIProvider)
+				if !ok {
+					t.Fatal("provider is not an OpenAIProvider")
+				}
+			}
+		})
+	}
+}
+
 func TestNewProvidersFromConfig(t *testing.T) {
 	tests := []struct {
 		name            string

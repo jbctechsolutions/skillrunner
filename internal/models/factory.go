@@ -17,6 +17,7 @@ import (
 // Supported providers:
 // - Ollama (local models, default enabled)
 // - Anthropic (Claude models)
+// - OpenAI (GPT-4o, GPT-4o-mini models)
 func NewProvidersFromConfig(cfg *config.Config) ([]ModelProvider, error) {
 	var providers []ModelProvider
 
@@ -30,6 +31,12 @@ func NewProvidersFromConfig(cfg *config.Config) ([]ModelProvider, error) {
 	anthropicProvider, err := createAnthropicProvider(cfg)
 	if err == nil && anthropicProvider != nil {
 		providers = append(providers, anthropicProvider)
+	}
+
+	// OpenAI provider
+	openaiProvider, err := createOpenAIProvider(cfg)
+	if err == nil && openaiProvider != nil {
+		providers = append(providers, openaiProvider)
 	}
 
 	if len(providers) == 0 {
@@ -106,6 +113,38 @@ func createAnthropicProvider(cfg *config.Config) (ModelProvider, error) {
 	provider, err := NewAnthropicProvider(apiKey, "", &http.Client{Timeout: 30 * time.Second})
 	if err != nil {
 		return nil, fmt.Errorf("create anthropic provider: %w", err)
+	}
+
+	return provider, nil
+}
+
+// createOpenAIProvider creates an OpenAI provider.
+func createOpenAIProvider(cfg *config.Config) (ModelProvider, error) {
+	var apiKey string
+	enabled := false
+
+	// Check new config format first
+	if cfg.Providers != nil && cfg.Providers.OpenAI != nil {
+		enabled = cfg.Providers.OpenAI.Enabled
+		apiKey = expandEnvVar(cfg.Providers.OpenAI.APIKey)
+	}
+
+	// Check environment variable as fallback
+	if apiKey == "" {
+		apiKey = os.Getenv("OPENAI_API_KEY")
+		if apiKey != "" {
+			enabled = true
+		}
+	}
+
+	// Skip if not enabled or no API key
+	if !enabled || apiKey == "" {
+		return nil, nil
+	}
+
+	provider, err := NewOpenAIProvider(apiKey, "", &http.Client{Timeout: 30 * time.Second})
+	if err != nil {
+		return nil, fmt.Errorf("create openai provider: %w", err)
 	}
 
 	return provider, nil

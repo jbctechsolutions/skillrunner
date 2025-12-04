@@ -62,6 +62,8 @@ func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*Completi
 		return c.completeOllama(ctx, req)
 	case types.ModelProviderAnthropic:
 		return c.completeAnthropic(ctx, req)
+	case types.ModelProviderOpenAI:
+		return c.completeOpenAI(ctx, req)
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
@@ -352,11 +354,8 @@ func (c *Client) completeAnthropic(ctx context.Context, req CompletionRequest) (
 				"content": req.Prompt,
 			},
 		},
-		"max_tokens": req.MaxTokens,
-	}
-
-	if req.Temperature > 0 {
-		anthropicReq["temperature"] = req.Temperature
+		"max_tokens":  req.MaxTokens,
+		"temperature": req.Temperature, // Always include - temperature=0 is valid for deterministic responses
 	}
 
 	reqBody, err := json.Marshal(anthropicReq)
@@ -424,14 +423,114 @@ func (c *Client) completeAnthropic(ctx context.Context, req CompletionRequest) (
 	}, nil
 }
 
+// completeOpenAI calls OpenAI Chat API
+func (c *Client) completeOpenAI(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	startTime := time.Now()
+
+	// Get API key
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("OPENAI_API_KEY environment variable not set")
+	}
+
+	// Extract model name (remove "openai/" prefix)
+	modelName := strings.TrimPrefix(req.Model, "openai/")
+
+	// Build OpenAI API request
+	openaiReq := map[string]interface{}{
+		"model": modelName,
+		"messages": []map[string]string{
+			{
+				"role":    "user",
+				"content": req.Prompt,
+			},
+		},
+	}
+
+	if req.MaxTokens > 0 {
+		openaiReq["max_tokens"] = req.MaxTokens
+	}
+	// Always include temperature for OpenAI - temperature=0 is valid for deterministic responses
+	openaiReq["temperature"] = req.Temperature
+
+	reqBody, err := json.Marshal(openaiReq)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	// Call OpenAI API
+	endpoint := "https://api.openai.com/v1/chat/completions"
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("openai request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("openai API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var openaiResp struct {
+		ID      string `json:"id"`
+		Object  string `json:"object"`
+		Created int64  `json:"created"`
+		Model   string `json:"model"`
+		Choices []struct {
+			Index   int `json:"index"`
+			Message struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"message"`
+			FinishReason string `json:"finish_reason"`
+		} `json:"choices"`
+		Usage struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+			TotalTokens      int `json:"total_tokens"`
+		} `json:"usage"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&openaiResp); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	// Extract text from choices
+	if len(openaiResp.Choices) == 0 {
+		return nil, fmt.Errorf("openai response contained no choices")
+	}
+	content := openaiResp.Choices[0].Message.Content
+
+	return &CompletionResponse{
+		Content:      content,
+		InputTokens:  openaiResp.Usage.PromptTokens,
+		OutputTokens: openaiResp.Usage.CompletionTokens,
+		Model:        req.Model,
+		Provider:     string(types.ModelProviderOpenAI),
+		Duration:     time.Since(startTime),
+	}, nil
+}
+
 // getProvider determines the provider from model name.
-// Supported providers: Ollama (local), Anthropic (cloud).
+// Supported providers: Ollama (local), Anthropic (cloud), OpenAI (cloud).
 func getProvider(model string) types.ModelProvider {
 	if strings.HasPrefix(model, "ollama/") {
 		return types.ModelProviderOllama
 	}
 	if strings.HasPrefix(model, "anthropic/") {
 		return types.ModelProviderAnthropic
+	}
+	if strings.HasPrefix(model, "openai/") {
+		return types.ModelProviderOpenAI
 	}
 	// Default to Ollama for bare model names (local-first approach)
 	return types.ModelProviderOllama

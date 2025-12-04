@@ -13,8 +13,8 @@ import (
 	"time"
 )
 
-// AnthropicProvider integrates with the Anthropic Messages API.
-type AnthropicProvider struct {
+// OpenAIProvider integrates with the OpenAI Chat Completions API.
+type OpenAIProvider struct {
 	apiKey  string
 	baseURL string
 	client  *http.Client
@@ -27,37 +27,52 @@ type AnthropicProvider struct {
 	cacheTTL    time.Duration
 }
 
-type anthropicModelList struct {
+type openAIModelList struct {
 	Data []struct {
 		ID string `json:"id"`
 	} `json:"data"`
 }
 
-type anthropicMessageRequest struct {
-	Model     string                    `json:"model"`
-	MaxTokens int                       `json:"max_tokens"`
-	Messages  []anthropicMessageContent `json:"messages"`
-	Stream    bool                      `json:"stream"`
+type openAIChatRequest struct {
+	Model       string                  `json:"model"`
+	Messages    []openAIChatMessage     `json:"messages"`
+	MaxTokens   int                     `json:"max_tokens,omitempty"`
+	Temperature float64                 `json:"temperature"`
+	Stream      bool                    `json:"stream"`
 }
 
-type anthropicMessageContent struct {
+type openAIChatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-type anthropicMessageResponse struct {
-	Content []struct {
-		Text string `json:"text"`
-	} `json:"content"`
+type openAIChatResponse struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	Model   string `json:"model"`
+	Choices []struct {
+		Index   int `json:"index"`
+		Message struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
+	} `json:"choices"`
+	Usage struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+		TotalTokens      int `json:"total_tokens"`
+	} `json:"usage"`
 }
 
-// NewAnthropicProvider constructs a provider for Anthropic's API.
-func NewAnthropicProvider(apiKey string, baseURL string, client *http.Client) (*AnthropicProvider, error) {
+// NewOpenAIProvider constructs a provider for OpenAI's API.
+func NewOpenAIProvider(apiKey string, baseURL string, client *http.Client) (*OpenAIProvider, error) {
 	if apiKey == "" {
-		return nil, fmt.Errorf("anthropic api key is required")
+		return nil, fmt.Errorf("openai api key is required")
 	}
 	if baseURL == "" {
-		baseURL = "https://api.anthropic.com"
+		baseURL = "https://api.openai.com"
 	}
 	if client == nil {
 		client = &http.Client{
@@ -65,21 +80,21 @@ func NewAnthropicProvider(apiKey string, baseURL string, client *http.Client) (*
 		}
 	}
 
-	return &AnthropicProvider{
+	return &OpenAIProvider{
 		apiKey:      apiKey,
 		baseURL:     strings.TrimRight(baseURL, "/"),
 		client:      client,
-		info:        ProviderInfo{Name: "anthropic-live", Type: ProviderTypeCloud},
+		info:        ProviderInfo{Name: "openai-live", Type: ProviderTypeCloud},
 		modelsCache: make(map[string]struct{}),
 		cacheTTL:    2 * time.Minute,
 	}, nil
 }
 
-func (p *AnthropicProvider) Info() ProviderInfo {
+func (p *OpenAIProvider) Info() ProviderInfo {
 	return p.info
 }
 
-func (p *AnthropicProvider) Models(ctx context.Context) ([]ModelRef, error) {
+func (p *OpenAIProvider) Models(ctx context.Context) ([]ModelRef, error) {
 	models, err := p.fetchModels(ctx, false)
 	if err != nil {
 		return nil, err
@@ -94,7 +109,7 @@ func (p *AnthropicProvider) Models(ctx context.Context) ([]ModelRef, error) {
 	return results, nil
 }
 
-func (p *AnthropicProvider) SupportsModel(ctx context.Context, model string) (bool, error) {
+func (p *OpenAIProvider) SupportsModel(ctx context.Context, model string) (bool, error) {
 	models, err := p.fetchModels(ctx, false)
 	if err != nil {
 		return false, err
@@ -103,24 +118,24 @@ func (p *AnthropicProvider) SupportsModel(ctx context.Context, model string) (bo
 	return ok, nil
 }
 
-func (p *AnthropicProvider) IsModelAvailable(ctx context.Context, model string) (bool, error) {
+func (p *OpenAIProvider) IsModelAvailable(ctx context.Context, model string) (bool, error) {
 	return p.SupportsModel(ctx, model)
 }
 
 // CheckModelHealth verifies a specific model is available and provides actionable feedback.
-func (p *AnthropicProvider) CheckModelHealth(ctx context.Context, modelID string) (*HealthStatus, error) {
+func (p *OpenAIProvider) CheckModelHealth(ctx context.Context, modelID string) (*HealthStatus, error) {
 	// Check if API key is set
 	if p.apiKey == "" {
 		return &HealthStatus{
 			Healthy: false,
-			Message: "Anthropic API key not configured",
+			Message: "OpenAI API key not configured",
 			Suggestions: []string{
-				"Set ANTHROPIC_API_KEY environment variable",
-				"Get API key from: https://console.anthropic.com/",
+				"Set OPENAI_API_KEY environment variable",
+				"Get API key from: https://platform.openai.com/api-keys",
 				"Update configuration with valid API key",
 			},
 			Details: map[string]interface{}{
-				"provider": "anthropic",
+				"provider": "openai",
 				"base_url": p.baseURL,
 			},
 		}, nil
@@ -131,15 +146,15 @@ func (p *AnthropicProvider) CheckModelHealth(ctx context.Context, modelID string
 	if err != nil {
 		return &HealthStatus{
 			Healthy: false,
-			Message: "Unable to fetch models from Anthropic API",
+			Message: "Unable to fetch models from OpenAI API",
 			Suggestions: []string{
 				"Check your API key is valid",
 				"Verify internet connection",
-				"Check Anthropic API status: https://status.anthropic.com/",
-				"Ensure ANTHROPIC_API_KEY is set correctly",
+				"Check OpenAI API status: https://status.openai.com/",
+				"Ensure OPENAI_API_KEY is set correctly",
 			},
 			Details: map[string]interface{}{
-				"provider": "anthropic",
+				"provider": "openai",
 				"base_url": p.baseURL,
 				"error":    err.Error(),
 			},
@@ -156,14 +171,14 @@ func (p *AnthropicProvider) CheckModelHealth(ctx context.Context, modelID string
 
 		return &HealthStatus{
 			Healthy: false,
-			Message: fmt.Sprintf("Model '%s' not found in Anthropic catalog", modelID),
+			Message: fmt.Sprintf("Model '%s' not found in OpenAI catalog", modelID),
 			Suggestions: []string{
 				"Check model ID spelling",
-				"List available models: skill models list --provider=anthropic",
-				"Visit Anthropic docs: https://docs.anthropic.com/claude/docs/models-overview",
+				"List available models: skill models list --provider=openai",
+				"Visit OpenAI docs: https://platform.openai.com/docs/models",
 			},
 			Details: map[string]interface{}{
-				"provider":        "anthropic",
+				"provider":        "openai",
 				"requested_model": modelID,
 				"known_models":    knownModels,
 			},
@@ -179,7 +194,7 @@ func (p *AnthropicProvider) CheckModelHealth(ctx context.Context, modelID string
 		Suggestions: nil,
 		Details: map[string]interface{}{
 			"model_id":           modelID,
-			"provider":           "anthropic",
+			"provider":           "openai",
 			"tier":               metadata.Tier,
 			"cost_per_1k_tokens": metadata.CostPer1KTokens,
 			"base_url":           p.baseURL,
@@ -187,24 +202,33 @@ func (p *AnthropicProvider) CheckModelHealth(ctx context.Context, modelID string
 	}, nil
 }
 
-func (p *AnthropicProvider) ModelMetadata(ctx context.Context, model string) (ModelMetadata, error) {
+func (p *OpenAIProvider) ModelMetadata(ctx context.Context, model string) (ModelMetadata, error) {
 	if ok, err := p.SupportsModel(ctx, model); err != nil {
 		return ModelMetadata{}, err
 	} else if !ok {
 		return ModelMetadata{}, fmt.Errorf("%w: %s", ErrModelNotFound, model)
 	}
 
+	// GPT-4o: $2.50/$10.00 per 1M tokens (input/output) → $0.00625 per 1K tokens average
+	// GPT-4o-mini: $0.15/$0.60 per 1M tokens → $0.000375 per 1K tokens average
 	tier := AgentTierBalanced
-	cost := 0.02
-	if strings.Contains(model, "opus") {
-		tier = AgentTierPowerful
-		cost = 0.04
-	} else if strings.Contains(model, "sonnet") {
-		tier = AgentTierBalanced
-		cost = 0.025
-	} else if strings.Contains(model, "haiku") {
+	cost := 0.00625 // Default to GPT-4o pricing
+
+	if strings.HasPrefix(model, "gpt-4o-mini") {
 		tier = AgentTierFast
-		cost = 0.01
+		cost = 0.000375
+	} else if strings.HasPrefix(model, "gpt-4o") {
+		tier = AgentTierBalanced
+		cost = 0.00625
+	} else if strings.HasPrefix(model, "gpt-4-turbo") || strings.HasPrefix(model, "gpt-4-1106") {
+		tier = AgentTierPowerful
+		cost = 0.02
+	} else if strings.HasPrefix(model, "gpt-4") {
+		tier = AgentTierPowerful
+		cost = 0.045
+	} else if strings.HasPrefix(model, "gpt-3.5-turbo") {
+		tier = AgentTierFast
+		cost = 0.001
 	}
 
 	return ModelMetadata{
@@ -214,7 +238,7 @@ func (p *AnthropicProvider) ModelMetadata(ctx context.Context, model string) (Mo
 	}, nil
 }
 
-func (p *AnthropicProvider) ResolveModel(ctx context.Context, model string) (*ResolvedModel, error) {
+func (p *OpenAIProvider) ResolveModel(ctx context.Context, model string) (*ResolvedModel, error) {
 	if ok, err := p.SupportsModel(ctx, model); err != nil {
 		return nil, err
 	} else if !ok {
@@ -226,7 +250,7 @@ func (p *AnthropicProvider) ResolveModel(ctx context.Context, model string) (*Re
 	return &ResolvedModel{
 		Name:            model,
 		Provider:        p.Info(),
-		Route:           fmt.Sprintf("%s/v1/messages", p.baseURL),
+		Route:           fmt.Sprintf("%s/v1/chat/completions", p.baseURL),
 		Tier:            meta.Tier,
 		CostPer1KTokens: meta.CostPer1KTokens,
 		Metadata: map[string]string{
@@ -235,17 +259,30 @@ func (p *AnthropicProvider) ResolveModel(ctx context.Context, model string) (*Re
 	}, nil
 }
 
-func (p *AnthropicProvider) Generate(ctx context.Context, model, prompt string, stream bool, opts map[string]interface{}) (string, error) {
+func (p *OpenAIProvider) Generate(ctx context.Context, model, prompt string, stream bool, opts map[string]interface{}) (string, error) {
 	if stream {
-		return "", errors.New("anthropic streaming not implemented")
+		return "", errors.New("openai streaming not implemented")
 	}
 
-	request := anthropicMessageRequest{
-		Model:     model,
-		MaxTokens: 1024,
-		Messages: []anthropicMessageContent{
+	request := openAIChatRequest{
+		Model: model,
+		Messages: []openAIChatMessage{
 			{Role: "user", Content: prompt},
 		},
+		Temperature: 1.0, // Typical default for OpenAI chat models as of June 2024; see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature. This may change in future.
+		Stream:      false,
+	}
+
+	// Apply optional parameters
+	if maxTokens, ok := opts["max_tokens"].(int); ok {
+		request.MaxTokens = maxTokens
+	}
+	if temp, ok := opts["temperature"].(float64); ok {
+		request.Temperature = temp
+	} else if temp, ok := opts["temperature"].(float32); ok {
+		request.Temperature = float64(temp)
+	} else if temp, ok := opts["temperature"].(int); ok {
+		request.Temperature = float64(temp)
 	}
 
 	body, err := json.Marshal(request)
@@ -253,12 +290,11 @@ func (p *AnthropicProvider) Generate(ctx context.Context, model, prompt string, 
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/v1/messages", p.baseURL), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/v1/chat/completions", p.baseURL), bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
 	}
-	req.Header.Set("x-api-key", p.apiKey)
-	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := p.client.Do(req)
@@ -269,22 +305,22 @@ func (p *AnthropicProvider) Generate(ctx context.Context, model, prompt string, 
 
 	if resp.StatusCode != http.StatusOK {
 		payload, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-		return "", fmt.Errorf("anthropic request failed: status %d: %s", resp.StatusCode, strings.TrimSpace(string(payload)))
+		return "", fmt.Errorf("openai request failed: status %d: %s", resp.StatusCode, strings.TrimSpace(string(payload)))
 	}
 
-	var parsed anthropicMessageResponse
+	var parsed openAIChatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
 		return "", fmt.Errorf("decode response: %w", err)
 	}
 
-	if len(parsed.Content) == 0 {
-		return "", errors.New("anthropic response contained no content")
+	if len(parsed.Choices) == 0 {
+		return "", errors.New("openai response contained no choices")
 	}
 
-	return parsed.Content[0].Text, nil
+	return parsed.Choices[0].Message.Content, nil
 }
 
-func (p *AnthropicProvider) fetchModels(ctx context.Context, force bool) (map[string]struct{}, error) {
+func (p *OpenAIProvider) fetchModels(ctx context.Context, force bool) (map[string]struct{}, error) {
 	p.mu.RLock()
 	if !force && time.Since(p.lastFetch) < p.cacheTTL && len(p.modelsCache) > 0 {
 		defer p.mu.RUnlock()
@@ -296,8 +332,7 @@ func (p *AnthropicProvider) fetchModels(ctx context.Context, force bool) (map[st
 	if err != nil {
 		return nil, fmt.Errorf("create model list request: %w", err)
 	}
-	req.Header.Set("x-api-key", p.apiKey)
-	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.client.Do(req)
 	if err != nil {
@@ -310,7 +345,7 @@ func (p *AnthropicProvider) fetchModels(ctx context.Context, force bool) (map[st
 		return nil, fmt.Errorf("fetch models: status %d: %s", resp.StatusCode, strings.TrimSpace(string(payload)))
 	}
 
-	var parsed anthropicModelList
+	var parsed openAIModelList
 	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
 		return nil, fmt.Errorf("decode models: %w", err)
 	}
@@ -327,3 +362,4 @@ func (p *AnthropicProvider) fetchModels(ctx context.Context, force bool) (map[st
 
 	return cloneModelSet(models), nil
 }
+

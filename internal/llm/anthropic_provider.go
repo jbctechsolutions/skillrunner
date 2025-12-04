@@ -65,13 +65,10 @@ func (p *AnthropicProvider) Chat(ctx context.Context, req ChatRequest) (ChatResp
 
 	// Build Anthropic API request
 	anthropicReq := map[string]interface{}{
-		"model":      req.Model,
-		"messages":   messages,
-		"max_tokens": req.MaxTokens,
-	}
-
-	if req.Temperature > 0 {
-		anthropicReq["temperature"] = req.Temperature
+		"model":       req.Model,
+		"messages":    messages,
+		"max_tokens":  req.MaxTokens,
+		"temperature": req.Temperature, // Always include - temperature=0 is valid for deterministic responses
 	}
 
 	reqBody, err := json.Marshal(anthropicReq)
