@@ -269,7 +269,8 @@ func (p *OpenAIProvider) Generate(ctx context.Context, model, prompt string, str
 		Messages: []openAIChatMessage{
 			{Role: "user", Content: prompt},
 		},
-		Stream: false,
+		Temperature: 1.0, // OpenAI default
+		Stream:      false,
 	}
 
 	// Apply optional parameters
@@ -278,6 +279,8 @@ func (p *OpenAIProvider) Generate(ctx context.Context, model, prompt string, str
 	}
 	if temp, ok := opts["temperature"].(float64); ok {
 		request.Temperature = temp
+	} else if temp, ok := opts["temperature"].(float32); ok {
+		request.Temperature = float64(temp)
 	}
 
 	body, err := json.Marshal(request)
@@ -319,7 +322,7 @@ func (p *OpenAIProvider) fetchModels(ctx context.Context, force bool) (map[strin
 	p.mu.RLock()
 	if !force && time.Since(p.lastFetch) < p.cacheTTL && len(p.modelsCache) > 0 {
 		defer p.mu.RUnlock()
-		return cloneModelSetOpenAI(p.modelsCache), nil
+		return cloneModelSet(p.modelsCache), nil
 	}
 	p.mu.RUnlock()
 
@@ -355,13 +358,6 @@ func (p *OpenAIProvider) fetchModels(ctx context.Context, force bool) (map[strin
 	p.lastFetch = time.Now()
 	p.mu.Unlock()
 
-	return cloneModelSetOpenAI(models), nil
+	return cloneModelSet(models), nil
 }
 
-func cloneModelSetOpenAI(input map[string]struct{}) map[string]struct{} {
-	out := make(map[string]struct{}, len(input))
-	for key := range input {
-		out[key] = struct{}{}
-	}
-	return out
-}

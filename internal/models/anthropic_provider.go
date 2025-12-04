@@ -327,11 +327,3 @@ func (p *AnthropicProvider) fetchModels(ctx context.Context, force bool) (map[st
 
 	return cloneModelSet(models), nil
 }
-
-func cloneModelSet(input map[string]struct{}) map[string]struct{} {
-	out := make(map[string]struct{}, len(input))
-	for key := range input {
-		out[key] = struct{}{}
-	}
-	return out
-}
