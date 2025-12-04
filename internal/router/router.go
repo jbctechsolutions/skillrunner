@@ -183,7 +183,7 @@ func (mr *ModelRouter) isHealthy(ctx context.Context, modelName string) bool {
 	}
 
 	// Perform health check based on provider
-	// Supported providers: Ollama (local), Anthropic (cloud), OpenAI (cloud)
+	// Supported providers: Ollama (local), Anthropic (cloud), OpenAI (cloud), Groq (cloud, ultra-fast)
 	healthy := false
 	switch model.Provider {
 	case types.ModelProviderOllama:
@@ -192,6 +192,8 @@ func (mr *ModelRouter) isHealthy(ctx context.Context, modelName string) bool {
 		healthy = mr.checkAnthropicHealth(model)
 	case types.ModelProviderOpenAI:
 		healthy = mr.checkOpenAIHealth(model)
+	case types.ModelProviderGroq:
+		healthy = mr.checkGroqHealth(model)
 	default:
 		// Unknown provider, assume unhealthy
 		healthy = false
@@ -270,22 +272,30 @@ func (mr *ModelRouter) checkOllamaHealth(ctx context.Context, model *types.Model
 	return false
 }
 
+// checkCloudProviderHealth checks if a cloud provider's API key is configured.
+// It first checks the model's configured API key env, then falls back to the default.
+func (mr *ModelRouter) checkCloudProviderHealth(model *types.ModelInfo, defaultAPIKeyEnv string) bool {
+	if model.APIKeyEnv != "" {
+		if apiKey := os.Getenv(model.APIKeyEnv); apiKey != "" {
+			return true
+		}
+	}
+	return os.Getenv(defaultAPIKeyEnv) != ""
+}
+
 // checkAnthropicHealth checks if Anthropic API key is configured
 func (mr *ModelRouter) checkAnthropicHealth(model *types.ModelInfo) bool {
-	if model.APIKeyEnv == "" {
-		return false
-	}
-	apiKey := os.Getenv(model.APIKeyEnv)
-	return apiKey != ""
+	return mr.checkCloudProviderHealth(model, "ANTHROPIC_API_KEY")
 }
 
 // checkOpenAIHealth checks if OpenAI API key is configured
 func (mr *ModelRouter) checkOpenAIHealth(model *types.ModelInfo) bool {
-	if model.APIKeyEnv == "" {
-		return false
-	}
-	apiKey := os.Getenv(model.APIKeyEnv)
-	return apiKey != ""
+	return mr.checkCloudProviderHealth(model, "OPENAI_API_KEY")
+}
+
+// checkGroqHealth checks if Groq API key is configured
+func (mr *ModelRouter) checkGroqHealth(model *types.ModelInfo) bool {
+	return mr.checkCloudProviderHealth(model, "GROQ_API_KEY")
 }
 
 // EstimateCost estimates the cost of using a model

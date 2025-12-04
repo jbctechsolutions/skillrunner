@@ -143,13 +143,14 @@ type RouterResult struct {
 }
 
 // ModelProvider represents the model provider.
-// Skillrunner supports: Ollama (local), Anthropic (cloud), and OpenAI (cloud).
+// Skillrunner supports: Ollama (local), Anthropic (cloud), OpenAI (cloud), and Groq (cloud, ultra-fast).
 type ModelProvider string
 
 const (
 	ModelProviderOllama    ModelProvider = "ollama"
 	ModelProviderAnthropic ModelProvider = "anthropic"
 	ModelProviderOpenAI    ModelProvider = "openai"
+	ModelProviderGroq      ModelProvider = "groq"
 )
 
 // ModelInfo contains information about a model

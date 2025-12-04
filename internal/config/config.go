@@ -173,6 +173,7 @@ type Providers struct {
 	Ollama    *OllamaConfig    `yaml:"ollama,omitempty"`
 	Anthropic *AnthropicConfig `yaml:"anthropic,omitempty"`
 	OpenAI    *OpenAIConfig    `yaml:"openai,omitempty"`
+	Groq      *GroqConfig      `yaml:"groq,omitempty"`
 }
 
 // OllamaConfig contains Ollama-specific configuration
@@ -189,6 +190,12 @@ type AnthropicConfig struct {
 
 // OpenAIConfig contains OpenAI-specific configuration
 type OpenAIConfig struct {
+	APIKey  string `yaml:"api_key,omitempty"`
+	Enabled bool   `yaml:"enabled"`
+}
+
+// GroqConfig contains Groq-specific configuration
+type GroqConfig struct {
 	APIKey  string `yaml:"api_key,omitempty"`
 	Enabled bool   `yaml:"enabled"`
 }

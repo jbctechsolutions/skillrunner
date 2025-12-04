@@ -16,7 +16,8 @@ import (
 
 // Client provides a unified interface for calling different LLM providers
 type Client struct {
-	httpClient *http.Client
+	httpClient   *http.Client
+	groqProvider *GroqProvider // Cached Groq provider (lazily initialized)
 }
 
 // NewClient creates a new LLM client
@@ -26,6 +27,18 @@ func NewClient() *Client {
 			Timeout: 15 * time.Minute, // Long timeout for complex tasks with large models
 		},
 	}
+}
+
+// getGroqProvider returns a cached Groq provider, creating it on first use
+func (c *Client) getGroqProvider() (*GroqProvider, error) {
+	if c.groqProvider == nil {
+		provider, err := NewGroqProvider("")
+		if err != nil {
+			return nil, err
+		}
+		c.groqProvider = provider
+	}
+	return c.groqProvider, nil
 }
 
 // CompletionRequest represents a request to generate text
@@ -64,6 +77,8 @@ func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*Completi
 		return c.completeAnthropic(ctx, req)
 	case types.ModelProviderOpenAI:
 		return c.completeOpenAI(ctx, req)
+	case types.ModelProviderGroq:
+		return c.completeGroq(ctx, req)
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
@@ -520,8 +535,47 @@ func (c *Client) completeOpenAI(ctx context.Context, req CompletionRequest) (*Co
 	}, nil
 }
 
+// completeGroq calls Groq API for ultra-fast inference using GroqProvider
+func (c *Client) completeGroq(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	startTime := time.Now()
+
+	// Get cached Groq provider (lazily initialized)
+	provider, err := c.getGroqProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract model name (remove "groq/" prefix)
+	modelName := strings.TrimPrefix(req.Model, "groq/")
+
+	// Build chat request
+	chatReq := ChatRequest{
+		Model: modelName,
+		Messages: []ChatMessage{
+			{Role: RoleUser, Content: req.Prompt},
+		},
+		MaxTokens:   req.MaxTokens,
+		Temperature: float32(req.Temperature),
+	}
+
+	// Call Groq via provider
+	chatResp, err := provider.Chat(ctx, chatReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CompletionResponse{
+		Content:      chatResp.Content,
+		InputTokens:  chatResp.Usage.InputTokens,
+		OutputTokens: chatResp.Usage.OutputTokens,
+		Model:        req.Model,
+		Provider:     string(types.ModelProviderGroq),
+		Duration:     time.Since(startTime),
+	}, nil
+}
+
 // getProvider determines the provider from model name.
-// Supported providers: Ollama (local), Anthropic (cloud), OpenAI (cloud).
+// Supported providers: Ollama (local), Anthropic (cloud), OpenAI (cloud), Groq (cloud, ultra-fast).
 func getProvider(model string) types.ModelProvider {
 	if strings.HasPrefix(model, "ollama/") {
 		return types.ModelProviderOllama
@@ -531,6 +585,9 @@ func getProvider(model string) types.ModelProvider {
 	}
 	if strings.HasPrefix(model, "openai/") {
 		return types.ModelProviderOpenAI
+	}
+	if strings.HasPrefix(model, "groq/") {
+		return types.ModelProviderGroq
 	}
 	// Default to Ollama for bare model names (local-first approach)
 	return types.ModelProviderOllama
