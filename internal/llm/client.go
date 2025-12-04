@@ -506,7 +506,7 @@ func (c *Client) completeOpenAI(ctx context.Context, req CompletionRequest) (*Co
 
 	// Extract text from choices
 	if len(openaiResp.Choices) == 0 {
-		return nil, fmt.Errorf("openai returned no choices")
+		return nil, fmt.Errorf("openai response contained no choices")
 	}
 	content := openaiResp.Choices[0].Message.Content
 
