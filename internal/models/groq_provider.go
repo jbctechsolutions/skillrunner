@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 	"sync"
@@ -161,7 +162,7 @@ func (p *GroqProvider) CheckModelHealth(ctx context.Context, modelID string) (*H
 				"Get API key from: https://console.groq.com/",
 				"Update configuration with valid API key",
 			},
-			Details: map[string]interface{}{
+			Details: map[string]any{
 				"provider": "groq",
 				"base_url": p.baseURL,
 			},
@@ -179,7 +180,7 @@ func (p *GroqProvider) CheckModelHealth(ctx context.Context, modelID string) (*H
 				"Check Groq API status",
 				"Ensure GROQ_API_KEY is set correctly",
 			},
-			Details: map[string]interface{}{
+			Details: map[string]any{
 				"provider": "groq",
 				"base_url": p.baseURL,
 				"error":    err.Error(),
@@ -202,7 +203,7 @@ func (p *GroqProvider) CheckModelHealth(ctx context.Context, modelID string) (*H
 				"List available models: skill models list --provider=groq",
 				"Visit Groq docs: https://console.groq.com/docs/models",
 			},
-			Details: map[string]interface{}{
+			Details: map[string]any{
 				"provider":        "groq",
 				"requested_model": modelID,
 				"known_models":    knownModels,
@@ -218,7 +219,7 @@ func (p *GroqProvider) CheckModelHealth(ctx context.Context, modelID string) (*H
 				"Try a different model",
 				"Check Groq API status",
 			},
-			Details: map[string]interface{}{
+			Details: map[string]any{
 				"provider": "groq",
 				"model_id": modelID,
 				"active":   false,
@@ -232,7 +233,7 @@ func (p *GroqProvider) CheckModelHealth(ctx context.Context, modelID string) (*H
 		Healthy:     true,
 		Message:     fmt.Sprintf("Model '%s' is available", modelID),
 		Suggestions: nil,
-		Details: map[string]interface{}{
+		Details: map[string]any{
 			"model_id":           modelID,
 			"provider":           "groq",
 			"tier":               metadata.Tier,
@@ -301,7 +302,7 @@ func (p *GroqProvider) ResolveModel(ctx context.Context, model string) (*Resolve
 
 // Generate issues a completion request to Groq. When stream is true,
 // the returned channel yields partial responses terminated by a closed channel.
-func (p *GroqProvider) Generate(ctx context.Context, model, prompt string, stream bool, opts map[string]interface{}) (<-chan string, error) {
+func (p *GroqProvider) Generate(ctx context.Context, model, prompt string, stream bool, opts map[string]any) (<-chan string, error) {
 	request := groqChatRequest{
 		Model: model,
 		Messages: []groqChatMessage{
@@ -375,8 +376,7 @@ func (p *GroqProvider) Generate(ctx context.Context, model, prompt string, strea
 			line, err := reader.ReadBytes('\n')
 			if len(line) > 0 {
 				lineStr := strings.TrimSpace(string(line))
-				if strings.HasPrefix(lineStr, "data: ") {
-					data := strings.TrimPrefix(lineStr, "data: ")
+				if data, ok := strings.CutPrefix(lineStr, "data: "); ok {
 					if data == "[DONE]" {
 						return
 					}
@@ -458,8 +458,6 @@ func (p *GroqProvider) fetchModels(ctx context.Context, force bool) (map[string]
 
 func cloneGroqModelMap(input map[string]groqModelInfo) map[string]groqModelInfo {
 	out := make(map[string]groqModelInfo, len(input))
-	for key, value := range input {
-		out[key] = value
-	}
+	maps.Copy(out, input)
 	return out
 }
