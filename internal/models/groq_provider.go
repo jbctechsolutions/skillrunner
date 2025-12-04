@@ -251,10 +251,11 @@ func (p *GroqProvider) ModelMetadata(ctx context.Context, model string) (ModelMe
 	}
 
 	// Set tier and cost based on model
-	// Groq pricing as of 2024:
+	// Groq pricing (last verified: 2024-01). Pricing may have changed.
 	// - llama-3.1-70b-versatile: $0.59/$0.79 per 1M tokens (~$0.0007 per 1K)
 	// - llama-3.1-8b-instant: $0.05/$0.08 per 1M tokens (~$0.00007 per 1K)
 	// - mixtral-8x7b-32768: $0.24/$0.24 per 1M tokens (~$0.00024 per 1K)
+	// For current pricing, see: https://console.groq.com/docs/pricing
 	tier := AgentTierFast
 	cost := 0.0003 // Default cost per 1K tokens (average)
 
