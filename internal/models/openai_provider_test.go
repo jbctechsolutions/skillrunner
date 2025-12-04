@@ -555,6 +555,154 @@ func TestOpenAIProviderGenerateEmptyChoices(t *testing.T) {
 	}
 }
 
+func TestOpenAIProviderGenerateTemperatureZero(t *testing.T) {
+	var capturedTemp float64
+	var tempWasSet bool
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/models":
+			json.NewEncoder(w).Encode(openAIModelList{
+				Data: []struct {
+					ID string `json:"id"`
+				}{
+					{ID: "gpt-4o"},
+				},
+			})
+		case "/v1/chat/completions":
+			// Decode request to raw map to check if temperature was sent
+			var rawReq map[string]interface{}
+			if err := json.NewDecoder(r.Body).Decode(&rawReq); err != nil {
+				t.Fatalf("decode request: %v", err)
+			}
+
+			// Check if temperature key exists in the request
+			if temp, ok := rawReq["temperature"]; ok {
+				tempWasSet = true
+				capturedTemp = temp.(float64)
+			}
+
+			resp := openAIChatResponse{
+				Choices: []struct {
+					Index   int `json:"index"`
+					Message struct {
+						Role    string `json:"role"`
+						Content string `json:"content"`
+					} `json:"message"`
+					FinishReason string `json:"finish_reason"`
+				}{
+					{
+						Message: struct {
+							Role    string `json:"role"`
+							Content string `json:"content"`
+						}{
+							Role:    "assistant",
+							Content: "deterministic response",
+						},
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer server.Close()
+
+	provider, _ := NewOpenAIProvider("test-key", server.URL, server.Client())
+	ctx := context.Background()
+
+	// Test with temperature=0 for deterministic responses
+	opts := map[string]interface{}{
+		"temperature": 0.0,
+	}
+
+	resp, err := provider.Generate(ctx, "gpt-4o", "hello", false, opts)
+	if err != nil {
+		t.Fatalf("Generate error: %v", err)
+	}
+	if resp != "deterministic response" {
+		t.Fatalf("unexpected response: %s", resp)
+	}
+
+	// Verify temperature was sent to the API
+	if !tempWasSet {
+		t.Fatal("temperature was not sent in the request - omitempty may be incorrectly excluding temperature=0")
+	}
+
+	// Verify the temperature value is 0
+	if capturedTemp != 0.0 {
+		t.Errorf("expected temperature 0.0, got %f", capturedTemp)
+	}
+}
+
+func TestOpenAIProviderGenerateDefaultTemperature(t *testing.T) {
+	var capturedTemp float64
+	var tempWasSet bool
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/models":
+			json.NewEncoder(w).Encode(openAIModelList{
+				Data: []struct {
+					ID string `json:"id"`
+				}{
+					{ID: "gpt-4o"},
+				},
+			})
+		case "/v1/chat/completions":
+			var rawReq map[string]interface{}
+			if err := json.NewDecoder(r.Body).Decode(&rawReq); err != nil {
+				t.Fatalf("decode request: %v", err)
+			}
+
+			if temp, ok := rawReq["temperature"]; ok {
+				tempWasSet = true
+				capturedTemp = temp.(float64)
+			}
+
+			resp := openAIChatResponse{
+				Choices: []struct {
+					Index   int `json:"index"`
+					Message struct {
+						Role    string `json:"role"`
+						Content string `json:"content"`
+					} `json:"message"`
+					FinishReason string `json:"finish_reason"`
+				}{
+					{
+						Message: struct {
+							Role    string `json:"role"`
+							Content string `json:"content"`
+						}{
+							Role:    "assistant",
+							Content: "response",
+						},
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer server.Close()
+
+	provider, _ := NewOpenAIProvider("test-key", server.URL, server.Client())
+	ctx := context.Background()
+
+	// Call without temperature option - should use default of 1.0
+	_, err := provider.Generate(ctx, "gpt-4o", "hello", false, nil)
+	if err != nil {
+		t.Fatalf("Generate error: %v", err)
+	}
+
+	if !tempWasSet {
+		t.Fatal("temperature was not sent in the request")
+	}
+
+	// Default should be 1.0 (OpenAI's default)
+	if capturedTemp != 1.0 {
+		t.Errorf("expected default temperature 1.0, got %f", capturedTemp)
+	}
+}
+
 func TestOpenAIProviderGenerateAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
