@@ -183,13 +183,15 @@ func (mr *ModelRouter) isHealthy(ctx context.Context, modelName string) bool {
 	}
 
 	// Perform health check based on provider
-	// Supported providers: Ollama (local), Anthropic (cloud), Groq (cloud, ultra-fast)
+	// Supported providers: Ollama (local), Anthropic (cloud), OpenAI (cloud), Groq (cloud, ultra-fast)
 	healthy := false
 	switch model.Provider {
 	case types.ModelProviderOllama:
 		healthy = mr.checkOllamaHealth(ctx, model)
 	case types.ModelProviderAnthropic:
 		healthy = mr.checkAnthropicHealth(model)
+	case types.ModelProviderOpenAI:
+		healthy = mr.checkOpenAIHealth(model)
 	case types.ModelProviderGroq:
 		healthy = mr.checkGroqHealth(model)
 	default:

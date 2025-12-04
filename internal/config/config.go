@@ -172,6 +172,7 @@ func (m *Manager) GetConfigPath() string {
 type Providers struct {
 	Ollama    *OllamaConfig    `yaml:"ollama,omitempty"`
 	Anthropic *AnthropicConfig `yaml:"anthropic,omitempty"`
+	OpenAI    *OpenAIConfig    `yaml:"openai,omitempty"`
 	Groq      *GroqConfig      `yaml:"groq,omitempty"`
 }
 
@@ -183,6 +184,12 @@ type OllamaConfig struct {
 
 // AnthropicConfig contains Anthropic-specific configuration
 type AnthropicConfig struct {
+	APIKey  string `yaml:"api_key,omitempty"`
+	Enabled bool   `yaml:"enabled"`
+}
+
+// OpenAIConfig contains OpenAI-specific configuration
+type OpenAIConfig struct {
 	APIKey  string `yaml:"api_key,omitempty"`
 	Enabled bool   `yaml:"enabled"`
 }
