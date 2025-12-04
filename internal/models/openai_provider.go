@@ -214,19 +214,19 @@ func (p *OpenAIProvider) ModelMetadata(ctx context.Context, model string) (Model
 	tier := AgentTierBalanced
 	cost := 0.00625 // Default to GPT-4o pricing
 
-	if strings.Contains(model, "gpt-4o-mini") {
+	if strings.HasPrefix(model, "gpt-4o-mini") {
 		tier = AgentTierFast
 		cost = 0.000375
-	} else if strings.Contains(model, "gpt-4o") {
+	} else if strings.HasPrefix(model, "gpt-4o") {
 		tier = AgentTierBalanced
 		cost = 0.00625
-	} else if strings.Contains(model, "gpt-4-turbo") || strings.Contains(model, "gpt-4-1106") {
+	} else if strings.HasPrefix(model, "gpt-4-turbo") || strings.HasPrefix(model, "gpt-4-1106") {
 		tier = AgentTierPowerful
 		cost = 0.02
-	} else if strings.Contains(model, "gpt-4") {
+	} else if strings.HasPrefix(model, "gpt-4") {
 		tier = AgentTierPowerful
 		cost = 0.045
-	} else if strings.Contains(model, "gpt-3.5-turbo") {
+	} else if strings.HasPrefix(model, "gpt-3.5-turbo") {
 		tier = AgentTierFast
 		cost = 0.001
 	}
