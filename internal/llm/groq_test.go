@@ -6,15 +6,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
 
 func TestGroqProviderChat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/openai/v1/chat/completions" {
-			http.NotFound(w, r)
-			return
-		}
 		if r.Header.Get("Authorization") != "Bearer test-groq-key" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
@@ -54,13 +51,30 @@ func TestGroqProviderChat(t *testing.T) {
 		t.Fatalf("NewGroqProvider error: %v", err)
 	}
 
-	// Override the HTTP client to use our test server
-	provider.httpClient = server.Client()
+	// Use SetBaseURL to point to our test server
+	provider.SetBaseURL(server.URL)
 
-	// Override the endpoint (we need to modify the Chat method to use a configurable endpoint for testing)
-	// For now, we'll test the provider creation only
-	if provider.Name() != "groq" {
-		t.Errorf("expected provider name 'groq', got '%s'", provider.Name())
+	// Test the Chat method
+	resp, err := provider.Chat(context.Background(), ChatRequest{
+		Model: "llama-3.1-8b-instant",
+		Messages: []ChatMessage{
+			{Role: RoleUser, Content: "Hello"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Chat error: %v", err)
+	}
+
+	if resp.Content != "Hello! How can I help you today?" {
+		t.Errorf("expected 'Hello! How can I help you today?', got '%s'", resp.Content)
+	}
+
+	if resp.Usage.InputTokens != 10 {
+		t.Errorf("expected input tokens 10, got %d", resp.Usage.InputTokens)
+	}
+
+	if resp.Usage.OutputTokens != 8 {
+		t.Errorf("expected output tokens 8, got %d", resp.Usage.OutputTokens)
 	}
 }
 
@@ -102,12 +116,24 @@ func TestGroqProviderChatRateLimitError(t *testing.T) {
 		t.Fatalf("NewGroqProvider error: %v", err)
 	}
 
-	// Create a custom provider with overridden endpoint
-	// Note: The actual Chat method uses a hardcoded endpoint, so this test would need
-	// the implementation to be modified to support custom endpoints for testing.
-	// For now, we verify the provider was created correctly.
-	if provider == nil {
-		t.Fatal("provider should not be nil")
+	// Use SetBaseURL to point to our test server
+	provider.SetBaseURL(server.URL)
+
+	// Test that rate limit error is properly returned
+	_, err = provider.Chat(context.Background(), ChatRequest{
+		Model: "llama-3.1-8b-instant",
+		Messages: []ChatMessage{
+			{Role: RoleUser, Content: "Hello"},
+		},
+	})
+
+	if err == nil {
+		t.Fatal("expected error for rate limit, got nil")
+	}
+
+	// Check that error message contains rate limit info
+	if !strings.Contains(err.Error(), "rate limit") {
+		t.Errorf("expected error to mention 'rate limit', got: %v", err)
 	}
 }
 
@@ -223,12 +249,29 @@ func TestGroqProviderChatResponseParsing(t *testing.T) {
 			defer os.Unsetenv("GROQ_API_KEY")
 
 			provider, _ := NewGroqProvider("")
-			ctx := context.Background()
+			provider.SetBaseURL(server.URL)
 
-			// Note: Can't call Chat directly due to hardcoded endpoint
-			// This is a design limitation - the provider should accept a configurable base URL
-			_ = ctx
-			_ = provider
+			resp, err := provider.Chat(context.Background(), ChatRequest{
+				Model: "llama-3.1-8b-instant",
+				Messages: []ChatMessage{
+					{Role: RoleUser, Content: "Hello"},
+				},
+			})
+			if err != nil {
+				t.Fatalf("Chat error: %v", err)
+			}
+
+			if resp.Content != tc.expectedContent {
+				t.Errorf("expected content '%s', got '%s'", tc.expectedContent, resp.Content)
+			}
+
+			if resp.Usage.InputTokens != tc.expectedInput {
+				t.Errorf("expected input tokens %d, got %d", tc.expectedInput, resp.Usage.InputTokens)
+			}
+
+			if resp.Usage.OutputTokens != tc.expectedOutput {
+				t.Errorf("expected output tokens %d, got %d", tc.expectedOutput, resp.Usage.OutputTokens)
+			}
 		})
 	}
 }

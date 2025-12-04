@@ -11,11 +11,15 @@ import (
 	"time"
 )
 
+// DefaultGroqEndpoint is the default Groq API endpoint.
+const DefaultGroqEndpoint = "https://api.groq.com/openai/v1/chat/completions"
+
 // GroqProvider implements the Provider interface for Groq's ultra-fast inference API.
 // Groq uses an OpenAI-compatible API format.
 type GroqProvider struct {
 	apiKey     string
 	httpClient *http.Client
+	baseURL    string // API endpoint (configurable for testing)
 }
 
 // NewGroqProvider creates a new Groq provider.
@@ -34,7 +38,14 @@ func NewGroqProvider(apiKeyEnv string) (*GroqProvider, error) {
 		httpClient: &http.Client{
 			Timeout: 5 * time.Minute,
 		},
+		baseURL: DefaultGroqEndpoint,
 	}, nil
+}
+
+// SetBaseURL sets a custom base URL for the Groq API.
+// This is primarily used for testing with mock servers.
+func (p *GroqProvider) SetBaseURL(url string) {
+	p.baseURL = url
 }
 
 // Name returns the provider name.
@@ -73,8 +84,7 @@ func (p *GroqProvider) Chat(ctx context.Context, req ChatRequest) (ChatResponse,
 	}
 
 	// Call Groq API
-	endpoint := "https://api.groq.com/openai/v1/chat/completions"
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(reqBody))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL, bytes.NewReader(reqBody))
 	if err != nil {
 		return ChatResponse{}, fmt.Errorf("create request: %w", err)
 	}
