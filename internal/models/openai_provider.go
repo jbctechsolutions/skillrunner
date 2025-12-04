@@ -269,7 +269,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, model, prompt string, str
 		Messages: []openAIChatMessage{
 			{Role: "user", Content: prompt},
 		},
-		Temperature: 1.0, // OpenAI default
+		Temperature: 1.0, // Typical default for OpenAI chat models as of June 2024; see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature. This may change in future.
 		Stream:      false,
 	}
 
