@@ -272,46 +272,30 @@ func (mr *ModelRouter) checkOllamaHealth(ctx context.Context, model *types.Model
 	return false
 }
 
-// checkAnthropicHealth checks if Anthropic API key is configured
-func (mr *ModelRouter) checkAnthropicHealth(model *types.ModelInfo) bool {
-	// Check model's configured API key env first
+// checkCloudProviderHealth checks if a cloud provider's API key is configured.
+// It first checks the model's configured API key env, then falls back to the default.
+func (mr *ModelRouter) checkCloudProviderHealth(model *types.ModelInfo, defaultAPIKeyEnv string) bool {
 	if model.APIKeyEnv != "" {
-		apiKey := os.Getenv(model.APIKeyEnv)
-		if apiKey != "" {
+		if apiKey := os.Getenv(model.APIKeyEnv); apiKey != "" {
 			return true
 		}
 	}
-	// Fall back to default ANTHROPIC_API_KEY
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	return apiKey != ""
+	return os.Getenv(defaultAPIKeyEnv) != ""
+}
+
+// checkAnthropicHealth checks if Anthropic API key is configured
+func (mr *ModelRouter) checkAnthropicHealth(model *types.ModelInfo) bool {
+	return mr.checkCloudProviderHealth(model, "ANTHROPIC_API_KEY")
 }
 
 // checkOpenAIHealth checks if OpenAI API key is configured
 func (mr *ModelRouter) checkOpenAIHealth(model *types.ModelInfo) bool {
-	// Check model's configured API key env first
-	if model.APIKeyEnv != "" {
-		apiKey := os.Getenv(model.APIKeyEnv)
-		if apiKey != "" {
-			return true
-		}
-	}
-	// Fall back to default OPENAI_API_KEY
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	return apiKey != ""
+	return mr.checkCloudProviderHealth(model, "OPENAI_API_KEY")
 }
 
 // checkGroqHealth checks if Groq API key is configured
 func (mr *ModelRouter) checkGroqHealth(model *types.ModelInfo) bool {
-	// Check model's configured API key env first
-	if model.APIKeyEnv != "" {
-		apiKey := os.Getenv(model.APIKeyEnv)
-		if apiKey != "" {
-			return true
-		}
-	}
-	// Fall back to default GROQ_API_KEY
-	apiKey := os.Getenv("GROQ_API_KEY")
-	return apiKey != ""
+	return mr.checkCloudProviderHealth(model, "GROQ_API_KEY")
 }
 
 // EstimateCost estimates the cost of using a model
