@@ -379,6 +379,7 @@ type Spinner struct {
 	writer   io.Writer
 	running  bool
 	done     chan struct{}
+	stopped  chan struct{} // signals that animate goroutine has exited
 	interval time.Duration
 	colored  bool
 }
@@ -442,6 +443,7 @@ func (s *Spinner) Start() {
 	}
 	s.running = true
 	s.done = make(chan struct{})
+	s.stopped = make(chan struct{})
 	s.mu.Unlock()
 
 	go s.animate()
@@ -456,7 +458,11 @@ func (s *Spinner) Stop() {
 	}
 	s.running = false
 	close(s.done)
+	stopped := s.stopped
 	s.mu.Unlock()
+
+	// Wait for animate goroutine to exit before writing to writer
+	<-stopped
 
 	// Clear the line - error intentionally ignored for terminal output
 	_, _ = fmt.Fprintf(s.writer, "\r%s\r", strings.Repeat(" ", len(s.message)+4))
@@ -495,6 +501,7 @@ func (s *Spinner) UpdateMessage(message string) {
 func (s *Spinner) animate() {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
+	defer close(s.stopped) // signal that we've exited
 
 	for {
 		select {
