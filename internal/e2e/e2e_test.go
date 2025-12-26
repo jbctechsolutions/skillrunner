@@ -56,8 +56,8 @@ func TestE2E_CLICommands(t *testing.T) {
 		{"run invalid profile", []string{"run", "skill", "request", "--profile", "invalid"}, true},
 
 		// Ask command (expects errors without providers configured)
-		{"ask valid no providers", []string{"ask", "what is this?"}, true},
-		{"ask with model no providers", []string{"ask", "question", "--model", "gpt-4"}, true},
+		{"ask valid no providers", []string{"ask", "test-skill", "what is this?"}, true},
+		{"ask with model no providers", []string{"ask", "test-skill", "question", "--model", "gpt-4"}, true},
 		{"ask missing args", []string{"ask"}, true},
 
 		// Metrics command
