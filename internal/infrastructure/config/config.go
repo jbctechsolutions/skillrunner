@@ -67,10 +67,10 @@ type CacheConfig struct {
 
 // BatchConfig holds configuration for batch processing.
 type BatchConfig struct {
-	Enabled       bool          `yaml:"enabled"`
-	MaxBatchSize  int           `yaml:"max_batch_size"`  // Maximum requests per batch
-	MaxWaitTime   time.Duration `yaml:"max_wait_time"`   // Maximum time to wait for batch to fill
-	PerProviderBatching bool     `yaml:"per_provider_batching"` // Whether to batch per provider
+	Enabled             bool          `yaml:"enabled"`
+	MaxBatchSize        int           `yaml:"max_batch_size"`        // Maximum requests per batch
+	MaxWaitTime         time.Duration `yaml:"max_wait_time"`         // Maximum time to wait for batch to fill
+	PerProviderBatching bool          `yaml:"per_provider_batching"` // Whether to batch per provider
 }
 
 // Default configuration values.

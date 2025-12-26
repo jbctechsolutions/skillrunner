@@ -53,10 +53,10 @@ type Container struct {
 	backendRegistry     *backend.Registry
 
 	// Wave 10: Cache
-	memoryCache   *cache.MemoryCache
-	sqliteCache   *cache.SQLiteCache
+	memoryCache    *cache.MemoryCache
+	sqliteCache    *cache.SQLiteCache
 	compositeCache *cache.CompositeCache
-	responseCache *cache.ResponseCache
+	responseCache  *cache.ResponseCache
 
 	// Machine ID for session tracking
 	machineID string

@@ -7,31 +7,31 @@ import (
 
 // CacheEntry represents a cached item with metadata.
 type CacheEntry struct {
-	Key         string        `json:"key"`
-	Value       interface{}   `json:"value"`
-	CreatedAt   time.Time     `json:"created_at"`
-	ExpiresAt   time.Time     `json:"expires_at"`
-	TTL         time.Duration `json:"ttl"`
-	HitCount    int64         `json:"hit_count"`
-	Size        int64         `json:"size"` // Size in bytes
-	ModelID     string        `json:"model_id,omitempty"`
-	PromptHash  string        `json:"prompt_hash,omitempty"`
+	Key        string        `json:"key"`
+	Value      interface{}   `json:"value"`
+	CreatedAt  time.Time     `json:"created_at"`
+	ExpiresAt  time.Time     `json:"expires_at"`
+	TTL        time.Duration `json:"ttl"`
+	HitCount   int64         `json:"hit_count"`
+	Size       int64         `json:"size"` // Size in bytes
+	ModelID    string        `json:"model_id,omitempty"`
+	PromptHash string        `json:"prompt_hash,omitempty"`
 }
 
 // CacheStats represents cache statistics.
 type CacheStats struct {
-	TotalEntries   int64         `json:"total_entries"`
-	TotalSize      int64         `json:"total_size"`      // Total cache size in bytes
-	HitCount       int64         `json:"hit_count"`
-	MissCount      int64         `json:"miss_count"`
-	HitRate        float64       `json:"hit_rate"`        // Percentage
-	EvictionCount  int64         `json:"eviction_count"`
-	ExpiredCount   int64         `json:"expired_count"`
-	OldestEntry    time.Time     `json:"oldest_entry"`
-	NewestEntry    time.Time     `json:"newest_entry"`
-	AvgTTL         time.Duration `json:"avg_ttl"`
-	TokensSaved    int64         `json:"tokens_saved"`    // Total tokens saved by cache hits
-	CostSaved      float64       `json:"cost_saved"`      // Estimated cost saved in USD
+	TotalEntries  int64         `json:"total_entries"`
+	TotalSize     int64         `json:"total_size"` // Total cache size in bytes
+	HitCount      int64         `json:"hit_count"`
+	MissCount     int64         `json:"miss_count"`
+	HitRate       float64       `json:"hit_rate"` // Percentage
+	EvictionCount int64         `json:"eviction_count"`
+	ExpiredCount  int64         `json:"expired_count"`
+	OldestEntry   time.Time     `json:"oldest_entry"`
+	NewestEntry   time.Time     `json:"newest_entry"`
+	AvgTTL        time.Duration `json:"avg_ttl"`
+	TokensSaved   int64         `json:"tokens_saved"` // Total tokens saved by cache hits
+	CostSaved     float64       `json:"cost_saved"`   // Estimated cost saved in USD
 }
 
 // CachePort for caching data with extended capabilities for Wave 10.
