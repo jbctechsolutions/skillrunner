@@ -28,6 +28,7 @@ type MemoryCache struct {
 	// Cleanup
 	cleanupTicker *time.Ticker
 	stopCleanup   chan struct{}
+	closeOnce     sync.Once
 }
 
 // memoryCacheEntry wraps a cache entry with additional internal metadata.
@@ -69,17 +70,11 @@ func (m *MemoryCache) cleanupLoop() {
 // Close stops the cleanup goroutine and releases resources.
 func (m *MemoryCache) Close() error {
 	if m.cleanupTicker != nil {
-		m.mu.Lock()
-		if m.stopCleanup != nil {
-			select {
-			case <-m.stopCleanup:
-				// Already closed
-			default:
-				close(m.stopCleanup)
-			}
-			m.stopCleanup = nil
-		}
-		m.mu.Unlock()
+		// Use sync.Once to safely close the channel exactly once,
+		// avoiding races with the cleanup goroutine
+		m.closeOnce.Do(func() {
+			close(m.stopCleanup)
+		})
 	}
 	return nil
 }
