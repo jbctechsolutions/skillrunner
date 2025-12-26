@@ -251,9 +251,9 @@ func TestConditionalTextFunctions(t *testing.T) {
 	ResetColorDetection()
 
 	tests := []struct {
-		name   string
-		fn     func(string) string
-		want   string
+		name string
+		fn   func(string) string
+		want string
 	}{
 		{"SuccessTextIfEnabled", SuccessTextIfEnabled, "✓ " + text},
 		{"ErrorTextIfEnabled", ErrorTextIfEnabled, "✗ " + text},

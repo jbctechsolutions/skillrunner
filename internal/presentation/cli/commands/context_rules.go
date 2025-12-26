@@ -58,7 +58,7 @@ Active rules are included in the headline context for skill executions.`,
 
 	addCmd.Flags().String("content", "", "rule content/description")
 	addCmd.Flags().String("scope", "workspace", "rule scope: global, workspace, session")
-	addCmd.MarkFlagRequired("content")
+	_ = addCmd.MarkFlagRequired("content")
 
 	// List subcommand
 	listCmd := &cobra.Command{

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 )
 
 // RuleRepository implements RuleStoragePort using SQLite.

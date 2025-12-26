@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 )
 
 // ContextItemRepository implements ContextItemStoragePort using SQLite.
@@ -61,9 +61,9 @@ func (r *ContextItemRepository) Get(ctx context.Context, id string) (*domainCont
 	`
 
 	var (
-		iid, name, itemType, content, tagsJSON        string
-		tokenEstimate                                 int
-		lastUsedAt, createdAt                         string
+		iid, name, itemType, content, tagsJSON string
+		tokenEstimate                          int
+		lastUsedAt, createdAt                  string
 	)
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(

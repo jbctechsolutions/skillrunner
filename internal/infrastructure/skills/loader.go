@@ -15,13 +15,13 @@ import (
 
 // SkillDefinition represents the YAML structure of a skill definition file.
 type SkillDefinition struct {
-	ID          string                 `yaml:"id"`
-	Name        string                 `yaml:"name"`
-	Version     string                 `yaml:"version"`
-	Description string                 `yaml:"description"`
-	Phases      []PhaseDefinition      `yaml:"phases"`
-	Routing     RoutingDefinition      `yaml:"routing"`
-	Metadata    map[string]any         `yaml:"metadata"`
+	ID          string            `yaml:"id"`
+	Name        string            `yaml:"name"`
+	Version     string            `yaml:"version"`
+	Description string            `yaml:"description"`
+	Phases      []PhaseDefinition `yaml:"phases"`
+	Routing     RoutingDefinition `yaml:"routing"`
+	Metadata    map[string]any    `yaml:"metadata"`
 }
 
 // PhaseDefinition represents the YAML structure of a phase within a skill.

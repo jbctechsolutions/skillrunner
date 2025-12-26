@@ -18,9 +18,9 @@ import (
 
 // chatFlags holds the flags for the chat command.
 type chatFlags struct {
-	Model       string
-	Profile     string
-	SessionName string
+	Model        string
+	Profile      string
+	SessionName  string
 	SystemPrompt string
 }
 

@@ -3,8 +3,6 @@ package commands
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -300,57 +298,4 @@ Use --remove-files to also delete the workspace directory.`,
 	cmd.Flags().BoolVar(&force, "force", false, "skip confirmation")
 
 	return cmd
-}
-
-// Helper functions for formatting workspace output (to be implemented)
-
-func formatWorkspaceList(workspaces []*workspace.Workspace) string {
-	var b strings.Builder
-
-	b.WriteString("Name\tType\tStatus\tBranch\tPath\n")
-	b.WriteString("----\t----\t------\t------\t----\n")
-
-	for _, ws := range workspaces {
-		branch := ws.GitBranch
-		if branch == "" {
-			branch = "-"
-		}
-
-		b.WriteString(fmt.Sprintf("%s\t%s\t%s\t%s\t%s\n",
-			ws.Name,
-			ws.Type,
-			ws.Status,
-			branch,
-			ws.Path,
-		))
-	}
-
-	return b.String()
-}
-
-func formatWorkspace(ws *workspace.Workspace) string {
-	var b strings.Builder
-
-	b.WriteString(fmt.Sprintf("Name:           %s\n", ws.Name))
-	b.WriteString(fmt.Sprintf("ID:             %s\n", ws.ID))
-	b.WriteString(fmt.Sprintf("Type:           %s\n", ws.Type))
-	b.WriteString(fmt.Sprintf("Status:         %s\n", ws.Status))
-	b.WriteString(fmt.Sprintf("Path:           %s\n", ws.Path))
-
-	if ws.GitBranch != "" {
-		b.WriteString(fmt.Sprintf("Branch:         %s\n", ws.GitBranch))
-	}
-
-	if ws.ParentRepo != "" {
-		b.WriteString(fmt.Sprintf("Parent Repo:    %s\n", ws.ParentRepo))
-	}
-
-	if ws.Description != "" {
-		b.WriteString(fmt.Sprintf("Description:    %s\n", ws.Description))
-	}
-
-	b.WriteString(fmt.Sprintf("Created:        %s\n", ws.CreatedAt.Format(time.RFC3339)))
-	b.WriteString(fmt.Sprintf("Last Used:      %s\n", ws.LastUsedAt.Format(time.RFC3339)))
-
-	return b.String()
 }

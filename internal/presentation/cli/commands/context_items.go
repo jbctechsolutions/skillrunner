@@ -93,7 +93,7 @@ Items can be tagged for organization and have token estimates calculated automat
 	addCmd.Flags().String("url", "", "URL to reference")
 	addCmd.Flags().String("name", "", "name for the context item")
 	addCmd.Flags().StringSlice("tags", nil, "tags for the item")
-	addCmd.MarkFlagRequired("name")
+	_ = addCmd.MarkFlagRequired("name")
 
 	// List subcommand
 	listCmd := &cobra.Command{

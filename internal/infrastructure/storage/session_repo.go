@@ -376,13 +376,13 @@ func (r *SessionRepository) querySessions(ctx context.Context, query string, arg
 // scanSessionRow scans a single row into a session.
 func (r *SessionRepository) scanSessionRow(row *sql.Row) (*session.Session, error) {
 	var (
-		id, workspaceID                          string
-		backend, model                           sql.NullString
-		status                                   string
-		startedAt                                string
-		endedAt                                  sql.NullString
-		machineID, tmuxSession                   sql.NullString
-		pid                                      sql.NullInt64
+		id, workspaceID                           string
+		backend, model                            sql.NullString
+		status                                    string
+		startedAt                                 string
+		endedAt                                   sql.NullString
+		machineID, tmuxSession                    sql.NullString
+		pid                                       sql.NullInt64
 		metadataJSON, tokenUsageJSON, contextJSON sql.NullString
 	)
 
@@ -401,13 +401,13 @@ func (r *SessionRepository) scanSessionRow(row *sql.Row) (*session.Session, erro
 // scanSessionRows scans rows into a session.
 func (r *SessionRepository) scanSessionRows(rows *sql.Rows) (*session.Session, error) {
 	var (
-		id, workspaceID                          string
-		backend, model                           sql.NullString
-		status                                   string
-		startedAt                                string
-		endedAt                                  sql.NullString
-		machineID, tmuxSession                   sql.NullString
-		pid                                      sql.NullInt64
+		id, workspaceID                           string
+		backend, model                            sql.NullString
+		status                                    string
+		startedAt                                 string
+		endedAt                                   sql.NullString
+		machineID, tmuxSession                    sql.NullString
+		pid                                       sql.NullInt64
 		metadataJSON, tokenUsageJSON, contextJSON sql.NullString
 	)
 

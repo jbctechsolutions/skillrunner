@@ -47,22 +47,22 @@ type FunctionCall struct {
 
 // ChatCompletionRequest is the request body for the OpenAI Chat Completions API.
 type ChatCompletionRequest struct {
-	Model            string         `json:"model"`
-	Messages         []Message      `json:"messages"`
-	MaxTokens        *int           `json:"max_tokens,omitempty"`
-	Temperature      *float32       `json:"temperature,omitempty"`
-	TopP             *float32       `json:"top_p,omitempty"`
-	N                *int           `json:"n,omitempty"`
-	Stream           bool           `json:"stream,omitempty"`
-	StreamOptions    *StreamOptions `json:"stream_options,omitempty"`
-	Stop             []string       `json:"stop,omitempty"`
-	PresencePenalty  *float32       `json:"presence_penalty,omitempty"`
-	FrequencyPenalty *float32       `json:"frequency_penalty,omitempty"`
-	LogitBias        map[string]int `json:"logit_bias,omitempty"`
-	User             string         `json:"user,omitempty"`
-	Seed             *int           `json:"seed,omitempty"`
-	Tools            []Tool         `json:"tools,omitempty"`
-	ToolChoice       any            `json:"tool_choice,omitempty"`
+	Model            string          `json:"model"`
+	Messages         []Message       `json:"messages"`
+	MaxTokens        *int            `json:"max_tokens,omitempty"`
+	Temperature      *float32        `json:"temperature,omitempty"`
+	TopP             *float32        `json:"top_p,omitempty"`
+	N                *int            `json:"n,omitempty"`
+	Stream           bool            `json:"stream,omitempty"`
+	StreamOptions    *StreamOptions  `json:"stream_options,omitempty"`
+	Stop             []string        `json:"stop,omitempty"`
+	PresencePenalty  *float32        `json:"presence_penalty,omitempty"`
+	FrequencyPenalty *float32        `json:"frequency_penalty,omitempty"`
+	LogitBias        map[string]int  `json:"logit_bias,omitempty"`
+	User             string          `json:"user,omitempty"`
+	Seed             *int            `json:"seed,omitempty"`
+	Tools            []Tool          `json:"tools,omitempty"`
+	ToolChoice       any             `json:"tool_choice,omitempty"`
 	ResponseFormat   *ResponseFormat `json:"response_format,omitempty"`
 }
 
@@ -142,13 +142,13 @@ type ErrorInfo struct {
 
 // StreamChunk represents a chunk in a streaming response.
 type StreamChunk struct {
-	ID                string        `json:"id"`
-	Object            string        `json:"object"`
-	Created           int64         `json:"created"`
-	Model             string        `json:"model"`
+	ID                string         `json:"id"`
+	Object            string         `json:"object"`
+	Created           int64          `json:"created"`
+	Model             string         `json:"model"`
 	Choices           []StreamChoice `json:"choices"`
-	Usage             *Usage        `json:"usage,omitempty"`
-	SystemFingerprint string        `json:"system_fingerprint,omitempty"`
+	Usage             *Usage         `json:"usage,omitempty"`
+	SystemFingerprint string         `json:"system_fingerprint,omitempty"`
 }
 
 // StreamChoice represents a choice in a streaming response.
@@ -215,8 +215,8 @@ const (
 	ModelGPT432k          = "gpt-4-32k"
 
 	// GPT-3.5 family
-	ModelGPT35Turbo       = "gpt-3.5-turbo"
-	ModelGPT35Turbo16k    = "gpt-3.5-turbo-16k"
+	ModelGPT35Turbo         = "gpt-3.5-turbo"
+	ModelGPT35Turbo16k      = "gpt-3.5-turbo-16k"
 	ModelGPT35TurboInstruct = "gpt-3.5-turbo-instruct"
 
 	// O1 family (reasoning models)

@@ -26,17 +26,17 @@ const (
 
 // Workspace represents a development workspace.
 type Workspace struct {
-	ID          string    // Unique workspace identifier
-	Name        string    // Human-readable name
-	Type        Type      // Workspace type
-	Path        string    // Absolute path to workspace directory
-	GitBranch   string    // Associated git branch (if git workspace)
-	Status      Status    // Current status
-	CreatedAt   time.Time // When workspace was created
-	LastUsedAt  time.Time // When workspace was last used
-	MachineID   string    // Machine identifier for remote workspaces
-	ParentRepo  string    // Parent repository path (for worktrees)
-	Description string    // Optional description
+	ID          string            // Unique workspace identifier
+	Name        string            // Human-readable name
+	Type        Type              // Workspace type
+	Path        string            // Absolute path to workspace directory
+	GitBranch   string            // Associated git branch (if git workspace)
+	Status      Status            // Current status
+	CreatedAt   time.Time         // When workspace was created
+	LastUsedAt  time.Time         // When workspace was last used
+	MachineID   string            // Machine identifier for remote workspaces
+	ParentRepo  string            // Parent repository path (for worktrees)
+	Description string            // Optional description
 	Metadata    map[string]string // Additional metadata
 }
 

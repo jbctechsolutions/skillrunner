@@ -76,8 +76,8 @@ type MessagesResponse struct {
 
 // ErrorResponse represents an error from the Anthropic API.
 type ErrorResponse struct {
-	Type  string     `json:"type"`
-	Error ErrorInfo  `json:"error"`
+	Type  string    `json:"type"`
+	Error ErrorInfo `json:"error"`
 }
 
 // ErrorInfo contains detailed error information.
@@ -157,11 +157,11 @@ func DefaultConfig(apiKey string) Config {
 
 // Available Claude models.
 const (
-	ModelClaude3Opus       = "claude-3-opus-20240229"
-	ModelClaude35Sonnet    = "claude-3-5-sonnet-20241022"
-	ModelClaude35Haiku     = "claude-3-5-haiku-20241022"
-	ModelClaude3Sonnet     = "claude-3-sonnet-20240229"
-	ModelClaude3Haiku      = "claude-3-haiku-20240307"
+	ModelClaude3Opus    = "claude-3-opus-20240229"
+	ModelClaude35Sonnet = "claude-3-5-sonnet-20241022"
+	ModelClaude35Haiku  = "claude-3-5-haiku-20241022"
+	ModelClaude3Sonnet  = "claude-3-sonnet-20240229"
+	ModelClaude3Haiku   = "claude-3-haiku-20240307"
 )
 
 // SupportedModels returns the list of models supported by this adapter.

@@ -6,9 +6,9 @@ import (
 
 func TestWorkspaceIsGitWorkspace(t *testing.T) {
 	tests := []struct {
-		name       string
-		workspace  *Workspace
-		expected   bool
+		name      string
+		workspace *Workspace
+		expected  bool
 	}{
 		{
 			name: "Worktree type",

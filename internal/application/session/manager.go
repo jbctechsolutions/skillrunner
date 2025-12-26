@@ -88,7 +88,7 @@ func (m *Manager) Start(ctx context.Context, opts session.StartOptions) (*sessio
 			// Not critical, log and continue
 		}
 		sess.Status = session.StatusDetached
-		m.storage.UpdateSession(ctx, sess)
+		_ = m.storage.UpdateSession(ctx, sess) // Best-effort update
 	}
 
 	return sess, nil

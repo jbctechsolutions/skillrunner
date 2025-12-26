@@ -11,8 +11,8 @@ import (
 
 // mockBackend is a mock implementation of BackendPort for testing
 type mockBackend struct {
-	name              string
-	supportsModel     bool
+	name                string
+	supportsModel       bool
 	modelControlSupport bool
 }
 

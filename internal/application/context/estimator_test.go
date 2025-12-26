@@ -11,10 +11,10 @@ func TestEstimator_Estimate(t *testing.T) {
 	estimator := NewEstimator()
 
 	tests := []struct {
-		name     string
-		text     string
-		wantMin  int
-		wantMax  int
+		name    string
+		text    string
+		wantMin int
+		wantMax int
 	}{
 		{
 			name:    "empty string",

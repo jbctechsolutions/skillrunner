@@ -36,11 +36,11 @@ type Session struct {
 
 // TokenUsage tracks token consumption for a session.
 type TokenUsage struct {
-	InputTokens  int       // Total input tokens consumed
-	OutputTokens int       // Total output tokens generated
-	TotalTokens  int       // Total tokens (input + output)
-	EstimatedCost float64  // Estimated cost in USD
-	LastUpdated  time.Time // When usage was last updated
+	InputTokens   int       // Total input tokens consumed
+	OutputTokens  int       // Total output tokens generated
+	TotalTokens   int       // Total tokens (input + output)
+	EstimatedCost float64   // Estimated cost in USD
+	LastUpdated   time.Time // When usage was last updated
 }
 
 // Context holds contextual information for a session.
@@ -120,36 +120,36 @@ type StartOptions struct {
 // BackendConfig holds backend-specific configuration.
 type BackendConfig struct {
 	// Aider-specific
-	AiderEditFormat    string            // edit format: diff, whole, udiff
-	AiderAutoCommit    bool              // auto-commit changes
-	AiderDirtyCommits  bool              // allow dirty working directory
-	AiderMapTokens     int               // tokens for repository map
-	AiderCachePrompts  bool              // enable prompt caching
-	AiderWeakModel     string            // weak model for simple tasks
-	AiderTestCmd       string            // test command to run
-	AiderLintCmd       string            // lint command to run
-	AiderAutoTest      bool              // auto-run tests
-	AiderAutoLint      bool              // auto-run lint
+	AiderEditFormat   string // edit format: diff, whole, udiff
+	AiderAutoCommit   bool   // auto-commit changes
+	AiderDirtyCommits bool   // allow dirty working directory
+	AiderMapTokens    int    // tokens for repository map
+	AiderCachePrompts bool   // enable prompt caching
+	AiderWeakModel    string // weak model for simple tasks
+	AiderTestCmd      string // test command to run
+	AiderLintCmd      string // lint command to run
+	AiderAutoTest     bool   // auto-run tests
+	AiderAutoLint     bool   // auto-run lint
 
 	// Claude-specific
-	ClaudeRulesFile    string            // path to CLAUDE.md
-	ClaudeHooksDir     string            // directory for hooks
-	ClaudeSessionHook  string            // session start hook script
-	ClaudePreCompact   string            // pre-compaction hook script
+	ClaudeRulesFile   string // path to CLAUDE.md
+	ClaudeHooksDir    string // directory for hooks
+	ClaudeSessionHook string // session start hook script
+	ClaudePreCompact  string // pre-compaction hook script
 
 	// OpenCode-specific
-	OpenCodeWorkspace  string            // workspace configuration
-	OpenCodeMode       string            // mode: chat, edit, review
+	OpenCodeWorkspace string // workspace configuration
+	OpenCodeMode      string // mode: chat, edit, review
 
 	// Common
-	Timeout            time.Duration     // session timeout
-	MaxTokens          int               // max tokens per request
-	Environment        map[string]string // environment variables
+	Timeout     time.Duration     // session timeout
+	MaxTokens   int               // max tokens per request
+	Environment map[string]string // environment variables
 }
 
 // InjectContent represents content to inject into a session.
 type InjectContent struct {
-	Type    string // prompt, file, item
-	Content string // The content to inject
+	Type    string   // prompt, file, item
+	Content string   // The content to inject
 	Files   []string // Files to inject (for file type)
 }

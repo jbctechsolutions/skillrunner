@@ -8,13 +8,13 @@ import (
 
 // ProviderStatus represents the health status of a single provider.
 type ProviderStatus struct {
-	Name      string   `json:"name"`
-	Type      string   `json:"type"`
-	Status    string   `json:"status"`
-	Endpoint  string   `json:"endpoint,omitempty"`
-	Models    []string `json:"models,omitempty"`
-	Latency   string   `json:"latency,omitempty"`
-	Error     string   `json:"error,omitempty"`
+	Name     string   `json:"name"`
+	Type     string   `json:"type"`
+	Status   string   `json:"status"`
+	Endpoint string   `json:"endpoint,omitempty"`
+	Models   []string `json:"models,omitempty"`
+	Latency  string   `json:"latency,omitempty"`
+	Error    string   `json:"error,omitempty"`
 }
 
 // SystemStatus represents the overall system health status.

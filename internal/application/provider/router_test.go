@@ -56,6 +56,9 @@ func (m *mockProvider) withAvailableModel(modelID string, available bool) *mockP
 	return m
 }
 
+// withLocal sets whether the mock provider is local (kept for future use).
+var _ = (*mockProvider).withLocal
+
 func (m *mockProvider) withLocal(isLocal bool) *mockProvider {
 	m.isLocal = isLocal
 	return m

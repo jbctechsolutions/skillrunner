@@ -31,8 +31,8 @@ func TestCalculateCost(t *testing.T) {
 				WithCosts(15.0, 75.0), // $15 per 1K input, $75 per 1K output
 			inputTokens:  1000,
 			outputTokens: 500,
-			wantInput:    15.0,  // 1000/1000 * 15
-			wantOutput:   37.5,  // 500/1000 * 75
+			wantInput:    15.0, // 1000/1000 * 15
+			wantOutput:   37.5, // 500/1000 * 75
 			wantTotal:    52.5,
 		},
 		{
@@ -41,8 +41,8 @@ func TestCalculateCost(t *testing.T) {
 				WithCosts(30.0, 60.0), // $30 per 1K input, $60 per 1K output
 			inputTokens:  2000,
 			outputTokens: 1000,
-			wantInput:    60.0,  // 2000/1000 * 30
-			wantOutput:   60.0,  // 1000/1000 * 60
+			wantInput:    60.0, // 2000/1000 * 30
+			wantOutput:   60.0, // 1000/1000 * 60
 			wantTotal:    120.0,
 		},
 		{
@@ -69,8 +69,8 @@ func TestCalculateCost(t *testing.T) {
 			name: "fractional token counts",
 			model: NewModel("test-model", "Test", ProviderOpenAI).
 				WithCosts(10.0, 20.0),
-			inputTokens:  150,  // 0.15 * 10 = 1.5
-			outputTokens: 250,  // 0.25 * 20 = 5.0
+			inputTokens:  150, // 0.15 * 10 = 1.5
+			outputTokens: 250, // 0.25 * 20 = 5.0
 			wantInput:    1.5,
 			wantOutput:   5.0,
 			wantTotal:    6.5,

@@ -11,17 +11,17 @@ import (
 
 // mockProvider implements ports.ProviderPort for testing
 type mockProvider struct {
-	name          string
-	isLocal       bool
-	healthy       bool
+	name            string
+	isLocal         bool
+	healthy         bool
 	supportedModels []string
 }
 
 func newMockProvider(name string, isLocal bool) *mockProvider {
 	return &mockProvider{
-		name:          name,
-		isLocal:       isLocal,
-		healthy:       true,
+		name:            name,
+		isLocal:         isLocal,
+		healthy:         true,
 		supportedModels: []string{"model-1", "model-2"},
 	}
 }

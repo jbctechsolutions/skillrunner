@@ -318,11 +318,11 @@ func (r *WorkspaceRepository) queryWorkspaces(ctx context.Context, query string,
 // scanWorkspaceRow scans a single row into a workspace.
 func (r *WorkspaceRepository) scanWorkspaceRow(row *sql.Row) (*domainContext.Workspace, error) {
 	var (
-		id, name, repoPath               string
-		worktreePath, branch, focus      sql.NullString
-		status                           string
-		defaultBackend                   sql.NullString
-		lastActiveAt, createdAt          string
+		id, name, repoPath          string
+		worktreePath, branch, focus sql.NullString
+		status                      string
+		defaultBackend              sql.NullString
+		lastActiveAt, createdAt     string
 	)
 
 	err := row.Scan(
@@ -339,11 +339,11 @@ func (r *WorkspaceRepository) scanWorkspaceRow(row *sql.Row) (*domainContext.Wor
 // scanWorkspaceRows scans rows into a workspace.
 func (r *WorkspaceRepository) scanWorkspaceRows(rows *sql.Rows) (*domainContext.Workspace, error) {
 	var (
-		id, name, repoPath               string
-		worktreePath, branch, focus      sql.NullString
-		status                           string
-		defaultBackend                   sql.NullString
-		lastActiveAt, createdAt          string
+		id, name, repoPath          string
+		worktreePath, branch, focus sql.NullString
+		status                      string
+		defaultBackend              sql.NullString
+		lastActiveAt, createdAt     string
 	)
 
 	err := rows.Scan(

@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 )
 
 const (

@@ -14,14 +14,14 @@ import (
 
 // Router errors
 var (
-	ErrNoProfileConfig    = errors.New("no configuration found for profile")
-	ErrNoModelAvailable   = errors.New("no model available for profile")
-	ErrNoFallbackModel    = errors.New("no fallback model available")
-	ErrInvalidProfile     = errors.New("invalid routing profile")
-	ErrProviderNotFound   = errors.New("provider not found")
-	ErrModelNotSupported  = errors.New("model not supported by any provider")
-	ErrConfigurationNil   = errors.New("routing configuration is nil")
-	ErrRegistryNil        = errors.New("provider registry is nil")
+	ErrNoProfileConfig   = errors.New("no configuration found for profile")
+	ErrNoModelAvailable  = errors.New("no model available for profile")
+	ErrNoFallbackModel   = errors.New("no fallback model available")
+	ErrInvalidProfile    = errors.New("invalid routing profile")
+	ErrProviderNotFound  = errors.New("provider not found")
+	ErrModelNotSupported = errors.New("model not supported by any provider")
+	ErrConfigurationNil  = errors.New("routing configuration is nil")
+	ErrRegistryNil       = errors.New("provider registry is nil")
 )
 
 // ModelSelection represents the result of model selection.

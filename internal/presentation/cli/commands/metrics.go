@@ -24,26 +24,26 @@ type ProviderMetrics struct {
 
 // SkillMetrics represents usage metrics for a single skill.
 type SkillMetrics struct {
-	Name        string `json:"name"`
-	Executions  int    `json:"executions"`
+	Name        string  `json:"name"`
+	Executions  int     `json:"executions"`
 	SuccessRate float64 `json:"success_rate"`
-	AvgDuration string `json:"avg_duration"`
+	AvgDuration string  `json:"avg_duration"`
 }
 
 // UsageMetrics represents the complete usage metrics.
 type UsageMetrics struct {
-	Period            string            `json:"period"`
-	StartDate         string            `json:"start_date"`
-	EndDate           string            `json:"end_date"`
-	TotalRequests     int               `json:"total_requests"`
-	SuccessfulCount   int               `json:"successful_count"`
-	FailedCount       int               `json:"failed_count"`
-	SuccessRate       float64           `json:"success_rate"`
-	TotalTokensInput  int64             `json:"total_tokens_input"`
-	TotalTokensOutput int64             `json:"total_tokens_output"`
-	TotalEstimatedCost float64          `json:"total_estimated_cost"`
-	ProviderMetrics   []ProviderMetrics `json:"provider_metrics"`
-	TopSkills         []SkillMetrics    `json:"top_skills"`
+	Period             string            `json:"period"`
+	StartDate          string            `json:"start_date"`
+	EndDate            string            `json:"end_date"`
+	TotalRequests      int               `json:"total_requests"`
+	SuccessfulCount    int               `json:"successful_count"`
+	FailedCount        int               `json:"failed_count"`
+	SuccessRate        float64           `json:"success_rate"`
+	TotalTokensInput   int64             `json:"total_tokens_input"`
+	TotalTokensOutput  int64             `json:"total_tokens_output"`
+	TotalEstimatedCost float64           `json:"total_estimated_cost"`
+	ProviderMetrics    []ProviderMetrics `json:"provider_metrics"`
+	TopSkills          []SkillMetrics    `json:"top_skills"`
 }
 
 // NewMetricsCmd creates the metrics command.
@@ -131,15 +131,15 @@ func getMockMetrics(duration time.Duration) UsageMetrics {
 	failedCount := totalRequests - successfulCount
 
 	return UsageMetrics{
-		Period:            duration.String(),
-		StartDate:         startTime.Format(time.RFC3339),
-		EndDate:           now.Format(time.RFC3339),
-		TotalRequests:     totalRequests,
-		SuccessfulCount:   successfulCount,
-		FailedCount:       failedCount,
-		SuccessRate:       float64(successfulCount) / float64(totalRequests) * 100,
-		TotalTokensInput:  int64(485000 * scale),
-		TotalTokensOutput: int64(127000 * scale),
+		Period:             duration.String(),
+		StartDate:          startTime.Format(time.RFC3339),
+		EndDate:            now.Format(time.RFC3339),
+		TotalRequests:      totalRequests,
+		SuccessfulCount:    successfulCount,
+		FailedCount:        failedCount,
+		SuccessRate:        float64(successfulCount) / float64(totalRequests) * 100,
+		TotalTokensInput:   int64(485000 * scale),
+		TotalTokensOutput:  int64(127000 * scale),
 		TotalEstimatedCost: 2.47 * scale,
 		ProviderMetrics: []ProviderMetrics{
 			{

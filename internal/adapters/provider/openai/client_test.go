@@ -835,10 +835,12 @@ func TestClient_Chat_MarshalError(t *testing.T) {
 	client := NewClient(config)
 
 	// Create a request with a channel which cannot be marshaled
-	type badRequest struct {
+	// (Type defined for documentation purposes, used to verify error handling)
+	type badRequest struct { //nolint:unused
 		ChatCompletionRequest
 		BadField chan int `json:"bad_field"`
 	}
+	_ = badRequest{} // Silence unused type warning
 
 	// We can't directly test this since the struct is typed, but we verify the client handles it
 	// by confirming the Chat method works with valid data

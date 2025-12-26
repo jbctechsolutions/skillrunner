@@ -16,8 +16,8 @@ type Node struct {
 // DAG represents a directed acyclic graph of phases for workflow execution.
 // It provides methods for topological sorting and parallel execution planning.
 type DAG struct {
-	nodes map[string]*Node     // phase ID -> node
-	edges map[string][]string  // phase ID -> dependent phase IDs
+	nodes map[string]*Node    // phase ID -> node
+	edges map[string][]string // phase ID -> dependent phase IDs
 }
 
 // NewDAG builds a DAG from the given phases.

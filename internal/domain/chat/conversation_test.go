@@ -118,7 +118,7 @@ func TestConversationGetMessages(t *testing.T) {
 	}
 
 	// Verify it's a copy by modifying the returned slice
-	messages = append(messages, NewUserMessage("test3"))
+	_ = append(messages, NewUserMessage("test3"))
 	if len(conv.Messages) != 2 {
 		t.Error("original messages should not be modified")
 	}

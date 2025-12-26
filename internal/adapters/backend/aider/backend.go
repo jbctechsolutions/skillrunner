@@ -18,10 +18,10 @@ import (
 
 // Backend implements the BackendPort interface for Aider.
 type Backend struct {
-	tmux        *process.TmuxManager
-	executable  string
-	sessionMap  map[string]*session.Session
-	machineID   string
+	tmux       *process.TmuxManager
+	executable string
+	sessionMap map[string]*session.Session
+	machineID  string
 }
 
 // NewBackend creates a new Aider backend.
@@ -73,7 +73,7 @@ func (b *Backend) Start(ctx context.Context, workspace string, config session.Ba
 
 	// Send command to tmux session
 	if err := b.tmux.SendKeys(ctx, tmuxSession, cmd); err != nil {
-		b.tmux.KillSession(ctx, tmuxSession)
+		_ = b.tmux.KillSession(ctx, tmuxSession) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to start aider: %w", err)
 	}
 

@@ -180,7 +180,7 @@ func TestTruncateString(t *testing.T) {
 		{"hello world", 5, "he..."},
 		{"abc", 3, "abc"},
 		{"abcd", 3, "abc"},
-		{"hello", 3, "hel"},  // maxLen <= 3 returns first maxLen chars
+		{"hello", 3, "hel"}, // maxLen <= 3 returns first maxLen chars
 		{"", 5, ""},
 	}
 
@@ -260,11 +260,11 @@ func TestCountProviderStatuses(t *testing.T) {
 
 func TestNewVersionCmd_Structure(t *testing.T) {
 	cmd := NewVersionCmd()
-	
+
 	if cmd.Use != "version" {
 		t.Errorf("expected Use='version', got %q", cmd.Use)
 	}
-	
+
 	if cmd.Flags().Lookup("short") == nil {
 		t.Error("missing --short flag")
 	}
@@ -272,11 +272,11 @@ func TestNewVersionCmd_Structure(t *testing.T) {
 
 func TestNewRunCmd_Structure(t *testing.T) {
 	cmd := NewRunCmd()
-	
+
 	if cmd.Use != "run <skill> <request>" {
 		t.Errorf("unexpected Use: %q", cmd.Use)
 	}
-	
+
 	if cmd.Flags().Lookup("profile") == nil {
 		t.Error("missing --profile flag")
 	}
@@ -287,11 +287,11 @@ func TestNewRunCmd_Structure(t *testing.T) {
 
 func TestNewListCmd_Structure(t *testing.T) {
 	cmd := NewListCmd()
-	
+
 	if cmd.Use != "list" {
 		t.Errorf("expected Use='list', got %q", cmd.Use)
 	}
-	
+
 	// Check alias
 	found := false
 	for _, alias := range cmd.Aliases {
@@ -303,7 +303,7 @@ func TestNewListCmd_Structure(t *testing.T) {
 	if !found {
 		t.Error("missing 'ls' alias")
 	}
-	
+
 	if cmd.Flags().Lookup("format") == nil {
 		t.Error("missing --format flag")
 	}

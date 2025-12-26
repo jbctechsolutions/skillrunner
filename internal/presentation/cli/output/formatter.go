@@ -536,12 +536,12 @@ type ProgressBarOption func(*ProgressBar)
 // NewProgressBar creates a new ProgressBar with the given options.
 func NewProgressBar(total int, message string, opts ...ProgressBarOption) *ProgressBar {
 	p := &ProgressBar{
-		total:    total,
-		width:    40,
-		message:  message,
-		writer:   os.Stdout,
-		colored:  true,
-		fillChar: "█",
+		total:     total,
+		width:     40,
+		message:   message,
+		writer:    os.Stdout,
+		colored:   true,
+		fillChar:  "█",
 		emptyChar: "░",
 	}
 
@@ -656,10 +656,10 @@ func (p *ProgressBar) render() {
 
 // StreamWriter provides a thread-safe writer for streaming output.
 type StreamWriter struct {
-	mu        sync.Mutex
-	writer    io.Writer
-	prefix    string
-	colored   bool
+	mu          sync.Mutex
+	writer      io.Writer
+	prefix      string
+	colored     bool
 	prefixColor Color
 }
 

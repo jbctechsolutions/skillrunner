@@ -34,10 +34,10 @@ func TestSessionDuration(t *testing.T) {
 	oneHourAgo := now.Add(-1 * time.Hour)
 
 	tests := []struct {
-		name     string
-		session  *Session
-		minDur   time.Duration
-		maxDur   time.Duration
+		name    string
+		session *Session
+		minDur  time.Duration
+		maxDur  time.Duration
 	}{
 		{
 			name: "Running session",
@@ -93,13 +93,13 @@ func TestStartOptions(t *testing.T) {
 
 func TestBackendConfig(t *testing.T) {
 	config := BackendConfig{
-		AiderEditFormat:  "diff",
-		AiderAutoCommit:  true,
-		AiderMapTokens:   1024,
-		ClaudeRulesFile:  "CLAUDE.md",
-		OpenCodeMode:     "chat",
-		Timeout:          30 * time.Minute,
-		MaxTokens:        4096,
+		AiderEditFormat: "diff",
+		AiderAutoCommit: true,
+		AiderMapTokens:  1024,
+		ClaudeRulesFile: "CLAUDE.md",
+		OpenCodeMode:    "chat",
+		Timeout:         30 * time.Minute,
+		MaxTokens:       4096,
 	}
 
 	if config.AiderEditFormat != "diff" {
@@ -121,9 +121,9 @@ func TestBackendConfig(t *testing.T) {
 
 func TestTokenUsage(t *testing.T) {
 	usage := TokenUsage{
-		InputTokens:  1000,
-		OutputTokens: 500,
-		TotalTokens:  1500,
+		InputTokens:   1000,
+		OutputTokens:  500,
+		TotalTokens:   1500,
 		EstimatedCost: 0.05,
 	}
 

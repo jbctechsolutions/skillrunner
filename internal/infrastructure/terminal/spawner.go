@@ -14,13 +14,13 @@ import (
 type TerminalType string
 
 const (
-	TerminalITerm2   TerminalType = "iterm2"
-	TerminalApp      TerminalType = "terminal"
-	TerminalTmux     TerminalType = "tmux"
-	TerminalKitty    TerminalType = "kitty"
+	TerminalITerm2    TerminalType = "iterm2"
+	TerminalApp       TerminalType = "terminal"
+	TerminalTmux      TerminalType = "tmux"
+	TerminalKitty     TerminalType = "kitty"
 	TerminalAlacritty TerminalType = "alacritty"
-	TerminalGnome    TerminalType = "gnome-terminal"
-	TerminalAuto     TerminalType = "auto"
+	TerminalGnome     TerminalType = "gnome-terminal"
+	TerminalAuto      TerminalType = "auto"
 )
 
 // Spawner manages terminal spawning.

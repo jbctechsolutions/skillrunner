@@ -57,12 +57,12 @@ type SkillsConfig struct {
 
 // Default configuration values.
 const (
-	DefaultOllamaURL        = "http://localhost:11434"
-	DefaultTimeout          = 30 * time.Second
-	DefaultLogLevel         = "info"
-	DefaultLogFormat        = "text"
-	DefaultSkillsDirectory  = "~/.skillrunner/skills"
-	DefaultRoutingProfile   = "default"
+	DefaultOllamaURL       = "http://localhost:11434"
+	DefaultTimeout         = 30 * time.Second
+	DefaultLogLevel        = "info"
+	DefaultLogFormat       = "text"
+	DefaultSkillsDirectory = "~/.skillrunner/skills"
+	DefaultRoutingProfile  = "default"
 )
 
 // Valid log levels.

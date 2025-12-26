@@ -89,11 +89,11 @@ func (m *Manager) Create(ctx context.Context, opts workspace.CreateOptions) (*wo
 	}
 
 	if err := m.storage.Save(ctx, ctxWs); err != nil {
-		// Try to clean up
+		// Try to clean up (best-effort, ignore errors)
 		if opts.GitWorktree {
-			m.gitWorktree.Remove(ctx, wsPath, wsPath, true)
+			_ = m.gitWorktree.Remove(ctx, wsPath, wsPath, true)
 		} else {
-			os.RemoveAll(wsPath)
+			_ = os.RemoveAll(wsPath)
 		}
 		return nil, fmt.Errorf("failed to save workspace: %w", err)
 	}

@@ -11,11 +11,11 @@ var ErrModelNotFound = errors.New("model not found in cost calculator")
 
 // ModelCostRate represents the cost rates for a specific model.
 type ModelCostRate struct {
-	ModelID       string  // unique identifier for the model
-	Provider      string  // provider name (ollama, anthropic, openai, groq)
-	InputRate     float64 // cost per 1000 input tokens
-	OutputRate    float64 // cost per 1000 output tokens
-	IsLocal       bool    // whether this is a local model (zero cost)
+	ModelID    string  // unique identifier for the model
+	Provider   string  // provider name (ollama, anthropic, openai, groq)
+	InputRate  float64 // cost per 1000 input tokens
+	OutputRate float64 // cost per 1000 output tokens
+	IsLocal    bool    // whether this is a local model (zero cost)
 }
 
 // CostCalculator manages cost calculations for AI model invocations.

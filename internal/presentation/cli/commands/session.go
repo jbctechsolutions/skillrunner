@@ -4,8 +4,6 @@ package commands
 import (
 	"fmt"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -267,48 +265,4 @@ Use --force to forcefully kill the session (SIGKILL instead of graceful shutdown
 	cmd.Flags().BoolVar(&force, "force", false, "forcefully kill the session")
 
 	return cmd
-}
-
-// Helper functions for formatting session output (to be implemented)
-
-func formatSessionList(sessions []*domainSession.Session) string {
-	var b strings.Builder
-
-	b.WriteString("ID\tBackend\tModel\tStatus\tStarted\n")
-	b.WriteString("--\t-------\t-----\t------\t-------\n")
-
-	for _, s := range sessions {
-		b.WriteString(fmt.Sprintf("%s\t%s\t%s\t%s\t%s\n",
-			s.ID,
-			s.Backend,
-			s.Model,
-			s.Status,
-			s.StartedAt.Format(time.RFC3339),
-		))
-	}
-
-	return b.String()
-}
-
-func formatSession(s *domainSession.Session) string {
-	var b strings.Builder
-
-	b.WriteString(fmt.Sprintf("Session ID:     %s\n", s.ID))
-	b.WriteString(fmt.Sprintf("Backend:        %s\n", s.Backend))
-	b.WriteString(fmt.Sprintf("Model:          %s\n", s.Model))
-	b.WriteString(fmt.Sprintf("Status:         %s\n", s.Status))
-	b.WriteString(fmt.Sprintf("Workspace:      %s\n", s.WorkspaceID))
-	b.WriteString(fmt.Sprintf("Started:        %s\n", s.StartedAt.Format(time.RFC3339)))
-	if s.EndedAt != nil {
-		b.WriteString(fmt.Sprintf("Ended:          %s\n", s.EndedAt.Format(time.RFC3339)))
-		b.WriteString(fmt.Sprintf("Duration:       %s\n", s.Duration()))
-	}
-	if s.ProcessID > 0 {
-		b.WriteString(fmt.Sprintf("Process ID:     %d\n", s.ProcessID))
-	}
-	if s.TmuxSession != "" {
-		b.WriteString(fmt.Sprintf("Tmux Session:   %s\n", s.TmuxSession))
-	}
-
-	return b.String()
 }

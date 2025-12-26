@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 )
 
 // HeadlineContext represents a compact context summary for injection into prompts.

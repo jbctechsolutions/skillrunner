@@ -388,10 +388,10 @@ func TestRoutingConfiguration_SetDefaults(t *testing.T) {
 
 func TestRoutingConfiguration_Merge(t *testing.T) {
 	tests := []struct {
-		name   string
-		base   *RoutingConfiguration
-		other  *RoutingConfiguration
-		check  func(*RoutingConfiguration) error
+		name  string
+		base  *RoutingConfiguration
+		other *RoutingConfiguration
+		check func(*RoutingConfiguration) error
 	}{
 		{
 			name:  "merge nil does nothing",

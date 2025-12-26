@@ -35,12 +35,12 @@ type PhaseResult struct {
 
 // ExecutionResult captures the outcome of executing an entire skill.
 type ExecutionResult struct {
-	SkillID      string         // ID of the executed skill
+	SkillID      string          // ID of the executed skill
 	Status       ExecutionStatus // Overall status of the execution
-	PhaseResults []PhaseResult  // Results from each phase
-	TotalCost    float64        // Total cost of execution
-	StartedAt    time.Time      // When execution started
-	CompletedAt  time.Time      // When execution completed
+	PhaseResults []PhaseResult   // Results from each phase
+	TotalCost    float64         // Total cost of execution
+	StartedAt    time.Time       // When execution started
+	CompletedAt  time.Time       // When execution completed
 }
 
 // NewPhaseResult creates a new PhaseResult with the given phase ID in pending status.

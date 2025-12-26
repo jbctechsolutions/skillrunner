@@ -92,7 +92,7 @@ func (b *Backend) Start(ctx context.Context, workspace string, config session.Ba
 	// Start claude in the tmux session
 	cmd := b.executable
 	if err := b.tmux.SendKeys(ctx, tmuxSession, cmd); err != nil {
-		b.tmux.KillSession(ctx, tmuxSession)
+		_ = b.tmux.KillSession(ctx, tmuxSession) // Best-effort cleanup
 		return nil, fmt.Errorf("failed to start claude: %w", err)
 	}
 
