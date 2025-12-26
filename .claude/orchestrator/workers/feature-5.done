@@ -1,0 +1,45 @@
+# Feature 5: Wire Context Commands - COMPLETED
+
+## Summary
+Successfully wired all four context command files to their respective repositories from the dependency injection container.
+
+## Files Modified
+
+### 1. context_items.go
+- Wired to `ContextItemRepository` from container
+- Implemented: add (file/snippet/url types), list (with tag filter), remove, load commands
+- Uses `domainContext.NewContextItem()` with UUID generation
+- Token estimation based on content length
+
+### 2. context_focus.go
+- Wired to `WorkspaceRepository` from container
+- Implemented: set focus, clear focus (--clear), show focus (--show)
+- Gets current workspace by repo path using `GetByRepoPath()`
+- Uses `SetFocus()` method on workspace repository
+
+### 3. context_checkpoint.go
+- Wired to `CheckpointRepository` and `SessionRepository` from container
+- Implemented: create, list, resume (latest), restore (specific), delete commands
+- Associates checkpoints with active session when available
+- Captures files modified, decisions made, and machine ID
+
+### 4. context_rules.go
+- Wired to `RulesRepository` from container
+- Implemented: add, list (with scope/active filters), show, activate, deactivate, remove commands
+- Supports rule scopes: global, workspace, session
+- Uses domain methods: `Activate()`, `Deactivate()`
+
+## Verification
+- `go build ./...` - PASSED
+- `go vet ./internal/presentation/cli/commands/...` - PASSED
+
+## Key Pattern Used
+```go
+container := GetContainer()
+if container == nil {
+    return fmt.Errorf("application not initialized")
+}
+repo := container.<RepositoryName>()
+```
+
+All commands follow consistent error handling and use tabwriter for formatted table output.

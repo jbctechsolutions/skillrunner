@@ -1,48 +1,56 @@
-# Feature 2: State Storage Port Interfaces - COMPLETED
+# Feature 2: SkillRegistry Implementation - COMPLETED
 
 ## Summary
-Created comprehensive state storage port interfaces in `internal/application/ports/state.go`.
+Created the SkillRegistry component for skill discovery and wired it to the CLI list command.
 
-## Implemented Interfaces
+## Files Created
+- internal/application/skills/registry.go - SkillRegistry implementation
+- internal/application/skills/registry_test.go - Comprehensive test suite (13 tests)
 
-### 1. WorkspaceStateStoragePort
-- CRUD operations: Create, Get, Update, Delete
-- Query methods: GetByName, GetByRepoPath, GetActive, List
-- Specialized methods: SetFocus, SetStatus, Exists
-- Includes WorkspaceFilter for flexible querying
+## Files Modified
+- internal/application/container.go - Added skillRegistry field and SkillRegistry() accessor
+- internal/presentation/cli/commands/list.go - Replaced getMockSkills() with loadSkills() using registry
 
-### 2. SessionStateStoragePort
-- CRUD operations: Create, Get, Update, Delete
-- Query methods: GetByWorkspace, GetActive, GetActiveByWorkspace, List
-- Specialized methods: UpdateStatus, UpdateTokenUsage
-- Uses existing session.Filter from domain
+## Implementation Details
 
-### 3. CheckpointStateStoragePort
-- CRUD operations: Create, Get, Update, Delete
-- Query methods: GetBySession, GetByWorkspace, GetLatest, List
-- Specialized methods: DeleteBySession
-- Includes CheckpointFilter for flexible querying
+### SkillRegistry (internal/application/skills/registry.go)
+- Thread-safe caching of loaded skills using sync.RWMutex
+- LoadBuiltInSkills() - Loads from ./skills directory (bundled skills)
+- LoadUserSkills(dir) - Loads from ~/.skillrunner/skills (user customizations)
+- LoadAll() - Loads both built-in and user skills (user skills override built-in)
+- GetSkill(id) - Retrieves skill by ID
+- GetSkillByName(name) - Retrieves skill by name
+- ListSkills() - Returns all loaded skills
+- Register/Unregister/Clear - Manual skill management
+- Reload() - Clears cache and reloads all skills
 
-### 4. ContextItemStateStoragePort
-- CRUD operations: Create, Get, Update, Delete
-- Query methods: GetByName, GetByTags, Search, List
-- Specialized methods: UpdateLastUsed, Exists
-- Includes ContextItemFilter for flexible querying with tag support
+### Container Integration
+- Added skillRegistry field to Container struct
+- Added SkillRegistry() accessor method
+- Skills are automatically loaded during container initialization
+- Loading errors are silently ignored (skills are optional)
 
-### 5. RuleStateStoragePort
-- CRUD operations: Create, Get, Update, Delete
-- Query methods: GetByName, GetActive, GetByScope, List
-- Specialized methods: Activate, Deactivate, Exists
-- Includes RuleFilter for flexible querying
+### List Command Changes
+- Replaced getMockSkills() with loadSkills()
+- loadSkills() retrieves skills from the registry via GetContainer()
+- Displays real skill metadata (name, description, phase count, routing profile)
 
-## Design Decisions
-- All methods use context.Context as first parameter for cancellation/timeout
-- Comprehensive Go doc comments on all interfaces and methods
-- Filter structs for each entity type to support complex queries
-- Follows existing port patterns from provider.go and storage.go
-- Uses domain types from internal/domain/context and internal/domain/session
-- Methods return domain errors (ErrNotFound, etc.) on failure
-- Named ports with "State" suffix to differentiate from existing simpler ports in context_storage.go
+## Test Coverage
+All 13 registry tests pass:
+- TestNewRegistry
+- TestRegisterAndGetSkill
+- TestGetNonExistentSkill
+- TestListSkills
+- TestUnregister
+- TestClear
+- TestRegisterNilSkill
+- TestLoadBuiltInSkillsNonExistentDir
+- TestLoadUserSkillsNonExistentDir
+- TestLoadSkillsFromDirectory
+- TestLoadAll
+- TestUserSkillsOverrideBuiltIn
+- TestReload
 
-## Verification
-- Package builds successfully with `go build ./internal/application/ports/...`
+## Build Status
+- go build ./... - SUCCESS
+- go test ./... - ALL PASS

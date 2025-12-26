@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/jbctechsolutions/skillrunner/internal/application"
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
@@ -31,6 +32,7 @@ type AppContext struct {
 	Config    *config.Config
 	Formatter *output.Formatter
 	Flags     *GlobalFlags
+	Container *application.Container
 }
 
 var (
@@ -116,11 +118,18 @@ func initializeApp() error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	// Initialize the application container with all dependencies
+	container, err := application.NewContainer(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to initialize application: %w", err)
+	}
+
 	// Store app context
 	appCtx = &AppContext{
 		Config:    cfg,
 		Formatter: formatter,
 		Flags:     &globalFlags,
+		Container: container,
 	}
 
 	return nil
@@ -159,6 +168,15 @@ func GetFormatter() *output.Formatter {
 		return appCtx.Formatter
 	}
 	return output.NewFormatter()
+}
+
+// GetContainer returns the application container.
+// Returns nil if the app hasn't been initialized.
+func GetContainer() *application.Container {
+	if appCtx != nil {
+		return appCtx.Container
+	}
+	return nil
 }
 
 // Execute runs the root command.

@@ -1,0 +1,70 @@
+# Feature 3: Wire run command (run.go) - COMPLETED
+
+## Summary
+Wired the run command to execute multi-phase workflows by connecting the CLI to the application services.
+
+## Changes Made
+
+### internal/presentation/cli/commands/run.go
+Replaced the stub implementation with a full workflow execution pipeline:
+
+1. **Container Integration**
+   - Gets Container from GetContainer()
+   - Retrieves SkillRegistry for skill lookup
+   - Retrieves ProviderRegistry for provider selection
+
+2. **Skill Loading**
+   - Looks up skill by ID first, then by name
+   - Returns user-friendly error if skill not found
+
+3. **Provider Selection**
+   - selectProvider() function chooses provider based on routing profile:
+     - `cheap`: Prefers local providers (e.g., Ollama)
+     - `premium`: Prefers cloud providers
+     - `balanced`: Uses first available provider
+
+4. **Workflow Execution**
+   - Creates WorkflowExecutor with DefaultExecutorConfig()
+   - Executes workflow with executor.Execute(ctx, skill, request)
+   - Tracks execution time and collects results
+
+5. **Progress Display**
+   - Uses spinner during execution
+   - Displays phase information before execution
+   - Shows phase results table with:
+     - Phase name, status, duration, tokens, model used
+   - Displays summary statistics
+
+6. **Output Formats**
+   - Text output: Headers, tables, spinner, colored status
+   - JSON output: Structured result with all phase details
+
+7. **--stream Flag Support**
+   - Flag is captured and passed through
+   - Displayed in execution header when enabled
+   - Note: Full streaming requires executor-level support (future enhancement)
+
+8. **Error Handling**
+   - User-friendly error messages
+   - Handles missing providers, skills, and execution failures
+
+## Helper Functions Added
+- `selectProvider()` - Profile-based provider selection
+- `runSkillJSON()` - JSON output execution path
+- `runSkillText()` - Text output with progress display
+- `displayPhaseResults()` - Table display of phase results
+- `formatStatus()` - Human-readable status strings
+- `formatDuration()` - Smart duration formatting (us/ms/s/m)
+- Updated `validateProfile()` to use slices.Contains (modernize)
+
+## Dependencies Used
+- context, time, sort, slices, strings
+- github.com/jbctechsolutions/skillrunner/internal/application/ports
+- github.com/jbctechsolutions/skillrunner/internal/application/workflow
+- github.com/jbctechsolutions/skillrunner/internal/domain/skill
+- github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output
+
+## Notes
+- The workflow executor currently uses synchronous Complete() calls
+- Full streaming support would require executor-level changes to use provider.Stream()
+- The implementation is ready for integration testing once providers are configured

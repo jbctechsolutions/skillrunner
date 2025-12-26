@@ -1,10 +1,10 @@
 You are a worker agent focused on implementing a single feature.
 
 ## Your Task
-Implement storage repositories: workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go in internal/infrastructure/storage/
+Feature 3: Wire run command (run.go) - Load skill from registry, create provider from config, execute workflow with WorkflowExecutor, display phase progress with spinner, show results (phases, tokens, timing), support --stream flag
 
 ## Orchestration Context
-Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage for Skillrunner MVP. This builds on the completed v2.0 implementation (Waves 1-6) which includes domain types, providers, routing, and CLI commands.
+Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.
 
 
 ## Instructions
@@ -27,24 +27,30 @@ Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage f
 
 
 ## Additional Context
-Implement storage repositories in internal/infrastructure/storage/ that implement the port interfaces from internal/application/ports/state.go.
+Wire the run command to execute multi-phase workflows.
 
-Create these files:
-1. workspace_repo.go - implements WorkspaceStatePort
-2. session_repo.go - implements SessionStatePort  
-3. checkpoint_repo.go - implements CheckpointStatePort
-4. context_item_repo.go - implements ContextItemStatePort
-5. rules_repo.go - implements RuleStatePort
+Key files to read first:
+- internal/presentation/cli/commands/run.go (command to modify)
+- internal/application/workflow/executor.go (workflow executor)
+- internal/application/skills/registry.go (skill registry just created)
+- internal/application/container.go (GetContainer, services)
+- internal/presentation/cli/output/ (formatter, spinner)
 
-Requirements:
-- Use the SQLite connection from internal/adapters/sync/sqlite/
-- Each repo takes *sql.DB in constructor
-- Implement all interface methods with proper SQL queries
-- Use prepared statements for security
-- Handle NULL values appropriately
-- JSON encode/decode for array fields (tags, files_modified, decisions)
-- Write comprehensive tests using in-memory SQLite
-- Follow existing patterns from internal/infrastructure/ directory
-- Use domain types from internal/domain/context/ if they exist, otherwise create simple structs
+Tasks:
+1. Modify run.go runSkill() function:
+   - Get Container from GetContainer()
+   - Get SkillRegistry and load skill by name
+   - Get WorkflowExecutor from container
+   - Execute workflow: executor.Execute(ctx, skill, request)
+   - Display phase progress using spinner
+   - Show execution results (phases, tokens, timing, final output)
+
+2. Support --stream flag for streaming output
+
+3. Handle errors gracefully with user-friendly messages
+
+4. Display execution summary with timing and token usage
+
+The workflow executor already handles DAG execution, parallel phases, etc. You just need to wire it to the CLI.
 
 Begin implementing the feature now.

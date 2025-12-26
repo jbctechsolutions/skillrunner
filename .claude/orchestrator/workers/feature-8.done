@@ -1,0 +1,42 @@
+# Feature 8: Wire ask command (ask.go) - COMPLETED
+
+## Summary
+Wired the ask command for single-phase skill execution with full provider integration.
+
+## Changes Made
+
+### 1. Updated ask.go (internal/presentation/cli/commands/ask.go)
+- Changed command signature from `ask <question>` to `ask <skill> <question>` to accept skill name
+- Added `--phase` flag to specify which phase to execute (defaults to first phase)
+- Added `--stream` flag for streaming output support
+- Integrated with Container for accessing SkillRegistry and ProviderRegistry
+- Implemented skill lookup by ID or name via GetSkill() and GetSkillByName()
+- Added getPhaseToExecute() to get specified phase or first phase
+- Built prompt from phase template with input substitution
+- Created provider router for model selection based on profile
+- Execute requests via provider's Complete() or Stream() method
+- Display formatted response with token counts
+- Modernized profile validation using slices.Contains()
+
+### 2. Updated chat.go (internal/presentation/cli/commands/chat.go)
+- Moved initChatService() function from ask.go (which was removed in rewrite)
+- Added required imports for provider and config packages
+
+### 3. Updated commands_test.go (internal/presentation/cli/commands/commands_test.go)
+- Updated TestNewAskCmd_Structure to check for new --phase and --stream flags
+- Updated TestAskCmd_Validation test cases with new 2-argument format (skill + question)
+- All ask-related tests pass
+
+## Key Features
+1. Load skill from registry by ID or name
+2. Execute first phase (default) or specified phase via --phase flag
+3. Route to provider based on profile (cheap/balanced/premium)
+4. Display response with optional streaming (--stream flag)
+5. Proper error handling for missing skills, phases, and providers
+
+## Testing
+- All ask-related tests pass: TestAskCmd_Validation, TestNewAskCmd_Structure, TestValidateAskProfile
+- Build succeeds for entire project
+
+## Note
+Pre-existing test failures in run command tests (TestRunCmd_Validation) are due to run.go being wired by another feature. Those tests now fail because they pass dummy skill names that don't exist. This is outside the scope of Feature 8.

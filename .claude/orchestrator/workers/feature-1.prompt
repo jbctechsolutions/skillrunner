@@ -1,10 +1,10 @@
 You are a worker agent focused on implementing a single feature.
 
 ## Your Task
-Implement SQLite infrastructure with connection manager and migrations for tables: workspaces, sessions, checkpoints, context_items, rules, drift_log
+Feature 1: Create application container (internal/application/container.go) with dependency injection - Initialize SQLite connection, create repository instances, SessionManager, WorkflowExecutor, SkillLoader. Wire container into AppContext in root.go
 
 ## Orchestration Context
-Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage for Skillrunner MVP. This builds on the completed v2.0 implementation (Waves 1-6) which includes domain types, providers, routing, and CLI commands.
+Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.
 
 
 ## Instructions
@@ -27,11 +27,41 @@ Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage f
 
 
 ## Additional Context
-Create SQLite infrastructure in internal/adapters/sync/sqlite/. Include:
-1. sqlite.go - Connection manager with Open(), Close(), Ping() methods
-2. migrations.go - Schema with tables: workspaces (id, name, repo_path, worktree_path, branch, focus, status, default_backend, last_active_at, created_at), sessions (id, workspace_id, backend, model, profile, status, tokens_used, tokens_limit, pid, machine_id, started_at, last_active_at), checkpoints (id, workspace_id, session_id, summary, details, files_modified, decisions, machine_id, created_at), context_items (id, name, type, content, tags, token_estimate, last_used_at, created_at), rules (id, name, content, scope, is_active, created_at), drift_log (id, workspace_id, session_id, original_focus, detected_topic, prompt_snippet, action_taken, created_at)
-3. Add github.com/mattn/go-sqlite3 to go.mod
-4. Write comprehensive tests with in-memory SQLite
-5. Follow existing patterns from internal/infrastructure/config/
+This is Wave 8 of Skillrunner v2.0. Waves 1-7 are complete with domain layer, application services, and storage adapters.
+
+Your task: Create the application container for dependency injection.
+
+Key files to read first:
+- internal/presentation/cli/commands/root.go (AppContext struct and initializeApp)
+- internal/infrastructure/storage/session_repo.go (example repository)
+- internal/application/session/manager.go (SessionManager)
+- internal/application/workflow/executor.go (WorkflowExecutor)
+- internal/infrastructure/skills/loader.go (SkillLoader)
+- internal/adapters/backend/registry.go (BackendRegistry)
+- internal/adapters/provider/registry.go (ProviderRegistry)
+
+Create:
+1. internal/application/container.go with Container struct that holds:
+   - DB connection (*sql.DB)
+   - All repositories (Session, Workspace, Checkpoint, ContextItem, Rules)
+   - SessionManager
+   - WorkflowExecutor  
+   - SkillLoader
+   - ProviderRegistry
+   - BackendRegistry
+
+2. NewContainer(cfg *config.Config) function that:
+   - Opens SQLite database at ~/.skillrunner/skillrunner.db
+   - Creates all repository instances
+   - Creates SessionManager with storage and backends
+   - Creates WorkflowExecutor with provider
+   - Creates SkillLoader
+
+3. Modify root.go to:
+   - Add Container field to AppContext
+   - Initialize container in initializeApp()
+   - Add GetContainer() helper function
+
+Write unit tests for container initialization. Ensure existing tests still pass.
 
 Begin implementing the feature now.

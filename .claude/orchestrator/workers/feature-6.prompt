@@ -1,0 +1,56 @@
+You are a worker agent focused on implementing a single feature.
+
+## Your Task
+Feature 6: Wire workspace commands (workspace.go) - Get WorkspaceRepository from container, implement init/list/show/switch, display workspace status with active sessions
+
+## Orchestration Context
+Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.
+
+
+## Instructions
+1. Focus ONLY on implementing this specific feature
+2. Make small, incremental changes
+3. Test your changes as you go
+4. When you are DONE, create a file at: .claude/orchestrator/workers/feature-6.done
+   with a brief summary of what you implemented
+5. Do NOT commit your changes - the orchestrator will handle commits
+
+## Important
+- Do not work on other features
+- If you encounter a blocker, document it in the .done file and stop
+- Keep changes minimal and focused
+- NEVER commit, stage, or git add ANY of these files:
+  - .claude/ (entire directory - orchestrator state, logs, prompts, worker files)
+  - claude-progress.txt
+  - init.sh
+  - *.prompt, *.log, *.done, *.status files in .claude/
+
+
+## Additional Context
+Wire the workspace commands to the workspace repository.
+
+Key files to read first:
+- internal/presentation/cli/commands/workspace.go (command to modify)
+- internal/application/workspace/manager.go (workspace manager)
+- internal/infrastructure/storage/workspace_repo.go (workspace repository)
+- internal/application/container.go (GetContainer)
+
+Tasks:
+1. workspace init:
+   - Initialize workspace in current directory
+   - Create workspace record in database
+
+2. workspace list:
+   - Get WorkspaceRepository from GetContainer()
+   - List all workspaces
+
+3. workspace show:
+   - Display workspace details
+   - Show active sessions
+
+4. workspace switch:
+   - Change to different workspace directory
+
+Handle errors gracefully and display results in table format.
+
+Begin implementing the feature now.
