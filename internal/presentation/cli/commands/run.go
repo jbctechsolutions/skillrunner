@@ -106,18 +106,24 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no suitable provider found for profile: %s", runOpts.Profile)
 	}
 
-	// Create workflow executor with the selected provider
-	executorConfig := workflow.DefaultExecutorConfig()
-	executor := workflow.NewExecutor(provider, executorConfig)
-
 	ctx := context.Background()
 
-	// JSON output for scripting
+	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
+		executorConfig := workflow.DefaultExecutorConfig()
+		executor := workflow.NewExecutor(provider, executorConfig)
 		return runSkillJSON(ctx, executor, sk, request, provider)
 	}
 
-	// Text output with progress display
+	// Streaming output mode
+	if runOpts.Stream {
+		streamingExecutor := container.NewStreamingExecutor(provider)
+		return runSkillStreaming(ctx, streamingExecutor, sk, request, provider, formatter)
+	}
+
+	// Standard text output with progress display
+	executorConfig := workflow.DefaultExecutorConfig()
+	executor := workflow.NewExecutor(provider, executorConfig)
 	return runSkillText(ctx, executor, sk, request, provider, formatter)
 }
 
@@ -201,6 +207,52 @@ func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 	}
 
 	return formatter.JSON(jsonResult)
+}
+
+// runSkillStreaming executes the skill with streaming output.
+func runSkillStreaming(ctx context.Context, executor workflow.StreamingExecutor, sk *skill.Skill, request string, _ ports.ProviderPort, formatter *output.Formatter) error {
+	// Create streaming output handler
+	streamOut := output.NewStreamingOutput(
+		output.WithStreamingColor(formatter.Format() != output.FormatJSON),
+		output.WithShowTokenCounts(true),
+		output.WithShowPhaseInfo(true),
+	)
+
+	phases := sk.Phases()
+	streamOut.StartWorkflow(sk.Name(), sk.Version(), len(phases))
+
+	// Create streaming callback
+	callback := func(event workflow.StreamEvent) error {
+		switch event.Type {
+		case workflow.EventPhaseStarted:
+			streamOut.StartPhase(event.PhaseID, event.PhaseName, event.PhaseIndex)
+		case workflow.EventPhaseProgress:
+			if event.Content != "" {
+				streamOut.WriteChunk(event.Content)
+			}
+		case workflow.EventPhaseCompleted:
+			streamOut.CompletePhase(event.InputTokens, event.OutputTokens, "")
+		case workflow.EventPhaseFailed:
+			streamOut.FailPhase(event.Error)
+		case workflow.EventTokenUpdate:
+			streamOut.UpdateTokens(event.InputTokens, event.OutputTokens)
+		case workflow.EventWorkflowCompleted:
+			// Final completion is handled after the result is returned
+		}
+		return nil
+	}
+
+	// Execute with streaming
+	result, err := executor.ExecuteWithStreaming(ctx, sk, request, callback)
+	if err != nil {
+		streamOut.CompleteWorkflow(false)
+		return err
+	}
+
+	// Complete workflow
+	streamOut.CompleteWorkflow(result.Status == workflow.PhaseStatusCompleted)
+
+	return nil
 }
 
 // runSkillText executes the skill with text output and progress display.

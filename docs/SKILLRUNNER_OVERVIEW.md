@@ -1,7 +1,7 @@
 # Skillrunner: Complete Project Overview
 
 **Version:** 2.0 MVP
-**Status:** Wave 8 Complete (Functional MVP)
+**Status:** Wave 9 Complete (Streaming & Real-time Output)
 **Last Updated:** 2025-12-26
 
 ---
@@ -66,6 +66,7 @@ Each phase can depend on outputs from previous phases, and the system automatica
 | **Workspace Management** | Initialize and manage project workspaces | ✅ Complete |
 | **SQLite Storage** | Persistent storage for sessions, workspaces, checkpoints | ✅ Complete |
 | **Provider Health Checks** | Real-time provider status monitoring | ✅ Complete |
+| **Streaming Output** | Real-time LLM response streaming with live token counts | ✅ Complete |
 
 ### Routing Profiles
 
@@ -248,6 +249,19 @@ Skillrunner uses **Hexagonal Architecture** (Ports & Adapters) for clean separat
   - `sr context *` - Context management
   - `sr workspace *` - Workspace management
 
+### Wave 9: Streaming & Real-time Output
+**Status:** ✅ Complete
+
+- StreamingExecutor interface for real-time LLM output
+- StreamingPhaseExecutor with streaming callbacks
+- Real-time phase progress events (started, progress, completed, failed)
+- Live token counting during execution
+- StreamingOutput formatter for CLI display
+- Workflow-level events (started, completed)
+- `--stream` flag wired in `sr run` command
+- `--stream` flag wired in `sr ask` command
+- Comprehensive test coverage for streaming
+
 ---
 
 ## Current Status
@@ -264,8 +278,14 @@ sr list
 # Run a multi-phase workflow
 sr run code-review "Review this code for issues"
 
+# Run with streaming output (real-time)
+sr run code-review "Review this PR" --stream
+
 # Quick single-phase query
 sr ask code-review "What are common security issues?"
+
+# Ask with streaming output
+sr ask explain "Explain this code" --stream
 
 # Session management
 sr session start --backend aider
@@ -297,11 +317,6 @@ All tests pass with the following coverage:
 ---
 
 ## Future Roadmap
-
-### Wave 9: Streaming & Real-time Output (Planned)
-- Streaming LLM responses during execution
-- Real-time phase progress updates
-- Live token counting
 
 ### Wave 10: Caching & Performance (Planned)
 - Response caching for repeated inputs
