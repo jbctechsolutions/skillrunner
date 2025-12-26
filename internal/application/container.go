@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/backend"
+	"github.com/jbctechsolutions/skillrunner/internal/adapters/cache"
 	adapterProvider "github.com/jbctechsolutions/skillrunner/internal/adapters/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/sync/sqlite"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
@@ -50,6 +51,12 @@ type Container struct {
 	providerRegistry    *adapterProvider.Registry
 	providerInitializer *appProvider.Initializer
 	backendRegistry     *backend.Registry
+
+	// Wave 10: Cache
+	memoryCache    *cache.MemoryCache
+	sqliteCache    *cache.SQLiteCache
+	compositeCache *cache.CompositeCache
+	responseCache  *cache.ResponseCache
 
 	// Machine ID for session tracking
 	machineID string
@@ -143,6 +150,11 @@ func (c *Container) initServices() error {
 	// Create session manager
 	c.sessionManager = session.NewManager(sessionStorage, c.backendRegistry, c.machineID)
 
+	// Wave 10: Initialize cache if enabled
+	if c.config.Cache.Enabled {
+		c.initCache()
+	}
+
 	// Create workflow executors with a composite provider
 	// For now, we use a placeholder that will be replaced when providers are configured
 	executorConfig := workflow.DefaultExecutorConfig()
@@ -165,8 +177,28 @@ func (c *Container) initServices() error {
 	return nil
 }
 
+// initCache initializes the caching subsystem.
+func (c *Container) initCache() {
+	// Create memory cache (L1 - fast, limited size)
+	c.memoryCache = cache.NewMemoryCache(c.config.Cache.MaxMemorySize, c.config.Cache.CleanupPeriod)
+
+	// Create SQLite cache (L2 - persistent, larger capacity)
+	c.sqliteCache = cache.NewSQLiteCache(c.db, c.config.Cache.MaxDiskSize)
+
+	// Create composite cache (combines L1 and L2)
+	c.compositeCache = cache.NewCompositeCache(c.memoryCache, c.sqliteCache)
+
+	// Create response cache (LLM-specific caching layer)
+	c.responseCache = cache.NewResponseCache(c.compositeCache, c.config.Cache.DefaultTTL)
+}
+
 // Close releases all resources held by the container.
 func (c *Container) Close() error {
+	// Wave 10: Stop memory cache cleanup goroutine
+	if c.memoryCache != nil {
+		_ = c.memoryCache.Close()
+	}
+
 	if c.dbConn != nil {
 		return c.dbConn.Close()
 	}
@@ -261,6 +293,24 @@ func (c *Container) BackendRegistry() *backend.Registry {
 // MachineID returns the machine identifier.
 func (c *Container) MachineID() string {
 	return c.machineID
+}
+
+// ResponseCache returns the response cache for LLM caching.
+// Returns nil if caching is not enabled.
+func (c *Container) ResponseCache() *cache.ResponseCache {
+	return c.responseCache
+}
+
+// MemoryCache returns the in-memory cache (L1 cache).
+// Returns nil if caching is not enabled.
+func (c *Container) MemoryCache() *cache.MemoryCache {
+	return c.memoryCache
+}
+
+// CompositeCache returns the composite cache (L1 + L2).
+// Returns nil if caching is not enabled.
+func (c *Container) CompositeCache() *cache.CompositeCache {
+	return c.compositeCache
 }
 
 // getMachineID generates or retrieves a unique machine identifier.

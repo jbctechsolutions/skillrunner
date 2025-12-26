@@ -1,7 +1,7 @@
 # Skillrunner: Complete Project Overview
 
 **Version:** 2.0 MVP
-**Status:** Wave 9 Complete (Streaming & Real-time Output)
+**Status:** Wave 10 Complete (Caching & Performance)
 **Last Updated:** 2025-12-26
 
 ---
@@ -262,6 +262,19 @@ Skillrunner uses **Hexagonal Architecture** (Ports & Adapters) for clean separat
 - `--stream` flag wired in `sr ask` command
 - Comprehensive test coverage for streaming
 
+### Wave 10: Caching & Performance
+**Status:** ✅ Complete
+
+- Two-tier cache architecture (in-memory L1 + SQLite L2)
+- Response caching for repeated LLM requests
+- SHA256 request fingerprinting for deterministic cache keys
+- TTL-based cache expiration with automatic cleanup
+- LRU eviction when cache exceeds size limits
+- Batch request aggregator for provider efficiency
+- Cache CLI commands (`sr cache stats`, `sr cache clear`, `sr cache list`)
+- SQLite migrations for persistent cache storage
+- Comprehensive test coverage for all cache adapters
+
 ---
 
 ## Current Status
@@ -304,6 +317,12 @@ sr context checkpoint create "before refactor"
 sr workspace init
 sr workspace list
 sr workspace show
+
+# Cache management (Wave 10)
+sr cache stats              # View cache statistics
+sr cache clear              # Clear all cached responses
+sr cache list               # List cached entries
+sr cache config             # View cache configuration
 ```
 
 ### Test Coverage
@@ -317,11 +336,6 @@ All tests pass with the following coverage:
 ---
 
 ## Future Roadmap
-
-### Wave 10: Caching & Performance (Planned)
-- Response caching for repeated inputs
-- Prompt optimization
-- Batch processing for multiple requests
 
 ### Wave 11: Observability (Planned)
 - Structured logging
@@ -387,6 +401,13 @@ skills:
 logging:
   level: info
   format: text
+
+cache:
+  enabled: true
+  max_memory_size: 104857600  # 100MB L1 cache
+  max_disk_size: 1073741824   # 1GB L2 cache
+  default_ttl: 24h
+  cleanup_period: 5m
 ```
 
 ### First Workflow
