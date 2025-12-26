@@ -40,10 +40,11 @@ type Container struct {
 	rulesRepo      ports.RuleStoragePort
 
 	// Application services
-	sessionManager   *session.Manager
-	workflowExecutor workflow.Executor
-	skillLoader      *skills.Loader
-	skillRegistry    *appSkills.Registry
+	sessionManager    *session.Manager
+	workflowExecutor  workflow.Executor
+	streamingExecutor workflow.StreamingExecutor
+	skillLoader       *skills.Loader
+	skillRegistry     *appSkills.Registry
 
 	// Registries
 	providerRegistry    *adapterProvider.Registry
@@ -142,10 +143,11 @@ func (c *Container) initServices() error {
 	// Create session manager
 	c.sessionManager = session.NewManager(sessionStorage, c.backendRegistry, c.machineID)
 
-	// Create workflow executor with a composite provider
+	// Create workflow executors with a composite provider
 	// For now, we use a placeholder that will be replaced when providers are configured
 	executorConfig := workflow.DefaultExecutorConfig()
 	c.workflowExecutor = workflow.NewExecutor(nil, executorConfig)
+	c.streamingExecutor = workflow.NewStreamingExecutor(nil, executorConfig)
 
 	// Create skill loader
 	c.skillLoader = skills.NewLoader()
@@ -214,6 +216,21 @@ func (c *Container) SessionManager() *session.Manager {
 // WorkflowExecutor returns the workflow executor.
 func (c *Container) WorkflowExecutor() workflow.Executor {
 	return c.workflowExecutor
+}
+
+// StreamingExecutor returns the streaming workflow executor.
+func (c *Container) StreamingExecutor() workflow.StreamingExecutor {
+	return c.streamingExecutor
+}
+
+// NewWorkflowExecutor creates a new workflow executor with the specified provider.
+func (c *Container) NewWorkflowExecutor(provider ports.ProviderPort) workflow.Executor {
+	return workflow.NewExecutor(provider, workflow.DefaultExecutorConfig())
+}
+
+// NewStreamingExecutor creates a new streaming executor with the specified provider.
+func (c *Container) NewStreamingExecutor(provider ports.ProviderPort) workflow.StreamingExecutor {
+	return workflow.NewStreamingExecutor(provider, workflow.DefaultExecutorConfig())
 }
 
 // SkillLoader returns the skill loader.
