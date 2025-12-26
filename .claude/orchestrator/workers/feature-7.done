@@ -1,0 +1,81 @@
+# Feature 7: Create ProviderInitializer - COMPLETED
+
+## Summary
+Implemented the ProviderInitializer component to set up providers from configuration, check their health (Ollama connection, API keys), and modified the status command to display actual provider status and available models.
+
+## Files Created
+1. `internal/application/provider/initializer.go` - ProviderInitializer with:
+   - `ProviderHealth` struct for health status tracking
+   - `Initializer` struct managing provider registration and health
+   - `InitFromConfig(*config.Config)` to set up enabled providers
+   - `CheckHealth(ctx)` to verify provider connectivity (parallel checks)
+   - `GetAvailableModels(ctx)` to list models per provider
+   - `GetHealth(name)` and `GetAllHealth()` for cached health status
+   - Individual init methods for Ollama, Anthropic, OpenAI, and Groq
+
+2. `internal/application/provider/initializer_test.go` - Comprehensive tests (11 tests):
+   - TestNewInitializer
+   - TestInitFromConfig_NilConfig
+   - TestInitFromConfig_DefaultConfig
+   - TestInitFromConfig_DisabledProviders
+   - TestInitFromConfig_CloudProviderWithKey
+   - TestCheckHealth
+   - TestCheckHealth_UnhealthyProvider
+   - TestGetAllHealth
+   - TestGetAvailableModels
+   - TestRegistry
+   - TestProviderHealth_Type
+
+## Files Modified
+1. `internal/application/container.go`:
+   - Added import for `appProvider` (application provider package)
+   - Added `providerInitializer *appProvider.Initializer` field
+   - Modified `initRegistries()` to create and initialize the ProviderInitializer
+   - Added `ProviderInitializer()` getter method
+
+2. `internal/presentation/cli/commands/status.go`:
+   - Replaced mock data with actual provider status from container
+   - Added `--check` flag for live health checks
+   - Added `getSystemStatus(checkHealth bool)` using real container data
+   - Added `getProviderStatuses()` to fetch status from ProviderInitializer
+   - Enhanced provider status display with:
+     - API key configuration status for cloud providers
+     - Real health status from health checks
+     - Latency information
+     - Available models list
+     - Connection status for Ollama
+   - Added helper functions: `formatLatency()`, `determineOverallStatus()`
+
+3. `internal/presentation/cli/commands/commands_test.go`:
+   - Updated `TestGetMockSystemStatus` to `TestGetSystemStatus` to use the new function
+
+## Key Features
+- Providers are initialized from config at container startup
+- Health data is cached and updated lazily
+- Parallel health checks for all providers when `--check` flag is used
+- Proper handling of disabled providers (show as unavailable)
+- Cloud provider API key validation (shows "not configured" if missing)
+- Ollama connection status checking via ping
+- Model listing for enabled and healthy providers
+
+## Testing
+All tests pass: `go test ./internal/application/provider/... -v` (76 tests total)
+Build succeeds: `go build ./...`
+
+## Usage
+```bash
+# Show basic status
+sr status
+
+# Show detailed status with latency and model info
+sr status --detailed
+
+# Perform live health checks
+sr status --check
+
+# Combine flags
+sr status --detailed --check
+
+# Get status as JSON for scripting
+sr status -o json
+```

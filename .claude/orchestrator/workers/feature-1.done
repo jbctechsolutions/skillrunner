@@ -1,56 +1,58 @@
-# Feature 1: SQLite Infrastructure - COMPLETED
+# Feature 1: Application Container for Dependency Injection - COMPLETED
 
 ## Summary
-Implemented SQLite infrastructure with connection manager and migrations for all required tables.
 
-## Files Modified/Created
-- `internal/adapters/sync/sqlite/sqlite.go` - Added Ping() method to connection manager
-- `internal/adapters/sync/sqlite/migrations.go` - Updated sessions and drift_log table schemas
-- `internal/adapters/sync/sqlite/sqlite_test.go` - Created comprehensive tests for connection manager
-- `internal/adapters/sync/sqlite/migrations_test.go` - Created comprehensive tests for migrations
+Created an application container for centralized dependency injection that initializes and manages all application dependencies.
 
-## Changes Made
+## Files Created
 
-### Connection Manager (sqlite.go)
-- Added `Ping()` method to test database connectivity
-- Existing methods: `Open()`, `Close()`, `DB()`, `Path()`, `IsClosed()`
+### internal/application/container.go
+- `Container` struct holding all application dependencies:
+  - Database connection (`*sqlite.Connection`, `*sql.DB`)
+  - Repositories: SessionStateStoragePort, WorkspaceStateStoragePort, CheckpointStateStoragePort, ContextItemStoragePort, RuleStoragePort
+  - Application services: SessionManager, WorkflowExecutor, SkillLoader
+  - Registries: ProviderRegistry, BackendRegistry
+  - Machine ID for session tracking
 
-### Migrations (migrations.go)
-Updated schemas to match requirements:
+- `NewContainer(cfg *config.Config)` function that:
+  - Initializes SQLite database at ~/.skillrunner/skillrunner.db
+  - Creates all repositories with the database connection
+  - Creates provider and backend registries
+  - Creates SessionManager, WorkflowExecutor, and SkillLoader
+  - Returns initialized container or error
 
-#### sessions table
-Updated to include all required fields:
-- id, workspace_id, backend, model, profile, status
-- tokens_used, tokens_limit, pid, machine_id
-- started_at, last_active_at
+- `sessionStorageAdapter` that adapts `SessionStateStoragePort` to `SessionStoragePort` interface required by SessionManager
 
-#### drift_log table
-Updated to include all required fields:
-- id, workspace_id, session_id
-- original_focus, detected_topic, prompt_snippet, action_taken
-- created_at
+- Getter methods for all dependencies
+- `Close()` method for cleanup
 
-#### Other tables (unchanged as they matched requirements)
-- workspaces: id, name, repo_path, worktree_path, branch, focus, status, default_backend, last_active_at, created_at
-- checkpoints: id, workspace_id, session_id, summary, details, files_modified, decisions, machine_id, created_at
-- context_items: id, name, type, content, tags, token_estimate, last_used_at, created_at
-- rules: id, name, content, scope, is_active, created_at
+### internal/application/container_test.go
+- Unit tests for container initialization:
+  - TestNewContainer - verifies all dependencies are properly initialized
+  - TestNewContainer_WithNilConfig - verifies default config creation
+  - TestContainer_Close - verifies cleanup works correctly
+  - TestGetMachineID - verifies machine ID generation
+  - TestSessionStorageAdapter - verifies adapter integration
 
-### Indices Added
-- idx_sessions_last_active
-- idx_sessions_backend
+## Files Modified
 
-## Test Coverage
-All 18 tests pass:
-- Connection lifecycle (Open, Close, Ping, DB)
-- In-memory database support
-- Concurrent access safety
-- All table creation and CRUD operations
-- Foreign key constraints
-- Cascade delete behavior
-- Index creation verification
-- Default value verification
-- Migration idempotency
+### internal/presentation/cli/commands/root.go
+- Added `Container *application.Container` field to `AppContext` struct
+- Modified `initializeApp()` to create and initialize the Container
+- Added `GetContainer()` helper function to access the container
 
-## Dependencies
-- github.com/mattn/go-sqlite3 v1.14.22 (already in go.mod)
+## Testing
+
+All existing tests pass:
+- `go test ./...` - All packages pass
+- Container-specific tests all pass
+
+## Dependencies Wired
+
+The container properly wires:
+1. SQLite connection via `adapters/sync/sqlite.Connection`
+2. All storage repositories from `infrastructure/storage`
+3. SessionManager from `application/session`
+4. WorkflowExecutor from `application/workflow`
+5. SkillLoader from `infrastructure/skills`
+6. Provider and Backend registries from `adapters/provider` and `adapters/backend`

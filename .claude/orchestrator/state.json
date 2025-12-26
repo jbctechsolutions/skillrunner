@@ -1,66 +1,146 @@
 {
-  "projectDir": "/Users/joel.castillo.cq/conductor/workspaces/skillrunner-v2/daegu",
-  "taskDescription": "Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage for Skillrunner MVP. This builds on the completed v2.0 implementation (Waves 1-6) which includes domain types, providers, routing, and CLI commands.",
+  "projectDir": "/Users/joel.castillo.cq/conductor/workspaces/skillrunner-v2/beirut",
+  "taskDescription": "Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.",
   "features": [
     {
       "id": "feature-1",
-      "description": "Implement SQLite infrastructure with connection manager and migrations for tables: workspaces, sessions, checkpoints, context_items, rules, drift_log",
+      "description": "Feature 1: Create application container (internal/application/container.go) with dependency injection - Initialize SQLite connection, create repository instances, SessionManager, WorkflowExecutor, SkillLoader. Wire container into AppContext in root.go",
       "status": "completed",
       "attempts": 1,
-      "startedAt": "2025-12-26T17:18:53.258Z",
-      "completedAt": "2025-12-26T17:36:42.723Z"
+      "startedAt": "2025-12-26T18:19:56.163Z",
+      "completedAt": "2025-12-26T18:31:40.315Z"
     },
     {
       "id": "feature-2",
-      "description": "Create state storage port interfaces: WorkspaceStoragePort, SessionStoragePort, CheckpointStoragePort, ContextItemStoragePort, RuleStoragePort in internal/application/ports/state.go",
+      "description": "Feature 2: Create SkillRegistry (internal/application/skills/registry.go) - Cache loaded skills, load from ~/.skillrunner/skills and embedded skills. Modify list.go to replace getMockSkills() with actual skill loading",
       "status": "completed",
       "attempts": 1,
-      "startedAt": "2025-12-26T17:18:53.117Z",
-      "completedAt": "2025-12-26T17:36:42.740Z"
+      "startedAt": "2025-12-26T18:32:15.195Z",
+      "completedAt": "2025-12-26T18:49:38.154Z",
+      "dependsOn": [
+        "feature-1"
+      ]
     },
     {
       "id": "feature-3",
-      "description": "Implement storage repositories: workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go in internal/infrastructure/storage/",
+      "description": "Feature 3: Wire run command (run.go) - Load skill from registry, create provider from config, execute workflow with WorkflowExecutor, display phase progress with spinner, show results (phases, tokens, timing), support --stream flag",
       "status": "completed",
       "attempts": 1,
-      "startedAt": "2025-12-26T17:36:54.231Z",
+      "startedAt": "2025-12-26T18:50:14.215Z",
+      "completedAt": "2025-12-26T19:07:40.621Z",
       "dependsOn": [
-        "feature-2"
+        "feature-1",
+        "feature-2",
+        "feature-7"
+      ]
+    },
+    {
+      "id": "feature-4",
+      "description": "Feature 4: Wire session commands (session.go) - Get SessionManager from container, implement start/list/attach/detach/peek/kill/inject for managing AI coding sessions",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2025-12-26T18:32:15.196Z",
+      "completedAt": "2025-12-26T18:49:38.185Z",
+      "dependsOn": [
+        "feature-1"
+      ]
+    },
+    {
+      "id": "feature-5",
+      "description": "Feature 5: Wire context commands (context_items.go, context_focus.go, context_checkpoint.go, context_rules.go) - Get repositories from container, implement add/list/remove for items, focus set/clear/show, checkpoint create/restore/list, rules management",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2025-12-26T18:50:14.216Z",
+      "completedAt": "2025-12-26T19:07:40.638Z",
+      "dependsOn": [
+        "feature-1"
+      ]
+    },
+    {
+      "id": "feature-6",
+      "description": "Feature 6: Wire workspace commands (workspace.go) - Get WorkspaceRepository from container, implement init/list/show/switch, display workspace status with active sessions",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2025-12-26T18:50:14.217Z",
+      "completedAt": "2025-12-26T19:07:40.652Z",
+      "dependsOn": [
+        "feature-1"
+      ]
+    },
+    {
+      "id": "feature-7",
+      "description": "Feature 7: Create ProviderInitializer (internal/application/provider/initializer.go) - Set up providers from config, check health (Ollama connection, API keys). Modify status.go to display provider status and available models",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2025-12-26T18:32:15.344Z",
+      "completedAt": "2025-12-26T18:49:38.170Z",
+      "dependsOn": [
+        "feature-1"
+      ]
+    },
+    {
+      "id": "feature-8",
+      "description": "Feature 8: Wire ask command (ask.go) - Load skill from registry, execute first/specified phase only, route to provider based on profile, display response with optional streaming",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2025-12-26T18:50:14.371Z",
+      "dependsOn": [
+        "feature-1",
+        "feature-2",
+        "feature-7"
       ],
-      "completedAt": "2025-12-26T17:43:07.902Z"
+      "completedAt": "2025-12-26T19:07:40.665Z"
     }
   ],
   "workers": [],
   "status": "reviewing",
-  "startTime": "2025-12-26T17:18:24.060Z",
-  "lastUpdated": "2025-12-26T17:43:08.071Z",
+  "startTime": "2025-12-26T18:19:25.651Z",
+  "lastUpdated": "2025-12-26T19:07:40.835Z",
   "progressLog": [
-    "[2025-12-26T17:18:24.060Z] Orchestration initialized with 3 features",
-    "[2025-12-26T17:18:36.986Z] Set dependencies for feature-3: feature-2",
-    "[2025-12-26T17:18:53.258Z] Started 2 parallel workers: feature-1, feature-2",
-    "[2025-12-26T17:21:33.213Z] 🔔 Worker completed: feature-2 - use mark_complete to update status",
-    "[2025-12-26T17:23:23.222Z] 🔔 Worker completed: feature-1 - use mark_complete to update status",
-    "[2025-12-26T17:36:42.723Z] ✅ Completed: feature-1 - Implement SQLite infrastructure with connection manager and migrations for tables: workspaces, sessions, checkpoints, context_items, rules, drift_log",
-    "[2025-12-26T17:36:42.740Z] ✅ Completed: feature-2 - Create state storage port interfaces: WorkspaceStoragePort, SessionStoragePort, CheckpointStoragePort, ContextItemStoragePort, RuleStoragePort in internal/application/ports/state.go",
-    "[2025-12-26T17:36:54.231Z] Started worker for feature-3: Implement storage repositories: workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go in internal/infrastructure/storage/",
-    "[2025-12-26T17:43:07.902Z] ✅ Completed: feature-3 - Implement storage repositories: workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go in internal/infrastructure/storage/",
-    "[2025-12-26T17:43:07.902Z] 🔍 All features done. Starting automated reviews...",
-    "[2025-12-26T17:43:08.071Z] 🔍 Started 2 review worker(s)"
+    "[2025-12-26T18:19:25.652Z] Orchestration initialized with 8 features",
+    "[2025-12-26T18:19:40.309Z] Set dependencies for feature-2: feature-1",
+    "[2025-12-26T18:19:40.322Z] Set dependencies for feature-3: feature-1, feature-2, feature-7",
+    "[2025-12-26T18:19:40.332Z] Set dependencies for feature-4: feature-1",
+    "[2025-12-26T18:19:40.342Z] Set dependencies for feature-5: feature-1",
+    "[2025-12-26T18:19:40.353Z] Set dependencies for feature-6: feature-1",
+    "[2025-12-26T18:19:40.363Z] Set dependencies for feature-7: feature-1",
+    "[2025-12-26T18:19:40.375Z] Set dependencies for feature-8: feature-1, feature-2, feature-7",
+    "[2025-12-26T18:19:56.163Z] Started worker for feature-1: Feature 1: Create application container (internal/application/container.go) with dependency injection - Initialize SQLite connection, create repository instances, SessionManager, WorkflowExecutor, SkillLoader. Wire container into AppContext in root.go",
+    "[2025-12-26T18:28:49.035Z] 🔔 Worker completed: feature-1 - use mark_complete to update status",
+    "[2025-12-26T18:31:40.315Z] ✅ Completed: feature-1 - Feature 1: Create application container (internal/application/container.go) with dependency injection - Initialize SQLite connection, create repository instances, SessionManager, WorkflowExecutor, SkillLoader. Wire container into AppContext in root.go",
+    "[2025-12-26T18:32:15.344Z] Started 3 parallel workers: feature-2, feature-7, feature-4",
+    "[2025-12-26T18:46:40.359Z] 🔔 Worker completed: feature-4 - use mark_complete to update status",
+    "[2025-12-26T18:48:40.365Z] 🔔 Worker completed: feature-2 - use mark_complete to update status",
+    "[2025-12-26T18:49:10.378Z] 🔔 Worker completed: feature-7 - use mark_complete to update status",
+    "[2025-12-26T18:49:38.154Z] ✅ Completed: feature-2 - Feature 2: Create SkillRegistry (internal/application/skills/registry.go) - Cache loaded skills, load from ~/.skillrunner/skills and embedded skills. Modify list.go to replace getMockSkills() with actual skill loading",
+    "[2025-12-26T18:49:38.170Z] ✅ Completed: feature-7 - Feature 7: Create ProviderInitializer (internal/application/provider/initializer.go) - Set up providers from config, check health (Ollama connection, API keys). Modify status.go to display provider status and available models",
+    "[2025-12-26T18:49:38.185Z] ✅ Completed: feature-4 - Feature 4: Wire session commands (session.go) - Get SessionManager from container, implement start/list/attach/detach/peek/kill/inject for managing AI coding sessions",
+    "[2025-12-26T18:50:14.371Z] Started 4 parallel workers: feature-3, feature-8, feature-5, feature-6",
+    "[2025-12-26T18:58:24.086Z] 🔔 Worker completed: feature-3 - use mark_complete to update status",
+    "[2025-12-26T18:59:04.113Z] 🔔 Worker completed: feature-6 - use mark_complete to update status",
+    "[2025-12-26T19:00:34.127Z] 🔔 Worker completed: feature-8 - use mark_complete to update status",
+    "[2025-12-26T19:00:54.103Z] 🔔 Worker completed: feature-5 - use mark_complete to update status",
+    "[2025-12-26T19:07:40.621Z] ✅ Completed: feature-3 - Feature 3: Wire run command (run.go) - Load skill from registry, create provider from config, execute workflow with WorkflowExecutor, display phase progress with spinner, show results (phases, tokens, timing), support --stream flag",
+    "[2025-12-26T19:07:40.638Z] ✅ Completed: feature-5 - Feature 5: Wire context commands (context_items.go, context_focus.go, context_checkpoint.go, context_rules.go) - Get repositories from container, implement add/list/remove for items, focus set/clear/show, checkpoint create/restore/list, rules management",
+    "[2025-12-26T19:07:40.652Z] ✅ Completed: feature-6 - Feature 6: Wire workspace commands (workspace.go) - Get WorkspaceRepository from container, implement init/list/show/switch, display workspace status with active sessions",
+    "[2025-12-26T19:07:40.665Z] ✅ Completed: feature-8 - Feature 8: Wire ask command (ask.go) - Load skill from registry, execute first/specified phase only, route to provider based on profile, display response with optional streaming",
+    "[2025-12-26T19:07:40.665Z] 🔍 All features done. Starting automated reviews...",
+    "[2025-12-26T19:07:40.835Z] 🔍 Started 2 review worker(s)"
   ],
   "reviewWorkers": [
     {
       "type": "code",
-      "workerId": "cc-reviewer-code-mjn5tv27",
-      "sessionName": "cc-reviewer-code-mjn5tv27",
+      "workerId": "cc-reviewer-code-mjn8ul8b",
+      "sessionName": "cc-reviewer-code-mjn8ul8b",
       "status": "running",
-      "startedAt": "2025-12-26T17:43:08.062Z"
+      "startedAt": "2025-12-26T19:07:40.826Z"
     },
     {
       "type": "architecture",
-      "workerId": "cc-reviewer-architecture-mjn5tv6m",
-      "sessionName": "cc-reviewer-architecture-mjn5tv6m",
+      "workerId": "cc-reviewer-architecture-mjn8ulcq",
+      "sessionName": "cc-reviewer-architecture-mjn8ulcq",
       "status": "running",
-      "startedAt": "2025-12-26T17:43:08.071Z"
+      "startedAt": "2025-12-26T19:07:40.835Z"
     }
   ]
 }

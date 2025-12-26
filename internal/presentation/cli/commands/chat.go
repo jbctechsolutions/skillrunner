@@ -10,10 +10,13 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/spf13/cobra"
 
+	adapterProvider "github.com/jbctechsolutions/skillrunner/internal/adapters/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/application/chat"
+	appProvider "github.com/jbctechsolutions/skillrunner/internal/application/provider"
 	domainChat "github.com/jbctechsolutions/skillrunner/internal/domain/chat"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/session"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
 )
 
 // chatFlags holds the flags for the chat command.
@@ -260,4 +263,36 @@ func handleChatCommand(cmd string, conversation *domainChat.Conversation, curren
 	default:
 		return false, fmt.Errorf("unknown command: %s (type /help for help)", command)
 	}
+}
+
+// initChatService initializes the chat service with provider registry and router.
+func initChatService() (*chat.Service, error) {
+	appCtx := GetAppContext()
+	if appCtx == nil {
+		return nil, fmt.Errorf("app context not initialized")
+	}
+
+	// Create provider registry
+	registry := adapterProvider.NewRegistry()
+
+	// TODO: Register providers based on configuration
+	// For now, this is a stub - providers should be registered from config
+
+	// Create routing configuration from app config
+	// Use default RoutingConfiguration with sensible defaults
+	routingCfg := config.NewRoutingConfiguration()
+
+	// Create router
+	router, err := appProvider.NewRouter(routingCfg, registry)
+	if err != nil {
+		return nil, fmt.Errorf("could not create router: %w", err)
+	}
+
+	// Create chat service
+	chatService, err := chat.NewService(router, registry)
+	if err != nil {
+		return nil, fmt.Errorf("could not create chat service: %w", err)
+	}
+
+	return chatService, nil
 }

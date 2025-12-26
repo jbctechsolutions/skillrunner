@@ -2,12 +2,19 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"slices"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
+	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
 
 // runFlags holds the flags for the run command.
@@ -65,41 +72,292 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	}
 
 	formatter := GetFormatter()
+	container := GetContainer()
 
-	// For now, implement stub execution that prints the execution info
-	if formatter.Format() == "json" {
-		// JSON output for scripting
-		result := map[string]any{
-			"skill":   skillName,
-			"request": request,
-			"profile": runOpts.Profile,
-			"stream":  runOpts.Stream,
-			"status":  "stub",
-			"message": fmt.Sprintf("Executing skill: %s with request: %s", skillName, request),
-		}
-		return formatter.JSON(result)
+	if container == nil {
+		return fmt.Errorf("application not initialized")
 	}
 
-	// Text output for terminal
+	// Get skill registry and load skill
+	registry := container.SkillRegistry()
+	if registry == nil {
+		return fmt.Errorf("skill registry not available")
+	}
+
+	// Try to find skill by ID first, then by name
+	sk := registry.GetSkill(skillName)
+	if sk == nil {
+		sk = registry.GetSkillByName(skillName)
+	}
+	if sk == nil {
+		return fmt.Errorf("skill not found: %s", skillName)
+	}
+
+	// Get a provider for execution
+	providerRegistry := container.ProviderRegistry()
+	providers := providerRegistry.ListProviders()
+	if len(providers) == 0 {
+		return fmt.Errorf("no providers configured. Run 'sr init' to set up providers")
+	}
+
+	// Select provider based on profile
+	provider := selectProvider(providers, runOpts.Profile)
+	if provider == nil {
+		return fmt.Errorf("no suitable provider found for profile: %s", runOpts.Profile)
+	}
+
+	// Create workflow executor with the selected provider
+	executorConfig := workflow.DefaultExecutorConfig()
+	executor := workflow.NewExecutor(provider, executorConfig)
+
+	ctx := context.Background()
+
+	// JSON output for scripting
+	if formatter.Format() == output.FormatJSON {
+		return runSkillJSON(ctx, executor, sk, request, provider)
+	}
+
+	// Text output with progress display
+	return runSkillText(ctx, executor, sk, request, provider, formatter)
+}
+
+// selectProvider chooses a provider based on the routing profile.
+func selectProvider(providers []ports.ProviderPort, profile string) ports.ProviderPort {
+	if len(providers) == 0 {
+		return nil
+	}
+
+	// Sort providers based on profile preference
+	switch profile {
+	case skill.ProfileCheap:
+		// Prefer local providers for cheap profile
+		for _, p := range providers {
+			if p.Info().IsLocal {
+				return p
+			}
+		}
+		// Fall back to first available
+		return providers[0]
+
+	case skill.ProfilePremium:
+		// Prefer cloud providers for premium profile
+		for _, p := range providers {
+			if !p.Info().IsLocal {
+				return p
+			}
+		}
+		// Fall back to first available
+		return providers[0]
+
+	default: // balanced
+		// Return first available provider
+		return providers[0]
+	}
+}
+
+// runSkillJSON executes the skill and outputs results as JSON.
+func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, provider ports.ProviderPort) error {
+	formatter := GetFormatter()
+
+	result, err := executor.Execute(ctx, sk, request)
+	if err != nil {
+		errorResult := map[string]any{
+			"skill":   sk.Name(),
+			"status":  "error",
+			"error":   err.Error(),
+			"profile": runOpts.Profile,
+		}
+		return formatter.JSON(errorResult)
+	}
+
+	// Build phase results for JSON output
+	phaseResults := make([]map[string]any, 0, len(result.PhaseResults))
+	for _, pr := range result.PhaseResults {
+		phaseResults = append(phaseResults, map[string]any{
+			"id":            pr.PhaseID,
+			"name":          pr.PhaseName,
+			"status":        string(pr.Status),
+			"duration_ms":   pr.Duration.Milliseconds(),
+			"input_tokens":  pr.InputTokens,
+			"output_tokens": pr.OutputTokens,
+			"model":         pr.ModelUsed,
+		})
+	}
+
+	jsonResult := map[string]any{
+		"skill":        sk.Name(),
+		"status":       string(result.Status),
+		"profile":      runOpts.Profile,
+		"provider":     provider.Info().Name,
+		"duration_ms":  result.Duration.Milliseconds(),
+		"total_tokens": result.TotalTokens,
+		"phases":       phaseResults,
+		"final_output": result.FinalOutput,
+		"streaming":    runOpts.Stream,
+	}
+
+	if result.Error != nil {
+		jsonResult["error"] = result.Error.Error()
+	}
+
+	return formatter.JSON(jsonResult)
+}
+
+// runSkillText executes the skill with text output and progress display.
+func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, provider ports.ProviderPort, formatter *output.Formatter) error {
+	// Display execution header
 	formatter.Header("Skill Execution")
-	formatter.Item("Skill", skillName)
+	formatter.Item("Skill", sk.Name())
+	formatter.Item("Version", sk.Version())
 	formatter.Item("Profile", runOpts.Profile)
-	formatter.Item("Streaming", fmt.Sprintf("%t", runOpts.Stream))
-	formatter.Println("")
-	formatter.Item("Request", request)
+	formatter.Item("Provider", provider.Info().Name)
+	if runOpts.Stream {
+		formatter.Item("Mode", "streaming")
+	}
 	formatter.Println("")
 
-	// Stub message
-	formatter.Info("Executing skill: %s with request: %s", skillName, request)
+	// Display the request (truncate if too long)
+	requestDisplay := request
+	if len(requestDisplay) > 100 {
+		requestDisplay = requestDisplay[:97] + "..."
+	}
+	formatter.Item("Request", requestDisplay)
+	formatter.Println("")
 
-	// TODO: Implement actual workflow execution with:
-	// 1. Load skill definition from registry
-	// 2. Initialize workflow executor
-	// 3. Execute phases with provider routing
-	// 4. Handle streaming output if enabled
-	// 5. Return results
+	// Show phase information
+	phases := sk.Phases()
+	formatter.SubHeader(fmt.Sprintf("Phases (%d)", len(phases)))
+	for i, phase := range phases {
+		deps := ""
+		if len(phase.DependsOn) > 0 {
+			deps = fmt.Sprintf(" (depends: %s)", strings.Join(phase.DependsOn, ", "))
+		}
+		formatter.BulletItem(fmt.Sprintf("%d. %s%s", i+1, phase.Name, deps))
+	}
+	formatter.Println("")
+
+	// Start spinner for execution
+	spinner := output.NewSpinner("Executing workflow...")
+	spinner.Start()
+
+	// Execute the workflow
+	startTime := time.Now()
+	result, err := executor.Execute(ctx, sk, request)
+	executionTime := time.Since(startTime)
+
+	spinner.Stop()
+
+	if err != nil {
+		formatter.Error("Execution failed: %v", err)
+		return err
+	}
+
+	// Display results
+	formatter.Println("")
+	formatter.Header("Execution Results")
+
+	// Phase results
+	formatter.SubHeader("Phase Results")
+	displayPhaseResults(formatter, result)
+	formatter.Println("")
+
+	// Summary statistics
+	formatter.SubHeader("Summary")
+	formatter.Item("Status", formatStatus(result.Status))
+	formatter.Item("Total Duration", formatDuration(executionTime))
+	formatter.Item("Total Tokens", fmt.Sprintf("%d", result.TotalTokens))
+	formatter.Println("")
+
+	// Final output
+	if result.FinalOutput != "" {
+		formatter.SubHeader("Output")
+		formatter.Println("")
+		// Print output with proper formatting
+		outputLines := strings.Split(result.FinalOutput, "\n")
+		for _, line := range outputLines {
+			formatter.Println("%s", line)
+		}
+	}
+
+	// Success message
+	if result.Status == workflow.PhaseStatusCompleted {
+		formatter.Println("")
+		formatter.Success("Skill execution completed successfully")
+	} else if result.Error != nil {
+		formatter.Println("")
+		formatter.Error("Skill execution failed: %v", result.Error)
+	}
 
 	return nil
+}
+
+// displayPhaseResults displays the results of each phase in a table.
+func displayPhaseResults(formatter *output.Formatter, result *workflow.ExecutionResult) {
+	// Sort phase results by completion order
+	sortedPhases := make([]*workflow.PhaseResult, 0, len(result.PhaseResults))
+	for _, pr := range result.PhaseResults {
+		sortedPhases = append(sortedPhases, pr)
+	}
+	sort.Slice(sortedPhases, func(i, j int) bool {
+		return sortedPhases[i].StartTime.Before(sortedPhases[j].StartTime)
+	})
+
+	// Create table data
+	tableData := output.TableData{
+		Columns: []output.TableColumn{
+			{Header: "Phase", Width: 20, Align: output.AlignLeft},
+			{Header: "Status", Width: 10, Align: output.AlignLeft},
+			{Header: "Duration", Width: 12, Align: output.AlignRight},
+			{Header: "Tokens", Width: 10, Align: output.AlignRight},
+			{Header: "Model", Width: 20, Align: output.AlignLeft},
+		},
+		Rows: make([][]string, 0, len(sortedPhases)),
+	}
+
+	for _, pr := range sortedPhases {
+		totalTokens := pr.InputTokens + pr.OutputTokens
+		tableData.Rows = append(tableData.Rows, []string{
+			pr.PhaseName,
+			formatStatus(pr.Status),
+			formatDuration(pr.Duration),
+			fmt.Sprintf("%d", totalTokens),
+			pr.ModelUsed,
+		})
+	}
+
+	_ = formatter.Table(tableData)
+}
+
+// formatStatus returns a human-readable status string.
+func formatStatus(status workflow.PhaseStatus) string {
+	switch status {
+	case workflow.PhaseStatusCompleted:
+		return "completed"
+	case workflow.PhaseStatusFailed:
+		return "failed"
+	case workflow.PhaseStatusRunning:
+		return "running"
+	case workflow.PhaseStatusSkipped:
+		return "skipped"
+	case workflow.PhaseStatusPending:
+		return "pending"
+	default:
+		return string(status)
+	}
+}
+
+// formatDuration returns a human-readable duration string.
+func formatDuration(d time.Duration) string {
+	if d < time.Millisecond {
+		return fmt.Sprintf("%dµs", d.Microseconds())
+	}
+	if d < time.Second {
+		return fmt.Sprintf("%dms", d.Milliseconds())
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%.1fs", d.Seconds())
+	}
+	return fmt.Sprintf("%.1fm", d.Minutes())
 }
 
 // validateProfile checks if the profile is valid.
@@ -107,10 +365,8 @@ func validateProfile(profile string) error {
 	profile = strings.ToLower(strings.TrimSpace(profile))
 	validProfiles := []string{skill.ProfileCheap, skill.ProfileBalanced, skill.ProfilePremium}
 
-	for _, valid := range validProfiles {
-		if profile == valid {
-			return nil
-		}
+	if slices.Contains(validProfiles, profile) {
+		return nil
 	}
 
 	return fmt.Errorf("invalid profile %q: must be one of %s", profile, strings.Join(validProfiles, ", "))

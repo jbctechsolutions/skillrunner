@@ -1,0 +1,59 @@
+# Feature 6: Wire workspace commands (workspace.go)
+
+## Summary
+Successfully wired all workspace CLI commands to the WorkspaceRepository from the container.
+
+## Implemented Commands
+
+### 1. `workspace create NAME`
+- Creates a new workspace record in the database
+- Uses current directory if no --path specified
+- Supports --branch and --worktree flags
+- Validates path exists and workspace doesn't already exist
+- Generates unique 8-character workspace ID
+
+### 2. `workspace list`
+- Lists all workspaces from WorkspaceRepository
+- Displays in table format: NAME, STATUS, BRANCH, PATH, LAST ACTIVE
+- Shows only active workspaces by default
+- Use --all flag to show idle/archived workspaces
+- Includes relative time formatting for "last active"
+
+### 3. `workspace status [NAME]`
+- Shows detailed workspace information
+- If NAME provided, shows that workspace
+- Otherwise finds workspace for current directory
+- Displays: ID, Status, Path, Worktree, Branch, Focus, Default Backend, Created, Last Active
+- Shows active sessions for the workspace from SessionManager
+
+### 4. `workspace switch NAME`
+- Outputs `cd` command for shell evaluation
+- Usage: `eval $(sr workspace switch NAME)`
+- Updates workspace status to "active"
+- Handles both repo path and worktree path
+
+### 5. `workspace delete NAME`
+- Removes workspace from registry
+- Optional --remove-files flag to delete workspace directory
+- Requires confirmation (type workspace name) unless --force
+
+### 6. `workspace spawn NAME`
+- Partially implemented (wired to repository)
+- Terminal spawner not yet available in container
+- Shows helpful message with workspace path
+
+## Key Implementation Details
+
+- All commands get `Container` via `GetContainer()`
+- Use `WorkspaceRepository()` for database operations
+- Use `SessionManager()` for session queries (in status command)
+- Proper error handling with user-friendly messages
+- Table formatting using `tabwriter` for consistent output
+- Added `formatRelativeTime()` helper for human-readable timestamps
+
+## Files Modified
+- `internal/presentation/cli/commands/workspace.go`
+
+## Build Status
+- Compiles successfully
+- No new test failures introduced

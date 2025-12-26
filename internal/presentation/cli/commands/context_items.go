@@ -2,9 +2,15 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"text/tabwriter"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+
+	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 )
 
 // NewContextItemsCmd creates the items subcommand for context.
@@ -15,9 +21,9 @@ func NewContextItemsCmd() *cobra.Command {
 		Long: `Manage context items that can be loaded into skill execution sessions.
 
 Context items can be:
-  • Files - Reference documentation or code files
-  • Snippets - Code or text snippets
-  • URLs - Links to relevant resources
+  - Files - Reference documentation or code files
+  - Snippets - Code or text snippets
+  - URLs - Links to relevant resources
 
 Items can be tagged for organization and have token estimates calculated automatically.`,
 		Example: `  # Add a file reference
@@ -51,22 +57,22 @@ Items can be tagged for organization and have token estimates calculated automat
 
 			// Validate: exactly one source type
 			sources := 0
-			itemType := ""
+			var itemType domainContext.ItemType
 			content := ""
 
 			if file != "" {
 				sources++
-				itemType = "file"
+				itemType = domainContext.ItemTypeFile
 				content = file
 			}
 			if snippet != "" {
 				sources++
-				itemType = "snippet"
+				itemType = domainContext.ItemTypeSnippet
 				content = snippet
 			}
 			if url != "" {
 				sources++
-				itemType = "url"
+				itemType = domainContext.ItemTypeURL
 				content = url
 			}
 
@@ -77,13 +83,42 @@ Items can be tagged for organization and have token estimates calculated automat
 				return fmt.Errorf("can only specify one source type")
 			}
 
-			// TODO: Implement add item logic
+			// Get repository from container
+			container := GetContainer()
+			if container == nil {
+				return fmt.Errorf("application not initialized")
+			}
+			repo := container.ContextItemRepository()
+
+			// Create the context item
+			id := uuid.New().String()
+			item, err := domainContext.NewContextItem(id, name, itemType)
+			if err != nil {
+				return fmt.Errorf("failed to create context item: %w", err)
+			}
+
+			item.SetContent(content)
+			for _, tag := range tags {
+				item.AddTag(tag)
+			}
+
+			// Estimate tokens (simple heuristic: ~4 chars per token)
+			tokenEstimate := len(content) / 4
+			item.SetTokenEstimate(tokenEstimate)
+
+			// Save to repository
+			ctx := context.Background()
+			if err := repo.Save(ctx, item); err != nil {
+				return fmt.Errorf("failed to save context item: %w", err)
+			}
+
 			formatter.Success("Added %s context item: %s", itemType, name)
+			formatter.Info("ID: %s", id)
 			if len(tags) > 0 {
 				formatter.Info("Tags: %v", tags)
 			}
+			formatter.Info("Estimated tokens: %d", tokenEstimate)
 
-			_ = content // Silence unused warning
 			return nil
 		},
 	}
@@ -102,13 +137,61 @@ Items can be tagged for organization and have token estimates calculated automat
 		RunE: func(cmd *cobra.Command, args []string) error {
 			formatter := GetFormatter()
 
-			// TODO: Implement list logic
-			formatter.Header("Context Items")
-			formatter.Info("No items found")
+			tag, _ := cmd.Flags().GetString("tag")
+
+			// Get repository from container
+			container := GetContainer()
+			if container == nil {
+				return fmt.Errorf("application not initialized")
+			}
+			repo := container.ContextItemRepository()
+
+			// List items
+			ctx := context.Background()
+			var items []*domainContext.ContextItem
+			var err error
+
+			if tag != "" {
+				items, err = repo.ListByTag(ctx, tag)
+			} else {
+				items, err = repo.List(ctx)
+			}
+
+			if err != nil {
+				return fmt.Errorf("failed to list context items: %w", err)
+			}
+
+			if len(items) == 0 {
+				formatter.Header("Context Items")
+				formatter.Info("No items found")
+				return nil
+			}
+
+			// Display items in table format
+			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+			fmt.Fprintln(w, "NAME\tTYPE\tTOKENS\tTAGS\tID")
+			fmt.Fprintln(w, "----\t----\t------\t----\t--")
+			for _, item := range items {
+				tags := item.Tags()
+				tagsStr := "-"
+				if len(tags) > 0 {
+					tagsStr = fmt.Sprintf("%v", tags)
+				}
+				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%s\n",
+					item.Name(),
+					item.Type(),
+					item.TokenEstimate(),
+					tagsStr,
+					shortenID(item.ID()),
+				)
+			}
+			_ = w.Flush()
 
 			return nil
 		},
 	}
+
+	listCmd.Flags().String("tag", "", "filter by tag")
 
 	// Remove subcommand
 	removeCmd := &cobra.Command{
@@ -119,7 +202,25 @@ Items can be tagged for organization and have token estimates calculated automat
 			formatter := GetFormatter()
 			name := args[0]
 
-			// TODO: Implement remove logic
+			// Get repository from container
+			container := GetContainer()
+			if container == nil {
+				return fmt.Errorf("application not initialized")
+			}
+			repo := container.ContextItemRepository()
+
+			// Find the item by name
+			ctx := context.Background()
+			item, err := repo.GetByName(ctx, name)
+			if err != nil {
+				return fmt.Errorf("failed to find context item: %w", err)
+			}
+
+			// Delete the item
+			if err := repo.Delete(ctx, item.ID()); err != nil {
+				return fmt.Errorf("failed to remove context item: %w", err)
+			}
+
 			formatter.Success("Removed context item: %s", name)
 
 			return nil
@@ -135,9 +236,30 @@ Items can be tagged for organization and have token estimates calculated automat
 			formatter := GetFormatter()
 			name := args[0]
 
-			// TODO: Implement load logic
+			// Get repository from container
+			container := GetContainer()
+			if container == nil {
+				return fmt.Errorf("application not initialized")
+			}
+			repo := container.ContextItemRepository()
+
+			// Find the item by name
+			ctx := context.Background()
+			item, err := repo.GetByName(ctx, name)
+			if err != nil {
+				return fmt.Errorf("failed to find context item: %w", err)
+			}
+
+			// Display item details
 			formatter.Header("Context Item: " + name)
-			formatter.Info("Content would be displayed here")
+			formatter.Info("Type: %s", item.Type())
+			formatter.Info("Token Estimate: %d", item.TokenEstimate())
+			if len(item.Tags()) > 0 {
+				formatter.Info("Tags: %v", item.Tags())
+			}
+			formatter.Println("")
+			formatter.Info("Content:")
+			formatter.Println(item.Content())
 
 			return nil
 		},

@@ -1,10 +1,10 @@
 You are a worker agent focused on implementing a single feature.
 
 ## Your Task
-Create state storage port interfaces: WorkspaceStoragePort, SessionStoragePort, CheckpointStoragePort, ContextItemStoragePort, RuleStoragePort in internal/application/ports/state.go
+Feature 2: Create SkillRegistry (internal/application/skills/registry.go) - Cache loaded skills, load from ~/.skillrunner/skills and embedded skills. Modify list.go to replace getMockSkills() with actual skill loading
 
 ## Orchestration Context
-Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage for Skillrunner MVP. This builds on the completed v2.0 implementation (Waves 1-6) which includes domain types, providers, routing, and CLI commands.
+Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.
 
 
 ## Instructions
@@ -27,14 +27,30 @@ Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage f
 
 
 ## Additional Context
-Create state storage port interfaces in internal/application/ports/state.go. Define:
-1. WorkspaceStoragePort - CRUD for workspaces, GetByName, GetActive, SetFocus
-2. SessionStoragePort - CRUD for sessions, GetByWorkspace, GetActive, UpdateStatus, UpdateTokenUsage
-3. CheckpointStoragePort - CRUD for checkpoints, GetBySession, GetByWorkspace, GetLatest
-4. ContextItemStoragePort - CRUD for items, GetByName, GetByTags, Search, UpdateLastUsed
-5. RuleStoragePort - CRUD for rules, GetActive, GetByScope, Activate/Deactivate
-6. Follow existing port patterns from internal/application/ports/provider.go
-7. Use context.Context as first param, return domain errors
-8. Include comprehensive Go doc comments
+Create the SkillRegistry for skill discovery and wire it to the list command.
+
+Key files to read first:
+- internal/infrastructure/skills/loader.go (existing skill loader)
+- internal/presentation/cli/commands/list.go (command to modify)
+- skills/*.yaml (built-in skill definitions)
+- internal/application/container.go (container to get SkillLoader from)
+
+Tasks:
+1. Create internal/application/skills/registry.go with:
+   - SkillRegistry struct caching loaded skills
+   - LoadBuiltInSkills() to load from ./skills directory
+   - LoadUserSkills(dir) to load from ~/.skillrunner/skills
+   - GetSkill(name) to retrieve by name
+   - ListSkills() to get all available skills
+
+2. Modify list.go:
+   - Get SkillLoader from GetContainer()
+   - Replace getMockSkills() with actual skill loading
+   - Load skills from both built-in and user directories
+   - Display real skill metadata
+
+3. Add Container method for SkillRegistry if needed
+
+Write tests for the registry.
 
 Begin implementing the feature now.

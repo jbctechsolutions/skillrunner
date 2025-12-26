@@ -67,8 +67,8 @@ func runList(formatFlag string) error {
 		output.WithColor(format != output.FormatJSON),
 	)
 
-	// Get mock skill data
-	skills := getMockSkills()
+	// Get skill data from registry
+	skills := loadSkills()
 
 	// Build output structure
 	listOutput := SkillListOutput{
@@ -147,39 +147,34 @@ func truncateString(s string, maxLen int) string {
 	return s[:maxLen-3] + "..."
 }
 
-// getMockSkills returns mock skill data for demonstration.
-// TODO: Replace with actual skill loading from registry/filesystem.
-func getMockSkills() []SkillInfo {
-	return []SkillInfo{
-		{
-			Name:           "code-review",
-			Description:    "Analyze code for quality, security, and best practices",
-			PhaseCount:     3,
-			RoutingProfile: "quality-first",
-		},
-		{
-			Name:           "summarize",
-			Description:    "Generate concise summaries of documents or text",
-			PhaseCount:     2,
-			RoutingProfile: "local-first",
-		},
-		{
-			Name:           "translate",
-			Description:    "Translate text between languages with context awareness",
-			PhaseCount:     2,
-			RoutingProfile: "cost-aware",
-		},
-		{
-			Name:           "extract-data",
-			Description:    "Extract structured data from unstructured text",
-			PhaseCount:     4,
-			RoutingProfile: "performance",
-		},
-		{
-			Name:           "generate-tests",
-			Description:    "Generate unit tests for code with coverage analysis",
-			PhaseCount:     3,
-			RoutingProfile: "quality-first",
-		},
+// loadSkills loads skills from the skill registry.
+// Returns skill info for display in the list command.
+func loadSkills() []SkillInfo {
+	container := GetContainer()
+	if container == nil {
+		// Container not initialized, return empty list
+		return nil
 	}
+
+	registry := container.SkillRegistry()
+	if registry == nil {
+		return nil
+	}
+
+	// Get all skills from the registry
+	skills := registry.ListSkills()
+
+	// Convert to SkillInfo for display
+	result := make([]SkillInfo, 0, len(skills))
+	for _, s := range skills {
+		info := SkillInfo{
+			Name:           s.Name(),
+			Description:    s.Description(),
+			PhaseCount:     len(s.Phases()),
+			RoutingProfile: s.Routing().DefaultProfile,
+		}
+		result = append(result, info)
+	}
+
+	return result
 }
