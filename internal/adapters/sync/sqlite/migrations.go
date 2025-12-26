@@ -1,0 +1,195 @@
+package sqlite
+
+import (
+	"database/sql"
+	"fmt"
+)
+
+// applyMigrations applies all database migrations in order.
+func applyMigrations(db *sql.DB) error {
+	// Enable foreign keys
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		return fmt.Errorf("could not enable foreign keys: %w", err)
+	}
+
+	// Create migrations table
+	if err := createMigrationsTable(db); err != nil {
+		return err
+	}
+
+	// Apply each migration
+	migrations := []struct {
+		version int
+		name    string
+		sql     string
+	}{
+		{1, "create_workspaces_table", createWorkspacesTable},
+		{2, "create_sessions_table", createSessionsTable},
+		{3, "create_checkpoints_table", createCheckpointsTable},
+		{4, "create_context_items_table", createContextItemsTable},
+		{5, "create_rules_table", createRulesTable},
+		{6, "create_drift_log_table", createDriftLogTable},
+		{7, "create_indices", createIndices},
+	}
+
+	for _, m := range migrations {
+		applied, err := isMigrationApplied(db, m.version)
+		if err != nil {
+			return fmt.Errorf("could not check migration %d: %w", m.version, err)
+		}
+
+		if applied {
+			continue
+		}
+
+		// Apply migration
+		if _, err := db.Exec(m.sql); err != nil {
+			return fmt.Errorf("could not apply migration %d (%s): %w", m.version, m.name, err)
+		}
+
+		// Record migration
+		if err := recordMigration(db, m.version, m.name); err != nil {
+			return fmt.Errorf("could not record migration %d: %w", m.version, err)
+		}
+	}
+
+	return nil
+}
+
+// createMigrationsTable creates the migrations tracking table.
+func createMigrationsTable(db *sql.DB) error {
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS migrations (
+			version INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	return err
+}
+
+// isMigrationApplied checks if a migration has been applied.
+func isMigrationApplied(db *sql.DB, version int) (bool, error) {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM migrations WHERE version = ?", version).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// recordMigration records that a migration has been applied.
+func recordMigration(db *sql.DB, version int, name string) error {
+	_, err := db.Exec("INSERT INTO migrations (version, name) VALUES (?, ?)", version, name)
+	return err
+}
+
+// Migration SQL statements
+
+const createWorkspacesTable = `
+CREATE TABLE workspaces (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	repo_path TEXT NOT NULL,
+	worktree_path TEXT,
+	branch TEXT,
+	focus TEXT,
+	status TEXT NOT NULL DEFAULT 'active',
+	default_backend TEXT,
+	last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`
+
+const createSessionsTable = `
+CREATE TABLE sessions (
+	id TEXT PRIMARY KEY,
+	workspace_id TEXT NOT NULL,
+	backend TEXT,
+	model TEXT,
+	profile TEXT,
+	status TEXT NOT NULL DEFAULT 'active',
+	tokens_used INTEGER DEFAULT 0,
+	tokens_limit INTEGER DEFAULT 0,
+	pid INTEGER,
+	machine_id TEXT,
+	started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+);
+`
+
+const createCheckpointsTable = `
+CREATE TABLE checkpoints (
+	id TEXT PRIMARY KEY,
+	workspace_id TEXT NOT NULL,
+	session_id TEXT NOT NULL,
+	summary TEXT NOT NULL,
+	details TEXT,
+	files_modified TEXT,
+	decisions TEXT,
+	machine_id TEXT,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+	FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+`
+
+const createContextItemsTable = `
+CREATE TABLE context_items (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	type TEXT NOT NULL,
+	content TEXT,
+	tags TEXT,
+	token_estimate INTEGER DEFAULT 0,
+	last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`
+
+const createRulesTable = `
+CREATE TABLE rules (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	content TEXT NOT NULL,
+	scope TEXT NOT NULL,
+	is_active BOOLEAN DEFAULT 1,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`
+
+const createDriftLogTable = `
+CREATE TABLE drift_log (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	workspace_id TEXT NOT NULL,
+	session_id TEXT,
+	original_focus TEXT,
+	detected_topic TEXT,
+	prompt_snippet TEXT,
+	action_taken TEXT,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+	FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL
+);
+`
+
+const createIndices = `
+CREATE INDEX IF NOT EXISTS idx_workspaces_status ON workspaces(status);
+CREATE INDEX IF NOT EXISTS idx_workspaces_last_active ON workspaces(last_active_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_workspace ON sessions(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
+CREATE INDEX IF NOT EXISTS idx_sessions_last_active ON sessions(last_active_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_backend ON sessions(backend);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_workspace ON checkpoints(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_session ON checkpoints(session_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON checkpoints(created_at);
+CREATE INDEX IF NOT EXISTS idx_context_items_name ON context_items(name);
+CREATE INDEX IF NOT EXISTS idx_context_items_type ON context_items(type);
+CREATE INDEX IF NOT EXISTS idx_context_items_last_used ON context_items(last_used_at);
+CREATE INDEX IF NOT EXISTS idx_rules_scope ON rules(scope);
+CREATE INDEX IF NOT EXISTS idx_rules_active ON rules(is_active);
+CREATE INDEX IF NOT EXISTS idx_drift_log_workspace ON drift_log(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_drift_log_session ON drift_log(session_id);
+CREATE INDEX IF NOT EXISTS idx_drift_log_created ON drift_log(created_at);
+`

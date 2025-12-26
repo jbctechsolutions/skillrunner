@@ -1,0 +1,25 @@
+{
+  "projectDir": "/Users/joel.castillo.cq/conductor/workspaces/skillrunner-v2/daegu",
+  "taskDescription": "Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage for Skillrunner MVP. This builds on the completed v2.0 implementation (Waves 1-6) which includes domain types, providers, routing, and CLI commands.",
+  "lastUpdated": "2025-12-26T17:43:08.071Z",
+  "features": [
+    {
+      "id": "feature-1",
+      "description": "Implement SQLite infrastructure with connection manager and migrations for tables: workspaces, sessions, checkpoints, context_items, rules, drift_log",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-2",
+      "description": "Create state storage port interfaces: WorkspaceStoragePort, SessionStoragePort, CheckpointStoragePort, ContextItemStoragePort, RuleStoragePort in internal/application/ports/state.go",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-3",
+      "description": "Implement storage repositories: workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go in internal/infrastructure/storage/",
+      "status": "completed",
+      "passes": true
+    }
+  ]
+}

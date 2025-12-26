@@ -1,0 +1,135 @@
+{
+  "summary": "The Wave 7 storage implementation demonstrates solid code quality with well-structured SQLite repositories following hexagonal architecture patterns. The code is generally clean with good error handling and proper use of domain entities. However, there are several issues that need attention: interface mismatches between ContextItemRepository/RuleRepository and their new port interfaces in state.go, unused function parameters in scan/build functions, missing unit tests for the new storage repositories, schema mismatches between migrations and repository implementations, and potential SQL injection in tag search. The architecture is sound but requires alignment work between older and newer interface definitions.",
+  "severity": "moderate",
+  "issues": [
+    {
+      "category": "bug",
+      "severity": "error",
+      "file": "internal/infrastructure/storage/context_item_repo.go",
+      "line": 21,
+      "message": "ContextItemRepository implements ContextItemStoragePort (context_storage.go) instead of ContextItemStateStoragePort (state.go). The new state.go interface has additional methods like Create, GetByTags, Search, List with filter, UpdateLastUsed that are not implemented.",
+      "suggestion": "Update ContextItemRepository to implement ContextItemStateStoragePort from state.go, or add a compile-time check with the correct interface. The repository should implement Create (not Save), GetByTags, Search, List(filter), UpdateLastUsed methods."
+    },
+    {
+      "category": "bug",
+      "severity": "error",
+      "file": "internal/infrastructure/storage/rules_repo.go",
+      "line": 20,
+      "message": "RuleRepository implements RuleStoragePort (context_storage.go) instead of RuleStateStoragePort (state.go). The new state.go interface has additional methods like Create, GetActive, GetByScope, Activate, Deactivate that differ from the implemented interface.",
+      "suggestion": "Update RuleRepository to implement RuleStateStoragePort from state.go, adding missing methods like Activate, Deactivate. Rename Save to Create for consistency with other repositories."
+    },
+    {
+      "category": "bug",
+      "severity": "error",
+      "file": "internal/infrastructure/storage/session_repo.go",
+      "line": 54,
+      "message": "Schema mismatch: SessionRepository expects columns 'ended_at', 'tmux_session', 'metadata', 'token_usage', 'context' but migration createSessionsTable only creates 'profile', 'tokens_used', 'tokens_limit', 'last_active_at'. Repository uses JSON columns for metadata/token_usage/context that don't exist in schema.",
+      "suggestion": "Either update the migration to add the missing columns (ended_at, tmux_session, metadata, token_usage, context) and remove profile column, or update the repository to match the existing schema."
+    },
+    {
+      "category": "bug",
+      "severity": "warning",
+      "file": "internal/infrastructure/storage/workspace_repo.go",
+      "line": 366,
+      "message": "Unused parameters lastActiveAt and createdAt in buildWorkspace function. These timestamps from the database are never used to restore the workspace's time fields.",
+      "suggestion": "Either use these parameters to restore the workspace's lastActiveAt and createdAt fields (will require setter methods on Workspace domain entity), or remove the parameters and adjust the SQL query to not select them."
+    },
+    {
+      "category": "bug",
+      "severity": "warning",
+      "file": "internal/infrastructure/storage/context_item_repo.go",
+      "line": 246,
+      "message": "Unused parameters lastUsedAt and createdAt in scanItem function. These timestamps from the database are never used to restore the item's time fields.",
+      "suggestion": "Either use these parameters to restore the item's lastUsedAt and createdAt fields, or remove them and adjust the SQL query/caller."
+    },
+    {
+      "category": "bug",
+      "severity": "warning",
+      "file": "internal/infrastructure/storage/rules_repo.go",
+      "line": 237,
+      "message": "Unused parameter createdAt in scanRule function. The createdAt timestamp from the database is never used.",
+      "suggestion": "Either use this parameter to restore the rule's createdAt field, or remove it and adjust the SQL query/caller."
+    },
+    {
+      "category": "bug",
+      "severity": "warning",
+      "file": "internal/infrastructure/storage/checkpoint_repo.go",
+      "line": 311,
+      "message": "The createdAt parameter is declared but never used in buildCheckpoint function. Checkpoint's CreatedAt() is never restored from storage.",
+      "suggestion": "Parse and use the createdAt timestamp to restore the checkpoint's time field, or document why it's intentionally not restored."
+    },
+    {
+      "category": "security",
+      "severity": "warning",
+      "file": "internal/infrastructure/storage/context_item_repo.go",
+      "line": 132,
+      "message": "SQL injection vulnerability in ListByTag: tag is concatenated directly into LIKE pattern without proper escaping. Malicious input with % or _ characters could bypass filtering or cause unexpected matching.",
+      "suggestion": "Escape special LIKE characters (%, _, [) in the tag before concatenation, or use a JSON_EXTRACT function for proper JSON array searching in SQLite."
+    },
+    {
+      "category": "maintainability",
+      "severity": "warning",
+      "file": "internal/application/ports/context_storage.go",
+      "line": 1,
+      "message": "Duplicate interface definitions exist: WorkspaceStoragePort, CheckpointStoragePort, ContextItemStoragePort, RuleStoragePort are defined in both context_storage.go and state.go with different method signatures. This creates confusion about which interface to implement.",
+      "suggestion": "Consolidate to single set of interfaces. Either deprecate the simpler interfaces in context_storage.go in favor of the richer state.go interfaces, or rename them to clarify their different purposes."
+    },
+    {
+      "category": "maintainability",
+      "severity": "info",
+      "file": "internal/infrastructure/storage/workspace_repo.go",
+      "line": 17,
+      "message": "WorkspaceRepository correctly implements WorkspaceStateStoragePort with compile-time check, but the simpler WorkspaceStoragePort in context_storage.go is not implemented. Both interfaces exist for workspaces.",
+      "suggestion": "Consider whether both interfaces are needed, or if one should be deprecated."
+    },
+    {
+      "category": "test-coverage",
+      "severity": "warning",
+      "file": "internal/infrastructure/storage/",
+      "line": 0,
+      "message": "No unit tests exist for the storage repository implementations (workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go). Only migrations have tests.",
+      "suggestion": "Add unit tests for each repository covering CRUD operations, edge cases (not found, duplicate keys, null handling), and filter/query methods. Use in-memory SQLite for fast tests."
+    },
+    {
+      "category": "style",
+      "severity": "info",
+      "file": "internal/infrastructure/storage/context_item_repo.go",
+      "line": 21,
+      "message": "NewContextItemRepository returns ports.ContextItemStoragePort interface instead of concrete type. This differs from other repositories (WorkspaceRepository, SessionRepository) that return concrete types.",
+      "suggestion": "For consistency, either have all New* functions return concrete types with compile-time interface checks, or have all return interface types. The former is generally preferred in Go."
+    },
+    {
+      "category": "style",
+      "severity": "info",
+      "file": "internal/infrastructure/storage/rules_repo.go",
+      "line": 20,
+      "message": "NewRuleRepository returns ports.RuleStoragePort interface instead of concrete type. Inconsistent with other repository constructors.",
+      "suggestion": "Return *RuleRepository for consistency with WorkspaceRepository and SessionRepository patterns."
+    },
+    {
+      "category": "performance",
+      "severity": "info",
+      "file": "internal/infrastructure/storage/context_item_repo.go",
+      "line": 123,
+      "message": "ListByTag uses LIKE with JSON string matching for tag search. This cannot use indexes effectively and may be slow with large datasets.",
+      "suggestion": "Consider using SQLite's JSON1 extension with json_each() for proper JSON array querying, or use a separate context_item_tags junction table for many-to-many relationship."
+    },
+    {
+      "category": "maintainability",
+      "severity": "info",
+      "file": "internal/infrastructure/storage/workspace_repo.go",
+      "line": 399,
+      "message": "nullableString helper function is duplicated conceptually with nullableInt in session_repo.go. These utility functions could be consolidated.",
+      "suggestion": "Move shared SQL helper functions (nullableString, nullableInt) to a common storage/helpers.go file to avoid duplication and ensure consistent null handling."
+    }
+  ],
+  "recommendations": [
+    "Align repository implementations with state.go interfaces: Update ContextItemRepository and RuleRepository to implement the richer ContextItemStateStoragePort and RuleStateStoragePort interfaces from state.go, adding missing methods like Create, GetByTags, Search, Activate, Deactivate.",
+    "Fix schema mismatch: The sessions table migration doesn't match the SessionRepository implementation. Update migration to include ended_at, tmux_session, metadata (JSON), token_usage (JSON), and context (JSON) columns.",
+    "Add repository unit tests: Create test files for each repository with in-memory SQLite, testing all CRUD operations, filter queries, edge cases (not found, duplicates), and null handling.",
+    "Consolidate duplicate interfaces: Choose between context_storage.go and state.go interfaces and deprecate the other, or clearly document their different purposes if both are intentionally needed.",
+    "Fix unused parameters: Either use the timestamp parameters (lastActiveAt, createdAt, lastUsedAt) to properly restore domain entity state from storage, or remove them to eliminate dead code warnings.",
+    "Address SQL injection in ListByTag: Escape LIKE special characters or use proper JSON querying to prevent potential tag search bypass.",
+    "Standardize constructor return types: Make all New*Repository functions return concrete types with compile-time interface checks for consistency."
+  ]
+}

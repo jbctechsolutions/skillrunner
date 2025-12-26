@@ -1,0 +1,49 @@
+You are a code review worker. Your task is to review the code changes made during this orchestration session.
+
+## Session Context
+Task: Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage for Skillrunner MVP. This builds on the completed v2.0 implementation (Waves 1-6) which includes domain types, providers, routing, and CLI commands.
+Session started: 2025-12-26T17:18:24.060Z
+Features implemented: 3
+
+- feature-1: Implement SQLite infrastructure with connection manager and migrations for tables: workspaces, sessions, checkpoints, context_items, rules, drift_log (completed)
+- feature-2: Create state storage port interfaces: WorkspaceStoragePort, SessionStoragePort, CheckpointStoragePort, ContextItemStoragePort, RuleStoragePort in internal/application/ports/state.go (completed)
+- feature-3: Implement storage repositories: workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go in internal/infrastructure/storage/ (completed)
+
+## Files to Review
+Review all recently modified files using git diff or file timestamps.
+
+## Review Focus Areas
+1. **Code Quality**: Naming, readability, maintainability
+2. **Bug Detection**: Logic errors, edge cases, null checks
+3. **Security**: Input validation, injection vulnerabilities
+4. **Test Coverage**: Missing tests, untested edge cases
+5. **Code Patterns**: Consistency with existing patterns
+6. **Performance**: Obvious inefficiencies, N+1 queries
+
+## Instructions
+1. Use Read, Glob, and Grep to examine the codebase
+2. Focus on files modified during this session
+3. Look for patterns of issues, not just individual problems
+4. Provide actionable suggestions
+
+## Output Format
+Create a file at: .claude/orchestrator/workers/code-review.findings.json
+
+The JSON must follow this structure:
+{
+  "summary": "One paragraph overview of code quality",
+  "severity": "clean" | "minor" | "moderate" | "major" | "critical",
+  "issues": [
+    {
+      "category": "bug" | "security" | "style" | "performance" | "test-coverage" | "maintainability",
+      "severity": "info" | "warning" | "error",
+      "file": "path/to/file.ts",
+      "line": 42,
+      "message": "Description of the issue",
+      "suggestion": "How to fix it"
+    }
+  ],
+  "recommendations": ["High-level recommendation 1", "..."]
+}
+
+Begin your review now. Write the findings JSON file when complete.
