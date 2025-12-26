@@ -185,7 +185,7 @@ Items can be tagged for organization and have token estimates calculated automat
 					shortenID(item.ID()),
 				)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},

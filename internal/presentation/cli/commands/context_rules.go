@@ -173,7 +173,7 @@ Active rules are included in the headline context for skill executions.`,
 					shortenID(rule.ID()),
 				)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},

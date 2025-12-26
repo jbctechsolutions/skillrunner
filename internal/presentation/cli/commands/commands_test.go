@@ -201,7 +201,7 @@ func TestLoadSkillsWithoutContainer(t *testing.T) {
 	skills := loadSkills()
 
 	// Without an initialized container, should return nil
-	if skills != nil && len(skills) > 0 {
+	if len(skills) > 0 {
 		// This is also acceptable - container might be initialized from prior tests
 		for _, skill := range skills {
 			if skill.Name == "" {

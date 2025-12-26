@@ -185,7 +185,7 @@ By default, shows only active sessions. Use --all to see all sessions.`,
 					duration.String(),
 				)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},

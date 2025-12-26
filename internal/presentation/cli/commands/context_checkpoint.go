@@ -203,7 +203,7 @@ Use checkpoints to pause work and resume later with full context.`,
 					files,
 				)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},

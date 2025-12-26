@@ -49,9 +49,9 @@ func TestE2E_CLICommands(t *testing.T) {
 
 		// Run command
 		// Note: These expect errors because the skills don't exist in test environment
-		{"run valid syntax", []string{"run", "test-skill", "test request"}, true},          // skill not found
+		{"run valid syntax", []string{"run", "test-skill", "test request"}, true},               // skill not found
 		{"run with profile", []string{"run", "skill", "request", "--profile", "premium"}, true}, // skill not found
-		{"run with stream", []string{"run", "skill", "request", "--stream"}, true},         // skill not found
+		{"run with stream", []string{"run", "skill", "request", "--stream"}, true},              // skill not found
 		{"run missing args", []string{"run"}, true},
 		{"run invalid profile", []string{"run", "skill", "request", "--profile", "invalid"}, true},
 

@@ -325,7 +325,7 @@ func displayPhaseResults(formatter *output.Formatter, result *workflow.Execution
 		})
 	}
 
-	formatter.Table(tableData)
+	_ = formatter.Table(tableData)
 }
 
 // formatStatus returns a human-readable status string.

@@ -236,7 +236,7 @@ Shows workspace name, type, status, and path.`,
 					lastActive,
 				)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},
@@ -404,7 +404,7 @@ Displays workspace name, path, branch (if Git), status, and active sessions.`,
 			}
 			fmt.Fprintf(w, "  Created:\t%s\n", ws.CreatedAt().Format(time.RFC3339))
 			fmt.Fprintf(w, "  Last Active:\t%s\n", formatRelativeTime(ws.LastActiveAt()))
-			w.Flush()
+			_ = w.Flush()
 
 			// Show active sessions
 			wsPath := ws.RepoPath()
@@ -435,7 +435,7 @@ Displays workspace name, path, branch (if Git), status, and active sessions.`,
 						duration.String(),
 					)
 				}
-				sessTable.Flush()
+				_ = sessTable.Flush()
 			} else {
 				fmt.Println()
 				formatter.Info("No active sessions")

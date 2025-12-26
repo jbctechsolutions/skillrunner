@@ -81,7 +81,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 
 	// Initialize application services
 	if err := c.initServices(); err != nil {
-		c.Close() // Clean up on error
+		_ = c.Close() // Clean up on error
 		return nil, fmt.Errorf("failed to initialize services: %w", err)
 	}
 
@@ -102,7 +102,7 @@ func (c *Container) initDatabase() error {
 
 	db, err := conn.DB()
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return fmt.Errorf("failed to get database handle: %w", err)
 	}
 
