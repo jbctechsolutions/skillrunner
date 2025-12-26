@@ -1,0 +1,147 @@
+# Test Generation Skill
+# A multi-phase skill for generating unit tests from source code
+# Phases: analyze -> generate -> validate
+
+id: test-gen
+name: Test Generation
+version: "1.0.0"
+description: |
+  Generates comprehensive unit tests for source code. The skill analyzes
+  the code structure to understand functions, classes, and dependencies,
+  then generates appropriate unit tests with mocks and assertions, and
+  finally validates the generated tests for coverage and correctness.
+
+routing:
+  default_profile: balanced
+  max_context_tokens: 16384
+
+phases:
+  - id: analyze
+    name: Code Analysis
+    prompt_template: |
+      Analyze the following source code to understand its structure for test generation.
+
+      ## Code to Analyze
+      {{.input}}
+
+      ## Analysis Requirements
+      1. Identify all functions, methods, and classes
+      2. Document input parameters and return types
+      3. Identify dependencies and external calls that need mocking
+      4. Note edge cases and boundary conditions
+      5. Identify any existing test patterns in the codebase
+
+      ## Output Format
+      Provide a structured analysis with:
+      - List of testable units (functions/methods)
+      - For each unit:
+        - Signature and purpose
+        - Input parameters with types
+        - Return values and types
+        - Dependencies requiring mocks
+        - Edge cases to test
+        - Suggested test scenarios
+
+      Focus on creating a comprehensive map of what needs testing.
+    routing_profile: cheap
+    max_tokens: 4096
+    temperature: 0.3
+
+  - id: generate
+    name: Test Generation
+    prompt_template: |
+      Generate comprehensive unit tests based on the code analysis.
+
+      ## Original Code
+      {{.input}}
+
+      ## Code Analysis
+      {{.phases.analyze.output}}
+
+      ## Test Generation Requirements
+      1. Create unit tests for each identified function/method
+      2. Include setup and teardown as needed
+      3. Create mocks for external dependencies
+      4. Test happy paths, edge cases, and error conditions
+      5. Use descriptive test names that explain the scenario
+      6. Include assertions for expected outcomes
+      7. Follow the testing conventions of the language detected
+
+      ## Output Format
+      Generate complete, runnable test code with:
+      - Proper imports and test framework setup
+      - Mock implementations for dependencies
+      - Test functions with clear naming: Test<Function>_<Scenario>
+      - Table-driven tests where appropriate
+      - Comments explaining complex test scenarios
+    routing_profile: balanced
+    depends_on:
+      - analyze
+    max_tokens: 8192
+    temperature: 0.5
+
+  - id: validate
+    name: Test Validation
+    prompt_template: |
+      Validate the generated tests for quality and coverage.
+
+      ## Original Code
+      {{.input}}
+
+      ## Code Analysis
+      {{.phases.analyze.output}}
+
+      ## Generated Tests
+      {{.phases.generate.output}}
+
+      ## Validation Checklist
+      1. Coverage Analysis:
+         - Are all public functions/methods tested?
+         - Are edge cases and error conditions covered?
+         - Are boundary conditions tested?
+
+      2. Quality Assessment:
+         - Do tests follow best practices?
+         - Are test names descriptive and clear?
+         - Are mocks correctly implemented?
+         - Do assertions verify the right behavior?
+
+      3. Correctness Check:
+         - Will the tests compile/run?
+         - Are there any syntax errors?
+         - Are imports complete and correct?
+
+      4. Missing Tests:
+         - Identify any untested scenarios
+         - Suggest additional test cases if needed
+
+      ## Output Format
+      Provide:
+      - Coverage summary (percentage estimate)
+      - List of tested scenarios
+      - Quality score (1-10) with justification
+      - List of any issues found
+      - Recommendations for improvement
+      - Final verdict: PASS/NEEDS_IMPROVEMENT/FAIL
+    routing_profile: balanced
+    depends_on:
+      - analyze
+      - generate
+    max_tokens: 4096
+    temperature: 0.3
+
+metadata:
+  author: skillrunner
+  category: development
+  tags:
+    - testing
+    - unit-tests
+    - code-quality
+    - automation
+  supported_languages:
+    - go
+    - python
+    - javascript
+    - typescript
+    - java
+    - rust

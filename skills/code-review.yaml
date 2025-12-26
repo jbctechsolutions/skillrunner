@@ -1,0 +1,117 @@
+# Code Review Skill
+# A multi-phase skill for comprehensive code review analysis.
+# Phases execute in order: analyze -> security -> report
+
+id: code-review
+name: Code Review
+version: "1.0.0"
+description: |
+  Performs a comprehensive multi-phase code review including pattern analysis,
+  security vulnerability checks, and generates a detailed review summary.
+  Uses quality-first routing to ensure thorough and accurate reviews.
+
+routing:
+  default_profile: premium  # Quality-first approach for thorough reviews
+  generation_model: claude  # Prefer Claude for high-quality analysis
+  review_model: claude      # Use Claude for review phases
+  max_context_tokens: 32000
+
+phases:
+  - id: analyze
+    name: Code Pattern Analysis
+    prompt_template: |
+      You are a senior software engineer performing a thorough code review.
+
+      Analyze the following code and identify:
+      1. Code patterns and architectural decisions
+      2. Potential bugs or logic errors
+      3. Performance concerns
+      4. Code style and readability issues
+      5. Adherence to best practices
+
+      Code to review:
+      {{.input}}
+
+      Provide a structured analysis with specific line references where applicable.
+      Focus on actionable feedback that will improve code quality.
+    routing_profile: premium
+    max_tokens: 4096
+    temperature: 0.3
+
+  - id: security
+    name: Security Analysis
+    prompt_template: |
+      You are a security expert reviewing code for vulnerabilities.
+
+      Based on the code analysis:
+      {{.phases.analyze}}
+
+      Original code:
+      {{.input}}
+
+      Perform a security-focused review checking for:
+      1. Injection vulnerabilities (SQL, XSS, command injection)
+      2. Authentication and authorization issues
+      3. Data exposure risks
+      4. Input validation gaps
+      5. Insecure dependencies or configurations
+      6. OWASP Top 10 vulnerabilities
+
+      For each finding, provide:
+      - Severity level (Critical, High, Medium, Low, Info)
+      - Description of the vulnerability
+      - Potential impact
+      - Recommended remediation
+    routing_profile: premium
+    depends_on:
+      - analyze
+    max_tokens: 4096
+    temperature: 0.2
+
+  - id: report
+    name: Review Summary Report
+    prompt_template: |
+      You are preparing a comprehensive code review report.
+
+      Code Analysis Results:
+      {{.phases.analyze}}
+
+      Security Analysis Results:
+      {{.phases.security}}
+
+      Generate a well-structured code review report including:
+
+      ## Executive Summary
+      Brief overview of the code quality and key findings.
+
+      ## Code Quality Assessment
+      - Overall quality score (1-10)
+      - Key strengths
+      - Areas for improvement
+
+      ## Issues Found
+      Prioritized list of issues with severity levels.
+
+      ## Security Findings
+      Summary of security concerns with remediation priorities.
+
+      ## Recommendations
+      Actionable next steps for the development team.
+
+      ## Conclusion
+      Final assessment and approval recommendation.
+    routing_profile: premium
+    depends_on:
+      - analyze
+      - security
+    max_tokens: 8192
+    temperature: 0.4
+
+metadata:
+  category: code-quality
+  tags:
+    - review
+    - security
+    - quality
+  author: skillrunner
+  license: MIT

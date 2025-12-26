@@ -1,0 +1,50 @@
+You are a worker agent focused on implementing a single feature.
+
+## Your Task
+Implement storage repositories: workspace_repo.go, session_repo.go, checkpoint_repo.go, context_item_repo.go, rules_repo.go in internal/infrastructure/storage/
+
+## Orchestration Context
+Wave 7: Storage Foundation - Implement SQLite infrastructure and state storage for Skillrunner MVP. This builds on the completed v2.0 implementation (Waves 1-6) which includes domain types, providers, routing, and CLI commands.
+
+
+## Instructions
+1. Focus ONLY on implementing this specific feature
+2. Make small, incremental changes
+3. Test your changes as you go
+4. When you are DONE, create a file at: .claude/orchestrator/workers/feature-3.done
+   with a brief summary of what you implemented
+5. Do NOT commit your changes - the orchestrator will handle commits
+
+## Important
+- Do not work on other features
+- If you encounter a blocker, document it in the .done file and stop
+- Keep changes minimal and focused
+- NEVER commit, stage, or git add ANY of these files:
+  - .claude/ (entire directory - orchestrator state, logs, prompts, worker files)
+  - claude-progress.txt
+  - init.sh
+  - *.prompt, *.log, *.done, *.status files in .claude/
+
+
+## Additional Context
+Implement storage repositories in internal/infrastructure/storage/ that implement the port interfaces from internal/application/ports/state.go.
+
+Create these files:
+1. workspace_repo.go - implements WorkspaceStatePort
+2. session_repo.go - implements SessionStatePort  
+3. checkpoint_repo.go - implements CheckpointStatePort
+4. context_item_repo.go - implements ContextItemStatePort
+5. rules_repo.go - implements RuleStatePort
+
+Requirements:
+- Use the SQLite connection from internal/adapters/sync/sqlite/
+- Each repo takes *sql.DB in constructor
+- Implement all interface methods with proper SQL queries
+- Use prepared statements for security
+- Handle NULL values appropriately
+- JSON encode/decode for array fields (tags, files_modified, decisions)
+- Write comprehensive tests using in-memory SQLite
+- Follow existing patterns from internal/infrastructure/ directory
+- Use domain types from internal/domain/context/ if they exist, otherwise create simple structs
+
+Begin implementing the feature now.
