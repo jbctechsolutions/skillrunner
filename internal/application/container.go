@@ -40,11 +40,11 @@ type Container struct {
 	rulesRepo      ports.RuleStoragePort
 
 	// Application services
-	sessionManager     *session.Manager
-	workflowExecutor   workflow.Executor
-	streamingExecutor  workflow.StreamingExecutor
-	skillLoader        *skills.Loader
-	skillRegistry      *appSkills.Registry
+	sessionManager    *session.Manager
+	workflowExecutor  workflow.Executor
+	streamingExecutor workflow.StreamingExecutor
+	skillLoader       *skills.Loader
+	skillRegistry     *appSkills.Registry
 
 	// Registries
 	providerRegistry    *adapterProvider.Registry

@@ -59,8 +59,8 @@ type StreamingExecutor interface {
 
 // streamingExecutor is the default implementation of StreamingExecutor.
 type streamingExecutor struct {
-	provider              ports.ProviderPort
-	config                ExecutorConfig
+	provider               ports.ProviderPort
+	config                 ExecutorConfig
 	streamingPhaseExecutor *streamingPhaseExecutor
 }
 
@@ -74,8 +74,8 @@ func NewStreamingExecutor(provider ports.ProviderPort, config ExecutorConfig) St
 	}
 
 	return &streamingExecutor{
-		provider:              provider,
-		config:                config,
+		provider:               provider,
+		config:                 config,
 		streamingPhaseExecutor: newStreamingPhaseExecutor(provider),
 	}
 }

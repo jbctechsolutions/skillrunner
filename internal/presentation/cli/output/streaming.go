@@ -123,7 +123,7 @@ func (so *StreamingOutput) WriteChunk(chunk string) {
 	defer so.mu.Unlock()
 
 	so.contentBuffer.WriteString(chunk)
-	fmt.Fprint(so.writer, chunk)
+	_, _ = fmt.Fprint(so.writer, chunk)
 }
 
 // CompletePhase marks the current phase as complete.

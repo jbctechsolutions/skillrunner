@@ -13,13 +13,13 @@ import (
 
 // mockStreamingProvider implements ports.ProviderPort for testing streaming.
 type mockStreamingProvider struct {
-	streamChunks  []string
-	streamDelay   time.Duration
-	inputTokens   int
-	outputTokens  int
-	modelUsed     string
-	shouldError   bool
-	errorMessage  string
+	streamChunks []string
+	streamDelay  time.Duration
+	inputTokens  int
+	outputTokens int
+	modelUsed    string
+	shouldError  bool
+	errorMessage string
 }
 
 func newMockStreamingProvider(chunks []string) *mockStreamingProvider {
