@@ -36,6 +36,7 @@ type PhaseResult struct {
 	InputTokens  int
 	OutputTokens int
 	ModelUsed    string
+	CacheHit     bool // Wave 10: Whether the result was served from cache
 }
 
 // ExecutionResult contains the aggregated results of executing a skill.
@@ -50,6 +51,9 @@ type ExecutionResult struct {
 	Duration     time.Duration
 	TotalTokens  int
 	Error        error
+	// Wave 10: Cache statistics
+	CacheHits   int // Number of phases served from cache
+	CacheMisses int // Number of phases that required provider calls
 }
 
 // ExecutorConfig contains configuration options for the executor.

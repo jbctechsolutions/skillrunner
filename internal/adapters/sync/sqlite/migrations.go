@@ -30,6 +30,9 @@ func applyMigrations(db *sql.DB) error {
 		{5, "create_rules_table", createRulesTable},
 		{6, "create_drift_log_table", createDriftLogTable},
 		{7, "create_indices", createIndices},
+		{8, "create_response_cache_table", createResponseCacheTable},
+		{9, "create_cache_stats_table", createCacheStatsTable},
+		{10, "create_cache_indices", createCacheIndices},
 	}
 
 	for _, m := range migrations {
@@ -192,4 +195,55 @@ CREATE INDEX IF NOT EXISTS idx_rules_active ON rules(is_active);
 CREATE INDEX IF NOT EXISTS idx_drift_log_workspace ON drift_log(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_drift_log_session ON drift_log(session_id);
 CREATE INDEX IF NOT EXISTS idx_drift_log_created ON drift_log(created_at);
+`
+
+// Wave 10: Response cache table for LLM responses
+const createResponseCacheTable = `
+CREATE TABLE response_cache (
+	key TEXT PRIMARY KEY,
+	fingerprint TEXT NOT NULL,
+	model_id TEXT NOT NULL,
+	response_content TEXT NOT NULL,
+	input_tokens INTEGER DEFAULT 0,
+	output_tokens INTEGER DEFAULT 0,
+	finish_reason TEXT,
+	model_used TEXT,
+	duration_ns INTEGER DEFAULT 0,
+	size_bytes INTEGER DEFAULT 0,
+	hit_count INTEGER DEFAULT 0,
+	ttl_seconds INTEGER NOT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	expires_at TIMESTAMP NOT NULL,
+	last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`
+
+// Wave 10: Cache statistics table for tracking performance
+const createCacheStatsTable = `
+CREATE TABLE cache_stats (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	stat_type TEXT NOT NULL,
+	stat_value INTEGER DEFAULT 0,
+	model_id TEXT,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO cache_stats (stat_type, stat_value) VALUES
+	('hit_count', 0),
+	('miss_count', 0),
+	('eviction_count', 0),
+	('expired_count', 0),
+	('input_tokens_saved', 0),
+	('output_tokens_saved', 0);
+`
+
+// Wave 10: Cache indices for performance
+const createCacheIndices = `
+CREATE INDEX IF NOT EXISTS idx_response_cache_fingerprint ON response_cache(fingerprint);
+CREATE INDEX IF NOT EXISTS idx_response_cache_model ON response_cache(model_id);
+CREATE INDEX IF NOT EXISTS idx_response_cache_expires ON response_cache(expires_at);
+CREATE INDEX IF NOT EXISTS idx_response_cache_created ON response_cache(created_at);
+CREATE INDEX IF NOT EXISTS idx_response_cache_last_accessed ON response_cache(last_accessed_at);
+CREATE INDEX IF NOT EXISTS idx_cache_stats_type ON cache_stats(stat_type);
+CREATE INDEX IF NOT EXISTS idx_cache_stats_model ON cache_stats(model_id);
 `

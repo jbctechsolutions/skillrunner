@@ -14,6 +14,7 @@ type Config struct {
 	Routing   RoutingConfig   `yaml:"routing"`
 	Logging   LoggingConfig   `yaml:"logging"`
 	Skills    SkillsConfig    `yaml:"skills"`
+	Cache     CacheConfig     `yaml:"cache"`
 }
 
 // ProviderConfigs holds configuration for all supported LLM providers.
@@ -55,6 +56,23 @@ type SkillsConfig struct {
 	Directory string `yaml:"directory"`
 }
 
+// CacheConfig holds configuration for response caching.
+type CacheConfig struct {
+	Enabled       bool          `yaml:"enabled"`
+	DefaultTTL    time.Duration `yaml:"default_ttl"`
+	MaxMemorySize int64         `yaml:"max_memory_size"` // Maximum in-memory cache size in bytes
+	MaxDiskSize   int64         `yaml:"max_disk_size"`   // Maximum SQLite cache size in bytes
+	CleanupPeriod time.Duration `yaml:"cleanup_period"`  // How often to run cleanup
+}
+
+// BatchConfig holds configuration for batch processing.
+type BatchConfig struct {
+	Enabled       bool          `yaml:"enabled"`
+	MaxBatchSize  int           `yaml:"max_batch_size"`  // Maximum requests per batch
+	MaxWaitTime   time.Duration `yaml:"max_wait_time"`   // Maximum time to wait for batch to fill
+	PerProviderBatching bool     `yaml:"per_provider_batching"` // Whether to batch per provider
+}
+
 // Default configuration values.
 const (
 	DefaultOllamaURL       = "http://localhost:11434"
@@ -63,6 +81,18 @@ const (
 	DefaultLogFormat       = "text"
 	DefaultSkillsDirectory = "~/.skillrunner/skills"
 	DefaultRoutingProfile  = "default"
+
+	// Cache defaults
+	DefaultCacheEnabled       = true
+	DefaultCacheTTL           = 24 * time.Hour     // 24 hours default TTL
+	DefaultCacheMaxMemorySize = 100 * 1024 * 1024  // 100 MB in-memory cache
+	DefaultCacheMaxDiskSize   = 1024 * 1024 * 1024 // 1 GB disk cache
+	DefaultCacheCleanupPeriod = 1 * time.Hour      // Cleanup every hour
+
+	// Batch defaults
+	DefaultBatchEnabled     = true
+	DefaultBatchMaxSize     = 10
+	DefaultBatchMaxWaitTime = 100 * time.Millisecond
 )
 
 // Valid log levels.
@@ -111,6 +141,13 @@ func NewDefaultConfig() *Config {
 		Skills: SkillsConfig{
 			Directory: DefaultSkillsDirectory,
 		},
+		Cache: CacheConfig{
+			Enabled:       DefaultCacheEnabled,
+			DefaultTTL:    DefaultCacheTTL,
+			MaxMemorySize: DefaultCacheMaxMemorySize,
+			MaxDiskSize:   DefaultCacheMaxDiskSize,
+			CleanupPeriod: DefaultCacheCleanupPeriod,
+		},
 	}
 }
 
@@ -136,6 +173,11 @@ func (c *Config) Validate() error {
 	// Validate skills config
 	if err := c.Skills.Validate(); err != nil {
 		errs = append(errs, fmt.Errorf("skills: %w", err))
+	}
+
+	// Validate cache config
+	if err := c.Cache.Validate(); err != nil {
+		errs = append(errs, fmt.Errorf("cache: %w", err))
 	}
 
 	if len(errs) > 0 {
@@ -252,5 +294,51 @@ func (s *SkillsConfig) Validate() error {
 	if s.Directory == "" {
 		return errors.New("directory is required")
 	}
+	return nil
+}
+
+// Validate checks if the CacheConfig is valid.
+func (c *CacheConfig) Validate() error {
+	var errs []error
+
+	if c.Enabled {
+		if c.DefaultTTL <= 0 {
+			errs = append(errs, errors.New("default_ttl must be positive when cache is enabled"))
+		}
+		if c.MaxMemorySize < 0 {
+			errs = append(errs, errors.New("max_memory_size must be non-negative"))
+		}
+		if c.MaxDiskSize < 0 {
+			errs = append(errs, errors.New("max_disk_size must be non-negative"))
+		}
+		if c.CleanupPeriod <= 0 {
+			errs = append(errs, errors.New("cleanup_period must be positive when cache is enabled"))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// Validate checks if the BatchConfig is valid.
+func (b *BatchConfig) Validate() error {
+	var errs []error
+
+	if b.Enabled {
+		if b.MaxBatchSize <= 0 {
+			errs = append(errs, errors.New("max_batch_size must be positive when batching is enabled"))
+		}
+		if b.MaxWaitTime <= 0 {
+			errs = append(errs, errors.New("max_wait_time must be positive when batching is enabled"))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
 	return nil
 }

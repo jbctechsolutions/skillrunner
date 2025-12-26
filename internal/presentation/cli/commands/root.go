@@ -87,6 +87,9 @@ Key features:
 	rootCmd.AddCommand(NewSessionCmd())
 	rootCmd.AddCommand(NewWorkspaceCmd())
 
+	// Wave 10: Cache management
+	rootCmd.AddCommand(NewCacheCmd())
+
 	return rootCmd
 }
 
