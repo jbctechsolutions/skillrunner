@@ -239,8 +239,10 @@ func (e *executor) executeBatch(
 				return
 			}
 
-			// Build context from dependent phases
+			// Build context from dependent phases (with lock to prevent data race)
+			mu.Lock()
 			dependencyOutputs := e.gatherDependencyOutputs(dag, p.ID, phaseOutputs)
+			mu.Unlock()
 
 			// Update status to running
 			mu.Lock()
