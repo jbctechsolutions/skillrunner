@@ -63,18 +63,18 @@ type ProviderMetrics struct {
 
 // SkillMetrics represents aggregated metrics for a skill.
 type SkillMetrics struct {
-	SkillID       string        // Skill ID
-	SkillName     string        // Skill name
-	TotalRuns     int64         // Total number of executions
-	SuccessCount  int64         // Number of successful executions
-	FailedCount   int64         // Number of failed executions
-	SuccessRate   float64       // Success rate (0.0 to 1.0)
-	AvgDuration   time.Duration // Average execution duration
-	MinDuration   time.Duration // Minimum execution duration
-	MaxDuration   time.Duration // Maximum execution duration
-	TotalTokens   int64         // Total tokens used
-	TotalCost     float64       // Total cost
-	Period        TimePeriod    // Time period for these metrics
+	SkillID      string        // Skill ID
+	SkillName    string        // Skill name
+	TotalRuns    int64         // Total number of executions
+	SuccessCount int64         // Number of successful executions
+	FailedCount  int64         // Number of failed executions
+	SuccessRate  float64       // Success rate (0.0 to 1.0)
+	AvgDuration  time.Duration // Average execution duration
+	MinDuration  time.Duration // Minimum execution duration
+	MaxDuration  time.Duration // Maximum execution duration
+	TotalTokens  int64         // Total tokens used
+	TotalCost    float64       // Total cost
+	Period       TimePeriod    // Time period for these metrics
 }
 
 // TimePeriod represents a time period for metrics aggregation.
@@ -90,14 +90,14 @@ func (p TimePeriod) Duration() time.Duration {
 
 // CostSummary represents a summary of costs.
 type CostSummary struct {
-	TotalCost     float64            // Total cost across all matching records
-	ByProvider    map[string]float64 // Cost breakdown by provider
-	BySkill       map[string]float64 // Cost breakdown by skill
-	ByModel       map[string]float64 // Cost breakdown by model
-	TotalTokens   int64              // Total tokens used
-	InputTokens   int64              // Total input tokens
-	OutputTokens  int64              // Total output tokens
-	Period        TimePeriod         // Time period for this summary
+	TotalCost    float64            // Total cost across all matching records
+	ByProvider   map[string]float64 // Cost breakdown by provider
+	BySkill      map[string]float64 // Cost breakdown by skill
+	ByModel      map[string]float64 // Cost breakdown by model
+	TotalTokens  int64              // Total tokens used
+	InputTokens  int64              // Total input tokens
+	OutputTokens int64              // Total output tokens
+	Period       TimePeriod         // Time period for this summary
 }
 
 // NewCostSummary creates a new initialized CostSummary.

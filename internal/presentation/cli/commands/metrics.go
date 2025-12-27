@@ -122,7 +122,7 @@ func getRealMetrics(duration time.Duration) (UsageMetrics, error) {
 	if err != nil {
 		return UsageMetrics{}, fmt.Errorf("failed to initialize container: %w", err)
 	}
-	defer container.Close()
+	defer func() { _ = container.Close() }()
 
 	// Get the metrics repository
 	metricsRepo := container.MetricsRepository()

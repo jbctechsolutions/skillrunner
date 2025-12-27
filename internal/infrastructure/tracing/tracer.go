@@ -19,6 +19,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 const (
@@ -65,7 +66,6 @@ type Tracer struct {
 	tracer   trace.Tracer
 	provider *sdktrace.TracerProvider
 	config   Config
-	mu       sync.RWMutex
 }
 
 // global is the package-level default tracer.
@@ -98,7 +98,7 @@ func Default() *Tracer {
 func New(ctx context.Context, cfg Config) (*Tracer, error) {
 	if !cfg.Enabled || cfg.ExporterType == ExporterNone {
 		return &Tracer{
-			tracer: trace.NewNoopTracerProvider().Tracer(TracerName),
+			tracer: noop.NewTracerProvider().Tracer(TracerName),
 			config: cfg,
 		}, nil
 	}
