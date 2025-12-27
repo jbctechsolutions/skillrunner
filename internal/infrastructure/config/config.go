@@ -10,11 +10,12 @@ import (
 
 // Config represents the root configuration for the skillrunner application.
 type Config struct {
-	Providers ProviderConfigs `yaml:"providers"`
-	Routing   RoutingConfig   `yaml:"routing"`
-	Logging   LoggingConfig   `yaml:"logging"`
-	Skills    SkillsConfig    `yaml:"skills"`
-	Cache     CacheConfig     `yaml:"cache"`
+	Providers     ProviderConfigs     `yaml:"providers"`
+	Routing       RoutingConfig       `yaml:"routing"`
+	Logging       LoggingConfig       `yaml:"logging"`
+	Skills        SkillsConfig        `yaml:"skills"`
+	Cache         CacheConfig         `yaml:"cache"`
+	Observability ObservabilityConfig `yaml:"observability"`
 }
 
 // ProviderConfigs holds configuration for all supported LLM providers.
@@ -73,6 +74,28 @@ type BatchConfig struct {
 	PerProviderBatching bool          `yaml:"per_provider_batching"` // Whether to batch per provider
 }
 
+// ObservabilityConfig holds configuration for observability features (Wave 11).
+type ObservabilityConfig struct {
+	Metrics MetricsConfig `yaml:"metrics"`
+	Tracing TracingConfig `yaml:"tracing"`
+}
+
+// MetricsConfig holds configuration for metrics collection.
+type MetricsConfig struct {
+	Enabled          bool          `yaml:"enabled"`           // Whether metrics collection is enabled
+	RetentionPeriod  time.Duration `yaml:"retention_period"`  // How long to retain metrics
+	AggregationLevel string        `yaml:"aggregation_level"` // none, skill, provider, phase
+}
+
+// TracingConfig holds configuration for distributed tracing.
+type TracingConfig struct {
+	Enabled      bool    `yaml:"enabled"`       // Whether tracing is enabled
+	ExporterType string  `yaml:"exporter_type"` // none, stdout, otlp
+	OTLPEndpoint string  `yaml:"otlp_endpoint"` // OTLP collector endpoint
+	SampleRate   float64 `yaml:"sample_rate"`   // Sampling rate (0.0 to 1.0)
+	ServiceName  string  `yaml:"service_name"`  // Service name for traces
+}
+
 // Default configuration values.
 const (
 	DefaultOllamaURL       = "http://localhost:11434"
@@ -93,6 +116,15 @@ const (
 	DefaultBatchEnabled     = true
 	DefaultBatchMaxSize     = 10
 	DefaultBatchMaxWaitTime = 100 * time.Millisecond
+
+	// Observability defaults
+	DefaultMetricsEnabled          = true
+	DefaultMetricsRetentionPeriod  = 30 * 24 * time.Hour // 30 days
+	DefaultMetricsAggregationLevel = "phase"
+	DefaultTracingEnabled          = false
+	DefaultTracingExporterType     = "none"
+	DefaultTracingSampleRate       = 1.0
+	DefaultTracingServiceName      = "skillrunner"
 )
 
 // Valid log levels.
@@ -107,6 +139,21 @@ var validLogLevels = map[string]bool{
 var validLogFormats = map[string]bool{
 	"json": true,
 	"text": true,
+}
+
+// Valid tracing exporter types.
+var validTracingExporterTypes = map[string]bool{
+	"none":   true,
+	"stdout": true,
+	"otlp":   true,
+}
+
+// Valid metrics aggregation levels.
+var validMetricsAggregationLevels = map[string]bool{
+	"none":     true,
+	"skill":    true,
+	"provider": true,
+	"phase":    true,
 }
 
 // NewDefaultConfig creates a new Config with sensible default values.
@@ -148,6 +195,19 @@ func NewDefaultConfig() *Config {
 			MaxDiskSize:   DefaultCacheMaxDiskSize,
 			CleanupPeriod: DefaultCacheCleanupPeriod,
 		},
+		Observability: ObservabilityConfig{
+			Metrics: MetricsConfig{
+				Enabled:          DefaultMetricsEnabled,
+				RetentionPeriod:  DefaultMetricsRetentionPeriod,
+				AggregationLevel: DefaultMetricsAggregationLevel,
+			},
+			Tracing: TracingConfig{
+				Enabled:      DefaultTracingEnabled,
+				ExporterType: DefaultTracingExporterType,
+				SampleRate:   DefaultTracingSampleRate,
+				ServiceName:  DefaultTracingServiceName,
+			},
+		},
 	}
 }
 
@@ -178,6 +238,11 @@ func (c *Config) Validate() error {
 	// Validate cache config
 	if err := c.Cache.Validate(); err != nil {
 		errs = append(errs, fmt.Errorf("cache: %w", err))
+	}
+
+	// Validate observability config
+	if err := c.Observability.Validate(); err != nil {
+		errs = append(errs, fmt.Errorf("observability: %w", err))
 	}
 
 	if len(errs) > 0 {
@@ -333,6 +398,71 @@ func (b *BatchConfig) Validate() error {
 		}
 		if b.MaxWaitTime <= 0 {
 			errs = append(errs, errors.New("max_wait_time must be positive when batching is enabled"))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// Validate checks if the ObservabilityConfig is valid.
+func (o *ObservabilityConfig) Validate() error {
+	var errs []error
+
+	if err := o.Metrics.Validate(); err != nil {
+		errs = append(errs, fmt.Errorf("metrics: %w", err))
+	}
+
+	if err := o.Tracing.Validate(); err != nil {
+		errs = append(errs, fmt.Errorf("tracing: %w", err))
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// Validate checks if the MetricsConfig is valid.
+func (m *MetricsConfig) Validate() error {
+	var errs []error
+
+	if m.Enabled {
+		if m.RetentionPeriod <= 0 {
+			errs = append(errs, errors.New("retention_period must be positive when metrics is enabled"))
+		}
+		if m.AggregationLevel != "" && !validMetricsAggregationLevels[m.AggregationLevel] {
+			errs = append(errs, fmt.Errorf("invalid aggregation_level %q: must be one of none, skill, provider, phase", m.AggregationLevel))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// Validate checks if the TracingConfig is valid.
+func (t *TracingConfig) Validate() error {
+	var errs []error
+
+	if t.Enabled {
+		if t.ExporterType != "" && !validTracingExporterTypes[t.ExporterType] {
+			errs = append(errs, fmt.Errorf("invalid exporter_type %q: must be one of none, stdout, otlp", t.ExporterType))
+		}
+		if t.ExporterType == "otlp" && t.OTLPEndpoint == "" {
+			errs = append(errs, errors.New("otlp_endpoint is required when exporter_type is 'otlp'"))
+		}
+		if t.SampleRate < 0 || t.SampleRate > 1 {
+			errs = append(errs, errors.New("sample_rate must be between 0.0 and 1.0"))
+		}
+		if t.ServiceName == "" {
+			errs = append(errs, errors.New("service_name is required when tracing is enabled"))
 		}
 	}
 

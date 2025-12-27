@@ -10,10 +10,12 @@ Skillrunner uses YAML-based configuration to manage provider settings, routing p
 4. [Routing Configuration](#routing-configuration)
 5. [Logging Configuration](#logging-configuration)
 6. [Skills Configuration](#skills-configuration)
-7. [Environment Variables](#environment-variables)
-8. [Complete Example](#complete-example)
-9. [Security Best Practices](#security-best-practices)
-10. [Advanced Topics](#advanced-topics)
+7. [Cache Configuration](#cache-configuration)
+8. [Observability Configuration](#observability-configuration)
+9. [Environment Variables](#environment-variables)
+10. [Complete Example](#complete-example)
+11. [Security Best Practices](#security-best-practices)
+12. [Advanced Topics](#advanced-topics)
 
 ---
 
@@ -485,6 +487,241 @@ ln -s /path/to/project/skills/custom-skill.yaml
 
 ---
 
+## Cache Configuration
+
+Skillrunner includes a two-tier caching system for LLM responses to improve performance and reduce costs.
+
+### Configuration Options
+
+```yaml
+cache:
+  enabled: true              # Enable/disable caching
+  max_memory_size: 104857600 # L1 memory cache size in bytes (100MB)
+  max_disk_size: 1073741824  # L2 SQLite cache size in bytes (1GB)
+  default_ttl: 1h            # Default time-to-live for cache entries
+  cleanup_period: 5m         # How often to clean expired entries
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable the caching system |
+| `max_memory_size` | int | `104857600` (100MB) | Maximum size of in-memory L1 cache |
+| `max_disk_size` | int | `1073741824` (1GB) | Maximum size of SQLite L2 cache |
+| `default_ttl` | duration | `1h` | Default time-to-live for cached responses |
+| `cleanup_period` | duration | `5m` | Interval for cache cleanup operations |
+
+### Cache Architecture
+
+Skillrunner uses a two-tier cache architecture:
+
+1. **L1 Memory Cache** - Fast in-memory cache for frequently accessed responses
+2. **L2 SQLite Cache** - Persistent disk-based cache for larger capacity
+
+When a cache lookup occurs:
+1. Check L1 (memory) first
+2. If L1 miss, check L2 (SQLite)
+3. On L2 hit, promote to L1
+4. On cache miss, fetch from provider
+
+### Cache Key Generation
+
+Cache keys are generated from:
+- Provider name
+- Model ID
+- Request messages (hashed)
+- Temperature and other parameters
+
+This ensures that identical requests return cached responses while different parameters trigger new requests.
+
+### Example Configuration
+
+```yaml
+cache:
+  enabled: true
+  max_memory_size: 209715200   # 200MB for high-traffic scenarios
+  max_disk_size: 5368709120    # 5GB for extensive caching
+  default_ttl: 24h             # Cache for 24 hours
+  cleanup_period: 10m
+```
+
+### Disabling Cache
+
+To disable caching entirely:
+
+```yaml
+cache:
+  enabled: false
+```
+
+---
+
+## Observability Configuration
+
+Skillrunner provides comprehensive observability features including structured logging, distributed tracing, and metrics collection.
+
+### Configuration Structure
+
+```yaml
+observability:
+  metrics:
+    enabled: true
+    aggregation_level: standard  # minimal, standard, or debug
+  tracing:
+    enabled: false
+    exporter_type: stdout        # stdout, otlp, or none
+    otlp_endpoint: ""
+    service_name: skillrunner
+    sample_rate: 1.0
+```
+
+### Metrics Configuration
+
+Metrics track execution statistics, token usage, costs, and performance data.
+
+```yaml
+observability:
+  metrics:
+    enabled: true
+    aggregation_level: standard
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable metrics collection |
+| `aggregation_level` | string | `standard` | Level of detail: `minimal`, `standard`, `debug` |
+
+**Aggregation Levels:**
+
+| Level | Description |
+|-------|-------------|
+| `minimal` | Basic counts and totals only |
+| `standard` | Includes per-provider and per-skill breakdowns |
+| `debug` | Full detail including phase-level metrics |
+
+### Tracing Configuration
+
+Distributed tracing provides visibility into workflow execution using OpenTelemetry.
+
+```yaml
+observability:
+  tracing:
+    enabled: true
+    exporter_type: otlp
+    otlp_endpoint: http://localhost:4317
+    service_name: skillrunner
+    sample_rate: 1.0
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable/disable distributed tracing |
+| `exporter_type` | string | `stdout` | Trace exporter: `stdout`, `otlp`, `none` |
+| `otlp_endpoint` | string | `""` | OTLP collector endpoint (required for `otlp` exporter) |
+| `service_name` | string | `skillrunner` | Service name in traces |
+| `sample_rate` | float | `1.0` | Sampling rate (0.0-1.0, where 1.0 = 100%) |
+
+**Exporter Types:**
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `stdout` | Prints traces to console | Development and debugging |
+| `otlp` | Sends to OTLP collector | Production with Jaeger, Tempo, etc. |
+| `none` | No-op exporter | Disable tracing without code changes |
+
+### Trace Hierarchy
+
+Skillrunner creates the following span hierarchy:
+
+```
+workflow:{skill_name}
+  ├── phase:{phase_id}
+  │   └── provider:{provider_name}
+  └── phase:{phase_id}
+      └── provider:{provider_name}
+```
+
+**Span Attributes:**
+
+- **Workflow spans**: skill_id, skill_name, phase_count, total_tokens, cost
+- **Phase spans**: phase_id, phase_name, tokens, cache_hit, duration
+- **Provider spans**: provider, model, output_tokens, finish_reason
+
+### Example Configurations
+
+**Development (verbose logging):**
+
+```yaml
+observability:
+  metrics:
+    enabled: true
+    aggregation_level: debug
+  tracing:
+    enabled: true
+    exporter_type: stdout
+    service_name: skillrunner-dev
+    sample_rate: 1.0
+```
+
+**Production with Jaeger:**
+
+```yaml
+observability:
+  metrics:
+    enabled: true
+    aggregation_level: standard
+  tracing:
+    enabled: true
+    exporter_type: otlp
+    otlp_endpoint: http://jaeger:4317
+    service_name: skillrunner
+    sample_rate: 0.1  # Sample 10% of traces
+```
+
+**Minimal (metrics only):**
+
+```yaml
+observability:
+  metrics:
+    enabled: true
+    aggregation_level: minimal
+  tracing:
+    enabled: false
+```
+
+### Viewing Metrics
+
+Use the `sr metrics` command to view collected metrics:
+
+```bash
+# View last 24 hours
+sr metrics --since 24h
+
+# View last 7 days as JSON
+sr metrics --since 7d -o json
+```
+
+Metrics include:
+- Total executions and success rates
+- Token usage per provider
+- Estimated costs
+- Top skills by usage
+- Provider latency
+
+### Cost Tracking
+
+Skillrunner automatically calculates costs based on provider pricing:
+
+| Provider | Input Cost (per 1M tokens) | Output Cost (per 1M tokens) |
+|----------|---------------------------|----------------------------|
+| Ollama | $0.00 | $0.00 |
+| Anthropic (Claude 3.5 Sonnet) | $3.00 | $15.00 |
+| OpenAI (GPT-4o) | $2.50 | $10.00 |
+| Groq | $0.05 | $0.10 |
+
+Costs are calculated per-phase and aggregated for reporting.
+
+---
+
 ## Environment Variables
 
 Skillrunner currently has limited environment variable support. Configuration is primarily file-based.
@@ -568,6 +805,28 @@ logging:
 skills:
   directory: ~/.skillrunner/skills  # Path to skills directory
   # Skills are YAML files that define multi-phase AI workflows
+
+# Cache Configuration
+# Two-tier caching for LLM responses
+cache:
+  enabled: true                    # Enable response caching
+  max_memory_size: 104857600       # L1 memory cache: 100MB
+  max_disk_size: 1073741824        # L2 SQLite cache: 1GB
+  default_ttl: 1h                  # Cache entry lifetime
+  cleanup_period: 5m               # Cleanup interval
+
+# Observability Configuration
+# Metrics, tracing, and structured logging
+observability:
+  metrics:
+    enabled: true                  # Enable metrics collection
+    aggregation_level: standard    # minimal | standard | debug
+  tracing:
+    enabled: false                 # Enable distributed tracing
+    exporter_type: stdout          # stdout | otlp | none
+    otlp_endpoint: ""              # OTLP collector endpoint
+    service_name: skillrunner      # Service name in traces
+    sample_rate: 1.0               # Trace sampling rate (0.0-1.0)
 ```
 
 ### Minimal Configuration
@@ -622,6 +881,24 @@ logging:
 
 skills:
   directory: /opt/skillrunner/skills  # Absolute path
+
+cache:
+  enabled: true
+  max_memory_size: 209715200       # 200MB for production
+  max_disk_size: 5368709120        # 5GB persistent cache
+  default_ttl: 24h
+  cleanup_period: 10m
+
+observability:
+  metrics:
+    enabled: true
+    aggregation_level: standard
+  tracing:
+    enabled: true
+    exporter_type: otlp
+    otlp_endpoint: http://jaeger:4317
+    service_name: skillrunner
+    sample_rate: 0.1               # Sample 10% of traces
 ```
 
 ### Development Configuration
@@ -644,6 +921,23 @@ logging:
 
 skills:
   directory: ./skills              # Relative to project
+
+cache:
+  enabled: true
+  max_memory_size: 52428800        # 50MB for development
+  max_disk_size: 104857600         # 100MB
+  default_ttl: 30m
+  cleanup_period: 1m
+
+observability:
+  metrics:
+    enabled: true
+    aggregation_level: debug       # Full detail for debugging
+  tracing:
+    enabled: true
+    exporter_type: stdout          # Print traces to console
+    service_name: skillrunner-dev
+    sample_rate: 1.0               # Trace everything
 ```
 
 ---
@@ -1049,6 +1343,17 @@ providers:
 ---
 
 ## Version History
+
+- **v0.3.0** - Wave 11: Observability
+  - Added observability configuration (metrics, tracing)
+  - Structured logging with correlation IDs
+  - OpenTelemetry distributed tracing support
+  - Cost tracking per provider/model
+
+- **v0.2.0** - Wave 10: Caching & Performance
+  - Added cache configuration section
+  - Two-tier caching (memory + SQLite)
+  - Configurable TTL and cleanup periods
 
 - **v0.1.0** - Initial configuration schema
   - Basic provider configuration
