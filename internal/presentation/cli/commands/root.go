@@ -2,9 +2,12 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"path/filepath"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -29,15 +32,17 @@ type GlobalFlags struct {
 
 // AppContext holds the application runtime context.
 type AppContext struct {
-	Config    *config.Config
-	Formatter *output.Formatter
-	Flags     *GlobalFlags
-	Container *application.Container
+	Config     *config.Config
+	Formatter  *output.Formatter
+	Flags      *GlobalFlags
+	Container  *application.Container
+	cancelFunc context.CancelFunc
 }
 
 var (
 	globalFlags GlobalFlags
 	appCtx      *AppContext
+	appCtxMu    sync.RWMutex // Protects appCtx for thread-safe access
 )
 
 // NewRootCmd creates the root command for the skillrunner CLI.
@@ -107,7 +112,7 @@ func initializeApp() error {
 		output.WithColor(format != output.FormatJSON),
 	)
 
-	// Load or create default config
+	// Load or create default config using the new loader
 	cfg, err := loadConfig(globalFlags.ConfigFile)
 	if err != nil {
 		if globalFlags.Verbose {
@@ -127,67 +132,109 @@ func initializeApp() error {
 		return fmt.Errorf("failed to initialize application: %w", err)
 	}
 
-	// Store app context
+	// Create cancellable context for graceful shutdown
+	_, cancel := context.WithCancel(context.Background())
+
+	// Store app context with mutex protection
+	appCtxMu.Lock()
 	appCtx = &AppContext{
-		Config:    cfg,
-		Formatter: formatter,
-		Flags:     &globalFlags,
-		Container: container,
+		Config:     cfg,
+		Formatter:  formatter,
+		Flags:      &globalFlags,
+		Container:  container,
+		cancelFunc: cancel,
 	}
+	appCtxMu.Unlock()
 
 	return nil
 }
 
 // loadConfig loads configuration from the specified file or default location.
 func loadConfig(configPath string) (*config.Config, error) {
-	if configPath == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("could not determine home directory: %w", err)
-		}
-		configPath = filepath.Join(homeDir, ".skillrunner", "config.yaml")
+	loader, err := config.NewLoader("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create config loader: %w", err)
 	}
 
-	// Check if file exists
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("config file not found: %s", configPath)
-	}
-
-	// TODO: Implement actual YAML loading when we have a config loader
-	// For now, return default config
-	return config.NewDefaultConfig(), nil
+	return loader.Load(configPath)
 }
 
 // GetAppContext returns the current application context.
 // Returns nil if the app hasn't been initialized.
+// Thread-safe via mutex protection.
 func GetAppContext() *AppContext {
+	appCtxMu.RLock()
+	defer appCtxMu.RUnlock()
 	return appCtx
 }
 
 // GetFormatter returns the output formatter.
 // Creates a default formatter if app context is not initialized.
+// Thread-safe via mutex protection.
 func GetFormatter() *output.Formatter {
-	if appCtx != nil {
-		return appCtx.Formatter
+	appCtxMu.RLock()
+	ctx := appCtx
+	appCtxMu.RUnlock()
+
+	if ctx != nil {
+		return ctx.Formatter
 	}
 	return output.NewFormatter()
 }
 
 // GetContainer returns the application container.
 // Returns nil if the app hasn't been initialized.
+// Thread-safe via mutex protection.
 func GetContainer() *application.Container {
-	if appCtx != nil {
-		return appCtx.Container
+	appCtxMu.RLock()
+	ctx := appCtx
+	appCtxMu.RUnlock()
+
+	if ctx != nil {
+		return ctx.Container
 	}
 	return nil
 }
 
-// Execute runs the root command.
-func Execute() {
-	rootCmd := NewRootCmd()
-	if err := rootCmd.Execute(); err != nil {
-		formatter := GetFormatter()
-		formatter.Error("%s", err.Error())
-		os.Exit(1)
+// Shutdown performs graceful shutdown of the application.
+// Cancels the context and cleans up resources.
+func Shutdown() {
+	appCtxMu.Lock()
+	defer appCtxMu.Unlock()
+
+	if appCtx != nil && appCtx.cancelFunc != nil {
+		appCtx.cancelFunc()
 	}
+}
+
+// Execute runs the root command with graceful shutdown support.
+func Execute() {
+	// Set up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Run command in a goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		rootCmd := NewRootCmd()
+		errChan <- rootCmd.Execute()
+	}()
+
+	// Wait for either command completion or signal
+	select {
+	case err := <-errChan:
+		if err != nil {
+			formatter := GetFormatter()
+			formatter.Error("%s", err.Error())
+			Shutdown()
+			os.Exit(1)
+		}
+	case sig := <-sigChan:
+		formatter := GetFormatter()
+		formatter.Warning("Received signal %v, shutting down...", sig)
+		Shutdown()
+		os.Exit(130) // Standard exit code for SIGINT
+	}
+
+	Shutdown()
 }

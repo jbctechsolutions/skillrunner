@@ -4,6 +4,7 @@ package context
 import (
 	"os"
 	"strings"
+	"unicode/utf8"
 )
 
 // Estimator provides token count estimation for text.
@@ -38,8 +39,9 @@ func (e *Estimator) Estimate(text string) int {
 	}
 
 	// Count characters (excluding excessive whitespace)
+	// Use utf8.RuneCountInString for proper Unicode character counting
 	text = strings.TrimSpace(text)
-	charCount := len(text)
+	charCount := utf8.RuneCountInString(text)
 
 	// Apply the ratio
 	tokens := float64(charCount) / e.charsPerToken

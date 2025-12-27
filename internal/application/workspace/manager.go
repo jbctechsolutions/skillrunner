@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -15,16 +17,50 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/git"
 )
 
+// sanitizePathForDeletion validates that a path is safe to delete.
+func sanitizePathForDeletion(path string) error {
+	if !filepath.IsAbs(path) {
+		return fmt.Errorf("path must be absolute: %s", path)
+	}
+
+	cleanPath := filepath.Clean(path)
+
+	if cleanPath != path && strings.Contains(path, "..") {
+		return fmt.Errorf("path contains traversal components: %s", path)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	if cleanPath == homeDir {
+		return fmt.Errorf("cannot delete home directory")
+	}
+
+	criticalPaths := []string{"/", "/bin", "/sbin", "/usr", "/etc", "/var", "/tmp", "/opt", "/lib", "/System", "/Library"}
+	if slices.Contains(criticalPaths, cleanPath) {
+		return fmt.Errorf("cannot delete system directory: %s", path)
+	}
+
+	skillrunnerDir := filepath.Join(homeDir, ".skillrunner")
+	if cleanPath == skillrunnerDir {
+		return fmt.Errorf("cannot delete skillrunner config directory")
+	}
+
+	return nil
+}
+
 // Manager manages development workspaces.
 type Manager struct {
-	storage     ports.WorkspaceStoragePort
+	storage     ports.WorkspaceStateStoragePort
 	gitWorktree *git.WorktreeManager
 	machineID   string
 	baseDir     string // Base directory for workspaces
 }
 
 // NewManager creates a new workspace manager.
-func NewManager(storage ports.WorkspaceStoragePort, machineID, baseDir string) (*Manager, error) {
+func NewManager(storage ports.WorkspaceStateStoragePort, machineID, baseDir string) (*Manager, error) {
 	// Initialize git worktree manager
 	gitWorktree, err := git.NewWorktreeManager()
 	if err != nil {
@@ -88,7 +124,7 @@ func (m *Manager) Create(ctx context.Context, opts workspace.CreateOptions) (*wo
 		return nil, fmt.Errorf("failed to convert workspace: %w", err)
 	}
 
-	if err := m.storage.Save(ctx, ctxWs); err != nil {
+	if err := m.storage.Create(ctx, ctxWs); err != nil {
 		// Try to clean up (best-effort, ignore errors)
 		if opts.GitWorktree {
 			_ = m.gitWorktree.Remove(ctx, wsPath, wsPath, true)
@@ -173,7 +209,7 @@ func (m *Manager) createGitWorktree(ctx context.Context, id, name, path, branch,
 // List returns workspaces matching the filter.
 func (m *Manager) List(ctx context.Context, filter workspace.Filter) ([]*workspace.Workspace, error) {
 	// Get all workspaces from storage
-	ctxWorkspaces, err := m.storage.List(ctx)
+	ctxWorkspaces, err := m.storage.List(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -190,17 +226,8 @@ func (m *Manager) List(ctx context.Context, filter workspace.Filter) ([]*workspa
 		if filter.MachineID != "" && ws.MachineID != filter.MachineID {
 			continue
 		}
-		if len(filter.Status) > 0 {
-			statusMatch := false
-			for _, s := range filter.Status {
-				if ws.Status == s {
-					statusMatch = true
-					break
-				}
-			}
-			if !statusMatch {
-				continue
-			}
+		if len(filter.Status) > 0 && !slices.Contains(filter.Status, ws.Status) {
+			continue
 		}
 
 		workspaces = append(workspaces, ws)
@@ -221,7 +248,7 @@ func (m *Manager) Get(ctx context.Context, workspaceID string) (*workspace.Works
 // GetByName retrieves a workspace by name.
 func (m *Manager) GetByName(ctx context.Context, name string) (*workspace.Workspace, error) {
 	// List all and find by name
-	ctxWorkspaces, err := m.storage.List(ctx)
+	ctxWorkspaces, err := m.storage.List(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +320,11 @@ func (m *Manager) Delete(ctx context.Context, workspaceID string, removeFiles bo
 
 	// Remove files if requested
 	if removeFiles {
+		// Sanitize path before deletion to prevent dangerous operations
+		if err := sanitizePathForDeletion(ws.Path); err != nil {
+			return fmt.Errorf("cannot delete workspace files: %w", err)
+		}
+
 		if ws.Type == workspace.TypeWorktree {
 			// Remove git worktree
 			if err := m.gitWorktree.Remove(ctx, ws.ParentRepo, ws.Path, true); err != nil {

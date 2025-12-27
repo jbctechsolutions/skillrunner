@@ -20,7 +20,7 @@ type HeadlineContext struct {
 
 // Injector generates headline context for workspace sessions.
 type Injector struct {
-	workspaceRepo ports.WorkspaceStoragePort
+	workspaceRepo ports.WorkspaceStateStoragePort
 	ruleRepo      ports.RuleStoragePort
 	itemRepo      ports.ContextItemStoragePort
 	estimator     *Estimator
@@ -29,7 +29,7 @@ type Injector struct {
 
 // NewInjector creates a new headline context injector.
 func NewInjector(
-	workspaceRepo ports.WorkspaceStoragePort,
+	workspaceRepo ports.WorkspaceStateStoragePort,
 	ruleRepo ports.RuleStoragePort,
 	itemRepo ports.ContextItemStoragePort,
 ) *Injector {

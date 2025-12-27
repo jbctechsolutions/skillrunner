@@ -8,33 +8,6 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/domain/session"
 )
 
-// WorkspaceStoragePort defines the interface for storing and retrieving workspaces.
-type WorkspaceStoragePort interface {
-	// Save persists a workspace to storage.
-	Save(ctx context.Context, workspace *domainContext.Workspace) error
-
-	// Get retrieves a workspace by ID.
-	Get(ctx context.Context, id string) (*domainContext.Workspace, error)
-
-	// GetByRepoPath retrieves a workspace by repository path.
-	GetByRepoPath(ctx context.Context, repoPath string) (*domainContext.Workspace, error)
-
-	// List returns all workspaces.
-	List(ctx context.Context) ([]*domainContext.Workspace, error)
-
-	// ListActive returns all active workspaces.
-	ListActive(ctx context.Context) ([]*domainContext.Workspace, error)
-
-	// Update updates an existing workspace.
-	Update(ctx context.Context, workspace *domainContext.Workspace) error
-
-	// Delete removes a workspace from storage.
-	Delete(ctx context.Context, id string) error
-
-	// Exists checks if a workspace exists.
-	Exists(ctx context.Context, id string) (bool, error)
-}
-
 // WorkflowSessionStoragePort defines the interface for storing and retrieving workflow sessions.
 // These sessions represent individual skill execution sessions within a workspace.
 type WorkflowSessionStoragePort interface {
