@@ -49,13 +49,15 @@ Skillrunner implements the **Ports & Adapters pattern** to achieve testability, 
 │  │  • Phase Executor                                 │      │
 │  │  • Provider Router                                │      │
 │  │  • Resolver (fallback logic)                      │      │
+│  │  • Observability Service                          │      │
 │  └──────────────────────────────────────────────────┘      │
 │                                                             │
 │  ┌──────────────────────────────────────────────────┐      │
 │  │                    PORTS                          │      │
 │  │  • ProviderPort (LLM interface)                   │      │
-│  │  • CachePort (future)                             │      │
-│  │  • StoragePort (future)                           │      │
+│  │  • CachePort (L1/L2 caching)                      │      │
+│  │  • MetricsStoragePort (metrics persistence)       │      │
+│  │  • StoragePort (session/workspace state)          │      │
 │  └──────────────────────────────────────────────────┘      │
 └─────────────────┬───────────────────────────────────────────┘
                   │
@@ -67,6 +69,7 @@ Skillrunner implements the **Ports & Adapters pattern** to achieve testability, 
 │  • Phase value object (immutable configuration)            │
 │  • Workflow DAG (graph algorithms)                         │
 │  • RoutingConfig (cost-aware routing)                      │
+│  • Metrics domain (execution records, aggregations)        │
 │  • Domain Errors (typed error hierarchy)                   │
 └─────────────────────────────────────────────────────────────┘
                   │
@@ -78,6 +81,11 @@ Skillrunner implements the **Ports & Adapters pattern** to achieve testability, 
 │  │  Provider  │  Provider  │  Provider  │  Provider  │     │
 │  └────────────┴────────────┴────────────┴────────────┘     │
 │                                                             │
+│  ┌────────────┬────────────┐                               │
+│  │  Memory    │  SQLite    │  (Two-tier cache)             │
+│  │   Cache    │   Cache    │                               │
+│  └────────────┴────────────┘                               │
+│                                                             │
 │  • Provider Registry (thread-safe)                         │
 │  • HTTP clients (provider-specific)                        │
 │  • Response mapping (port compliance)                      │
@@ -88,6 +96,9 @@ Skillrunner implements the **Ports & Adapters pattern** to achieve testability, 
 │                                                             │
 │  • Configuration (YAML/env loading)                         │
 │  • Skill loading (filesystem)                              │
+│  • Structured logging (slog-based)                         │
+│  • Distributed tracing (OpenTelemetry)                     │
+│  • Metrics storage (SQLite)                                │
 │  • Test utilities                                          │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -541,6 +552,194 @@ type ExecutionResult struct {
 
 ---
 
+## Observability System
+
+The observability system provides comprehensive visibility into workflow execution through structured logging, distributed tracing, and metrics collection.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Observability Service                       │
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │   Logger    │  │   Tracer    │  │  Metrics Storage    │ │
+│  │  (slog)     │  │ (OTel)      │  │  (SQLite)           │ │
+│  └──────┬──────┘  └──────┬──────┘  └─────────┬───────────┘ │
+│         │                │                    │             │
+│         ▼                ▼                    ▼             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │  Console/   │  │ stdout/OTLP │  │ Execution Records   │ │
+│  │  File       │  │  Exporter   │  │ Phase Records       │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Structured Logging
+
+The logging system uses Go's `log/slog` package for structured, leveled logging with context propagation.
+
+**Key features:**
+- **Correlation IDs** - Track requests across log entries
+- **Context propagation** - Pass context through the call stack
+- **Leveled output** - Debug, Info, Warn, Error levels
+- **Format options** - Text or JSON output
+
+**Usage pattern:**
+```go
+// Start with correlation ID
+ctx = logging.WithCorrelationID(ctx, correlationID)
+
+// Log with context
+logging.LogWorkflowStart(ctx, logger, skillID, skillName)
+logging.LogPhaseComplete(ctx, logger, phaseID, inputTokens, outputTokens, duration, cacheHit)
+logging.LogCostIncurred(ctx, logger, provider, model, cost, inputTokens, outputTokens)
+```
+
+### Distributed Tracing
+
+OpenTelemetry-based distributed tracing provides visibility into workflow execution timing and dependencies.
+
+**Span hierarchy:**
+```
+workflow:{skill_name}           # Root span for entire workflow
+├── phase:{phase_id}            # Child span for each phase
+│   └── provider:{name}         # Grandchild span for LLM call
+└── phase:{phase_id}
+    └── provider:{name}
+```
+
+**Span attributes:**
+
+| Span Type | Attributes |
+|-----------|------------|
+| Workflow | skill_id, skill_name, phase_count, total_tokens, cost, cache_hits, cache_misses |
+| Phase | phase_id, phase_name, input_tokens, output_tokens, cache_hit, cost |
+| Provider | provider, model, output_tokens, finish_reason |
+
+**Exporter options:**
+- `stdout` - Print traces to console (development)
+- `otlp` - Send to OpenTelemetry collector (production)
+- `none` - Disable tracing
+
+### Metrics Collection
+
+Metrics are persisted to SQLite for aggregation and reporting.
+
+**Execution records:**
+```go
+type ExecutionRecord struct {
+    ID            string
+    SkillID       string
+    SkillName     string
+    Status        string        // completed, failed
+    InputTokens   int
+    OutputTokens  int
+    TotalCost     float64
+    Duration      time.Duration
+    PhaseCount    int
+    CacheHits     int
+    CacheMisses   int
+    PrimaryModel  string
+    CorrelationID string
+}
+```
+
+**Phase execution records:**
+```go
+type PhaseExecutionRecord struct {
+    ID           string
+    ExecutionID  string
+    PhaseID      string
+    PhaseName    string
+    Status       string
+    Provider     string
+    Model        string
+    InputTokens  int
+    OutputTokens int
+    Cost         float64
+    Duration     time.Duration
+    CacheHit     bool
+}
+```
+
+**Aggregated metrics:**
+```go
+type AggregatedMetrics struct {
+    Period          DateRange
+    TotalExecutions int64
+    SuccessCount    int64
+    FailedCount     int64
+    SuccessRate     float64
+    InputTokens     int64
+    OutputTokens    int64
+    TotalCost       float64
+    AvgDuration     time.Duration
+    Providers       []ProviderMetrics
+    Skills          []SkillMetrics
+}
+```
+
+### Cost Tracking
+
+The cost calculator computes costs based on provider-specific pricing:
+
+```go
+type CostCalculator struct {
+    pricing map[string]ModelPricing
+}
+
+type ModelPricing struct {
+    InputPer1M  float64  // Cost per 1M input tokens
+    OutputPer1M float64  // Cost per 1M output tokens
+}
+
+// Calculate cost for a request
+breakdown := calculator.Calculate(model, inputTokens, outputTokens)
+// Returns: InputCost, OutputCost, TotalCost
+```
+
+**Default pricing (per 1M tokens):**
+
+| Provider/Model | Input | Output |
+|----------------|-------|--------|
+| Ollama (all) | $0.00 | $0.00 |
+| Claude 3.5 Sonnet | $3.00 | $15.00 |
+| Claude 3 Opus | $15.00 | $75.00 |
+| GPT-4o | $2.50 | $10.00 |
+| GPT-4 Turbo | $10.00 | $30.00 |
+| Groq (Llama) | $0.05 | $0.10 |
+
+### Observer Pattern
+
+The observability service uses an observer pattern to track workflow execution:
+
+```go
+// Start workflow observation
+ctx, observer := observabilityService.StartWorkflow(ctx, skillID, skillName)
+
+// For each phase
+ctx, phaseObserver := observer.StartPhase(ctx, phaseID, phaseName)
+
+// Track provider call
+ctx = phaseObserver.StartProviderCall(ctx, providerName, model)
+phaseObserver.EndProviderCall(outputTokens, finishReason, err)
+
+// Complete phase
+phaseObserver.CompletePhase(ctx, inputTokens, outputTokens, provider, model, cacheHit)
+
+// Complete workflow
+observer.CompleteWorkflow(ctx, totalInput, totalOutput, primaryModel)
+```
+
+This pattern:
+- Automatically records timing for each span
+- Propagates context through the execution
+- Aggregates metrics for persistence
+- Handles both success and failure paths
+
+---
+
 ## Key Design Decisions
 
 ### 1. Local-First Philosophy
@@ -845,16 +1044,33 @@ The architecture is designed for extensibility. Here's how to add new functional
 
 ---
 
+## Implemented Features (Waves 9-11)
+
+### Wave 9: Streaming
+- **Real-time output** - Stream LLM responses as they arrive
+- **StreamingExecutor** - Dedicated executor for streaming workflows
+- **Callback-based** - StreamCallback for handling chunks
+
+### Wave 10: Caching & Performance
+- **Two-tier cache** - L1 (memory) + L2 (SQLite) composite cache
+- **Response caching** - Cache LLM responses by request hash
+- **TTL-based expiry** - Configurable cache entry lifetime
+- **Automatic cleanup** - Background goroutine for expired entries
+
+### Wave 11: Observability
+- **Structured logging** - slog-based logger with correlation IDs
+- **Distributed tracing** - OpenTelemetry with stdout/OTLP exporters
+- **Metrics collection** - SQLite-backed metrics storage
+- **Cost tracking** - Per-provider cost calculation
+- **Observability service** - Coordinated logging, tracing, and metrics
+
 ## Future Enhancements
 
 ### Planned Features
-1. **Caching** - Cache LLM responses for repeated inputs
-2. **Streaming** - Support for streaming execution results
-3. **Observability** - Metrics, tracing, and structured logging
-4. **Rate limiting** - Per-provider rate limit enforcement
-5. **Retries** - Automatic retry with exponential backoff
-6. **Cost tracking** - Real-time cost calculation and budgets
-7. **Skill marketplace** - Share and discover skills
+1. **Rate limiting** - Per-provider rate limit enforcement
+2. **Retries** - Automatic retry with exponential backoff
+3. **Skill marketplace** - Share and discover skills
+4. **Budget alerts** - Cost thresholds and notifications
 
 ### Architectural Evolution
 - **Plugin system** - Dynamic provider loading
@@ -898,6 +1114,6 @@ The architecture is designed for extensibility. Here's how to add new functional
 
 ---
 
-**Document Status:** Draft v1.0
+**Document Status:** v2.0 (Wave 11 Complete)
 **Contributors:** Architecture Team
 **Last Review:** 2025-12-26

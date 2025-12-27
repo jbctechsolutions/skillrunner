@@ -33,6 +33,10 @@ func applyMigrations(db *sql.DB) error {
 		{8, "create_response_cache_table", createResponseCacheTable},
 		{9, "create_cache_stats_table", createCacheStatsTable},
 		{10, "create_cache_indices", createCacheIndices},
+		// Wave 11: Observability
+		{11, "create_execution_records_table", createExecutionRecordsTable},
+		{12, "create_phase_execution_records_table", createPhaseExecutionRecordsTable},
+		{13, "create_metrics_indices", createMetricsIndices},
 	}
 
 	for _, m := range migrations {
@@ -246,4 +250,61 @@ CREATE INDEX IF NOT EXISTS idx_response_cache_created ON response_cache(created_
 CREATE INDEX IF NOT EXISTS idx_response_cache_last_accessed ON response_cache(last_accessed_at);
 CREATE INDEX IF NOT EXISTS idx_cache_stats_type ON cache_stats(stat_type);
 CREATE INDEX IF NOT EXISTS idx_cache_stats_model ON cache_stats(model_id);
+`
+
+// Wave 11: Execution records table for workflow execution metrics
+const createExecutionRecordsTable = `
+CREATE TABLE execution_records (
+	id TEXT PRIMARY KEY,
+	skill_id TEXT NOT NULL,
+	skill_name TEXT NOT NULL,
+	status TEXT NOT NULL,
+	input_tokens INTEGER DEFAULT 0,
+	output_tokens INTEGER DEFAULT 0,
+	total_cost REAL DEFAULT 0,
+	duration_ns INTEGER DEFAULT 0,
+	phase_count INTEGER DEFAULT 0,
+	cache_hits INTEGER DEFAULT 0,
+	cache_misses INTEGER DEFAULT 0,
+	primary_model TEXT,
+	started_at TIMESTAMP NOT NULL,
+	completed_at TIMESTAMP NOT NULL,
+	correlation_id TEXT
+);
+`
+
+// Wave 11: Phase execution records table for individual phase metrics
+const createPhaseExecutionRecordsTable = `
+CREATE TABLE phase_execution_records (
+	id TEXT PRIMARY KEY,
+	execution_id TEXT NOT NULL,
+	phase_id TEXT NOT NULL,
+	phase_name TEXT NOT NULL,
+	status TEXT NOT NULL,
+	provider TEXT NOT NULL,
+	model TEXT NOT NULL,
+	input_tokens INTEGER DEFAULT 0,
+	output_tokens INTEGER DEFAULT 0,
+	cost REAL DEFAULT 0,
+	duration_ns INTEGER DEFAULT 0,
+	cache_hit BOOLEAN DEFAULT 0,
+	started_at TIMESTAMP NOT NULL,
+	completed_at TIMESTAMP NOT NULL,
+	error_message TEXT,
+	FOREIGN KEY (execution_id) REFERENCES execution_records(id) ON DELETE CASCADE
+);
+`
+
+// Wave 11: Metrics indices for performance
+const createMetricsIndices = `
+CREATE INDEX IF NOT EXISTS idx_execution_records_skill ON execution_records(skill_id);
+CREATE INDEX IF NOT EXISTS idx_execution_records_status ON execution_records(status);
+CREATE INDEX IF NOT EXISTS idx_execution_records_started ON execution_records(started_at);
+CREATE INDEX IF NOT EXISTS idx_execution_records_completed ON execution_records(completed_at);
+CREATE INDEX IF NOT EXISTS idx_execution_records_correlation ON execution_records(correlation_id);
+CREATE INDEX IF NOT EXISTS idx_phase_records_execution ON phase_execution_records(execution_id);
+CREATE INDEX IF NOT EXISTS idx_phase_records_provider ON phase_execution_records(provider);
+CREATE INDEX IF NOT EXISTS idx_phase_records_model ON phase_execution_records(model);
+CREATE INDEX IF NOT EXISTS idx_phase_records_started ON phase_execution_records(started_at);
+CREATE INDEX IF NOT EXISTS idx_phase_records_cache_hit ON phase_execution_records(cache_hit);
 `

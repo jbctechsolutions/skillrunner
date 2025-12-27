@@ -1,11 +1,14 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/jbctechsolutions/skillrunner/internal/application"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/metrics"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
 
@@ -89,16 +92,127 @@ func runMetrics(since string) error {
 		return fmt.Errorf("invalid time range: %w", err)
 	}
 
-	// Get mock metrics data
-	metrics := getMockMetrics(duration)
+	// Try to get real metrics from the database
+	usageMetrics, err := getRealMetrics(duration)
+	if err != nil {
+		// Fall back to mock data if metrics unavailable
+		formatter.Println("%s Could not retrieve metrics: %v",
+			formatter.Colorize("Warning:", output.ColorYellow), err)
+		formatter.Println("%s Showing mock data for demonstration purposes",
+			formatter.Colorize("Info:", output.ColorBlue))
+		formatter.Println("")
+		usageMetrics = getMockMetrics(duration)
+	}
 
 	// Handle JSON output
 	if formatter.Format() == output.FormatJSON {
-		return formatter.JSON(metrics)
+		return formatter.JSON(usageMetrics)
 	}
 
 	// Print text output
-	return printMetricsText(formatter, metrics)
+	return printMetricsText(formatter, usageMetrics)
+}
+
+// getRealMetrics retrieves actual metrics from the database.
+func getRealMetrics(duration time.Duration) (UsageMetrics, error) {
+	ctx := context.Background()
+
+	// Create container to access metrics repository
+	container, err := application.NewContainer(nil)
+	if err != nil {
+		return UsageMetrics{}, fmt.Errorf("failed to initialize container: %w", err)
+	}
+	defer container.Close()
+
+	// Get the metrics repository
+	metricsRepo := container.MetricsRepository()
+	if metricsRepo == nil {
+		return UsageMetrics{}, fmt.Errorf("metrics not enabled in configuration")
+	}
+
+	// Create filter for the time period
+	now := time.Now()
+	startTime := now.Add(-duration)
+	filter := metrics.MetricsFilter{
+		StartDate: startTime,
+		EndDate:   now,
+	}
+
+	// Get aggregated metrics
+	aggregated, err := metricsRepo.GetAggregatedMetrics(ctx, filter)
+	if err != nil {
+		return UsageMetrics{}, fmt.Errorf("failed to get aggregated metrics: %w", err)
+	}
+
+	// Convert domain metrics to CLI format
+	return convertToUsageMetrics(aggregated, duration), nil
+}
+
+// convertToUsageMetrics converts domain metrics to the CLI display format.
+func convertToUsageMetrics(agg *metrics.AggregatedMetrics, duration time.Duration) UsageMetrics {
+	// Convert provider metrics
+	providers := make([]ProviderMetrics, 0, len(agg.Providers))
+	for _, p := range agg.Providers {
+		providerType := "cloud"
+		if p.Name == "ollama" {
+			providerType = "local"
+		}
+
+		providers = append(providers, ProviderMetrics{
+			Name:            p.Name,
+			Type:            providerType,
+			TotalRequests:   int(p.TotalRequests),
+			SuccessfulCount: int(p.SuccessCount),
+			FailedCount:     int(p.FailedCount),
+			TokensInput:     p.TokensInput,
+			TokensOutput:    p.TokensOutput,
+			EstimatedCost:   p.TotalCost,
+			AvgLatencyMs:    p.AvgLatency.Milliseconds(),
+		})
+	}
+
+	// Convert skill metrics
+	skills := make([]SkillMetrics, 0, len(agg.Skills))
+	for _, s := range agg.Skills {
+		skills = append(skills, SkillMetrics{
+			Name:        s.SkillName,
+			Executions:  int(s.TotalRuns),
+			SuccessRate: s.SuccessRate * 100, // Convert to percentage
+			AvgDuration: formatMetricsDuration(s.AvgDuration),
+		})
+	}
+
+	// Calculate success rate as percentage
+	var successRate float64
+	if agg.TotalExecutions > 0 {
+		successRate = agg.SuccessRate * 100
+	}
+
+	return UsageMetrics{
+		Period:             duration.String(),
+		StartDate:          agg.Period.Start.Format(time.RFC3339),
+		EndDate:            agg.Period.End.Format(time.RFC3339),
+		TotalRequests:      int(agg.TotalExecutions),
+		SuccessfulCount:    int(agg.SuccessCount),
+		FailedCount:        int(agg.FailedCount),
+		SuccessRate:        successRate,
+		TotalTokensInput:   agg.InputTokens,
+		TotalTokensOutput:  agg.OutputTokens,
+		TotalEstimatedCost: agg.TotalCost,
+		ProviderMetrics:    providers,
+		TopSkills:          skills,
+	}
+}
+
+// formatMetricsDuration formats a duration for human display in metrics output.
+func formatMetricsDuration(d time.Duration) string {
+	if d < time.Second {
+		return fmt.Sprintf("%dms", d.Milliseconds())
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%.1fs", d.Seconds())
+	}
+	return fmt.Sprintf("%.1fm", d.Minutes())
 }
 
 // parseDuration parses a duration string like "24h", "7d", "30d".

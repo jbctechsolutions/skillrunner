@@ -11,15 +11,19 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/cache"
 	adapterProvider "github.com/jbctechsolutions/skillrunner/internal/adapters/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/sync/sqlite"
+	"github.com/jbctechsolutions/skillrunner/internal/application/observability"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	appProvider "github.com/jbctechsolutions/skillrunner/internal/application/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/application/session"
 	appSkills "github.com/jbctechsolutions/skillrunner/internal/application/skills"
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/provider"
 	domainSession "github.com/jbctechsolutions/skillrunner/internal/domain/session"
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/logging"
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/skills"
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/storage"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/tracing"
 )
 
 // Container holds all application dependencies and provides a central
@@ -58,6 +62,13 @@ type Container struct {
 	compositeCache *cache.CompositeCache
 	responseCache  *cache.ResponseCache
 
+	// Wave 11: Observability
+	logger               *logging.Logger
+	tracer               *tracing.Tracer
+	metricsRepo          ports.MetricsStoragePort
+	costCalculator       *provider.CostCalculator
+	observabilityService *observability.Service
+
 	// Machine ID for session tracking
 	machineID string
 }
@@ -86,6 +97,12 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 
 	// Initialize registries
 	c.initRegistries()
+
+	// Wave 11: Initialize observability
+	if err := c.initObservability(); err != nil {
+		_ = c.Close() // Clean up on error
+		return nil, fmt.Errorf("failed to initialize observability: %w", err)
+	}
 
 	// Initialize application services
 	if err := c.initServices(); err != nil {
@@ -192,8 +209,69 @@ func (c *Container) initCache() {
 	c.responseCache = cache.NewResponseCache(c.compositeCache, c.config.Cache.DefaultTTL)
 }
 
+// initObservability initializes the observability subsystem (logging, tracing, metrics).
+func (c *Container) initObservability() error {
+	ctx := context.Background()
+
+	// Initialize logger
+	logLevel := logging.LevelInfo
+	if c.config.Observability.Metrics.AggregationLevel == "debug" {
+		logLevel = logging.LevelDebug
+	}
+	logCfg := logging.Config{
+		Level:  logLevel,
+		Format: logging.FormatText,
+	}
+	c.logger = logging.New(logCfg)
+
+	// Initialize tracer if enabled
+	if c.config.Observability.Tracing.Enabled {
+		tracingCfg := tracing.Config{
+			Enabled:      true,
+			ExporterType: tracing.ExporterType(c.config.Observability.Tracing.ExporterType),
+			OTLPEndpoint: c.config.Observability.Tracing.OTLPEndpoint,
+			ServiceName:  c.config.Observability.Tracing.ServiceName,
+			Environment:  "production",
+			SampleRate:   c.config.Observability.Tracing.SampleRate,
+		}
+		tracer, err := tracing.New(ctx, tracingCfg)
+		if err != nil {
+			return fmt.Errorf("failed to create tracer: %w", err)
+		}
+		c.tracer = tracer
+	} else {
+		// Create no-op tracer
+		c.tracer = tracing.Default()
+	}
+
+	// Initialize metrics repository if enabled
+	if c.config.Observability.Metrics.Enabled {
+		c.metricsRepo = storage.NewMetricsRepository(c.db)
+	}
+
+	// Initialize cost calculator
+	c.costCalculator = provider.NewCostCalculator()
+
+	// Initialize observability service
+	c.observabilityService = observability.NewService(observability.ServiceConfig{
+		Logger:         c.logger,
+		Tracer:         c.tracer,
+		MetricsStorage: c.metricsRepo,
+		CostCalculator: c.costCalculator,
+	})
+
+	return nil
+}
+
 // Close releases all resources held by the container.
 func (c *Container) Close() error {
+	ctx := context.Background()
+
+	// Wave 11: Shutdown tracer
+	if c.tracer != nil {
+		_ = c.tracer.Shutdown(ctx)
+	}
+
 	// Wave 10: Stop memory cache cleanup goroutine
 	if c.memoryCache != nil {
 		_ = c.memoryCache.Close()
@@ -311,6 +389,32 @@ func (c *Container) MemoryCache() *cache.MemoryCache {
 // Returns nil if caching is not enabled.
 func (c *Container) CompositeCache() *cache.CompositeCache {
 	return c.compositeCache
+}
+
+// Logger returns the structured logger.
+func (c *Container) Logger() *logging.Logger {
+	return c.logger
+}
+
+// Tracer returns the OpenTelemetry tracer.
+func (c *Container) Tracer() *tracing.Tracer {
+	return c.tracer
+}
+
+// MetricsRepository returns the metrics storage repository.
+// Returns nil if metrics are not enabled.
+func (c *Container) MetricsRepository() ports.MetricsStoragePort {
+	return c.metricsRepo
+}
+
+// CostCalculator returns the cost calculator for provider pricing.
+func (c *Container) CostCalculator() *provider.CostCalculator {
+	return c.costCalculator
+}
+
+// ObservabilityService returns the observability service for workflow execution.
+func (c *Container) ObservabilityService() *observability.Service {
+	return c.observabilityService
 }
 
 // getMachineID generates or retrieves a unique machine identifier.
