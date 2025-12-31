@@ -24,7 +24,7 @@ const (
 
 // Manager handles context management operations for workspaces.
 type Manager struct {
-	workspaceRepo  ports.WorkspaceStoragePort
+	workspaceRepo  ports.WorkspaceStateStoragePort
 	sessionRepo    ports.WorkflowSessionStoragePort
 	checkpointRepo ports.CheckpointStoragePort
 	itemRepo       ports.ContextItemStoragePort
@@ -34,7 +34,7 @@ type Manager struct {
 
 // NewManager creates a new context manager.
 func NewManager(
-	workspaceRepo ports.WorkspaceStoragePort,
+	workspaceRepo ports.WorkspaceStateStoragePort,
 	sessionRepo ports.WorkflowSessionStoragePort,
 	checkpointRepo ports.CheckpointStoragePort,
 	itemRepo ports.ContextItemStoragePort,
@@ -123,7 +123,7 @@ These rules will be included in the context for skill execution.
 			return nil, fmt.Errorf("failed to create workspace: %w", err)
 		}
 
-		if err := m.workspaceRepo.Save(ctx, workspace); err != nil {
+		if err := m.workspaceRepo.Create(ctx, workspace); err != nil {
 			return nil, fmt.Errorf("failed to save workspace: %w", err)
 		}
 	}

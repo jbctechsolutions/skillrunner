@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/crypto"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
 
@@ -203,6 +204,12 @@ func runInit(force bool) error {
 	formatter.Println("%s", formatter.Dim("API keys will be stored encrypted in config.yaml"))
 	formatter.Println("")
 
+	// Initialize encryptor for API keys
+	encryptor, err := crypto.NewEncryptor()
+	if err != nil {
+		return fmt.Errorf("failed to initialize encryption: %w", err)
+	}
+
 	// Anthropic
 	configureAnthropic, err := p.promptYesNo("Configure Anthropic (Claude)", false)
 	if err != nil {
@@ -214,7 +221,11 @@ func runInit(force bool) error {
 			return err
 		}
 		if apiKey != "" {
-			cfg.Providers.Anthropic.APIKeyEncrypted = apiKey // TODO: encrypt
+			encryptedKey, err := encryptor.Encrypt(apiKey)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt Anthropic API key: %w", err)
+			}
+			cfg.Providers.Anthropic.APIKeyEncrypted = encryptedKey
 			cfg.Providers.Anthropic.Enabled = true
 		}
 	}
@@ -230,7 +241,11 @@ func runInit(force bool) error {
 			return err
 		}
 		if apiKey != "" {
-			cfg.Providers.OpenAI.APIKeyEncrypted = apiKey // TODO: encrypt
+			encryptedKey, err := encryptor.Encrypt(apiKey)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt OpenAI API key: %w", err)
+			}
+			cfg.Providers.OpenAI.APIKeyEncrypted = encryptedKey
 			cfg.Providers.OpenAI.Enabled = true
 		}
 	}
@@ -246,7 +261,11 @@ func runInit(force bool) error {
 			return err
 		}
 		if apiKey != "" {
-			cfg.Providers.Groq.APIKeyEncrypted = apiKey // TODO: encrypt
+			encryptedKey, err := encryptor.Encrypt(apiKey)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt Groq API key: %w", err)
+			}
+			cfg.Providers.Groq.APIKeyEncrypted = encryptedKey
 			cfg.Providers.Groq.Enabled = true
 		}
 	}
