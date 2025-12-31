@@ -29,7 +29,7 @@ LDFLAGS = -X $(LDFLAGS_PKG).Version=$(VERSION) \
           -X $(LDFLAGS_PKG).GitCommit=$(GIT_COMMIT) \
           -X $(LDFLAGS_PKG).BuildDate=$(BUILD_DATE)
 
-.PHONY: all build build-release test lint clean help release release-snapshot
+.PHONY: all build build-release test lint clean help release release-snapshot test-ci test-release test-workflows
 
 # Default target
 all: clean lint test build
@@ -92,6 +92,21 @@ vet:
 # Run all checks (format, vet, lint, test)
 check: fmt vet lint test
 
+# Test CI workflow locally using act
+# Requires: docker, act (brew install act)
+test-ci:
+	./scripts/test-workflows.sh ci
+
+# Test release workflow locally using act (dry-run)
+# Requires: docker, act (brew install act)
+test-release:
+	./scripts/test-workflows.sh release
+
+# Test all workflows locally using act
+# Requires: docker, act (brew install act)
+test-workflows:
+	./scripts/test-workflows.sh all
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -112,6 +127,11 @@ help:
 	@echo "  Release:"
 	@echo "    release          - Run goreleaser (requires GITHUB_TOKEN)"
 	@echo "    release-snapshot - Run goreleaser snapshot (no publish)"
+	@echo ""
+	@echo "  Workflow Testing (requires docker and act):"
+	@echo "    test-ci          - Test CI workflow locally"
+	@echo "    test-release     - Test release workflow (dry-run)"
+	@echo "    test-workflows   - Test all workflows locally"
 	@echo ""
 	@echo "  Other:"
 	@echo "    help             - Show this help message"

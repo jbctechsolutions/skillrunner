@@ -18,7 +18,7 @@ Unacceptable behavior includes harassment, trolling, personal attacks, or publis
 
 ### Prerequisites
 
-- **Go 1.24** or later
+- **Go 1.23** or later
 - **golangci-lint** for code linting
 - **Make** for build automation
 - **Git** for version control
@@ -205,6 +205,42 @@ Skillrunner follows hexagonal architecture (ports and adapters):
 - **Adapters**: Implements ports for specific providers
 - **Infrastructure**: Cross-cutting concerns (config, logging)
 - **Presentation**: CLI interface and output formatting
+
+### Experimental Features Pattern
+
+When implementing experimental or preview features, use the `ExperimentalError` pattern to provide clear feedback to users:
+
+```go
+// ExperimentalError indicates a feature is experimental and may not work correctly.
+type ExperimentalError struct {
+    Feature string
+    Message string
+    Err     error
+}
+
+func (e *ExperimentalError) Error() string {
+    if e.Err != nil {
+        return fmt.Sprintf("[experimental: %s] %s: %v", e.Feature, e.Message, e.Err)
+    }
+    return fmt.Sprintf("[experimental: %s] %s", e.Feature, e.Message)
+}
+
+// IsExperimental returns true to identify this as an experimental feature error.
+func (e *ExperimentalError) IsExperimental() bool {
+    return true
+}
+
+func (e *ExperimentalError) Unwrap() error {
+    return e.Err
+}
+```
+
+This pattern allows:
+- Clear identification of experimental features in error messages
+- Programmatic detection of experimental errors via `IsExperimental()`
+- Proper error wrapping for debugging
+
+See `internal/adapters/opencode/errors.go` for the reference implementation.
 
 ## License
 
