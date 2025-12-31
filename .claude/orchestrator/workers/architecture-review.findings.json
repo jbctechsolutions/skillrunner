@@ -1,84 +1,84 @@
 {
-  "summary": "The Wave 8 implementation demonstrates a well-structured approach to wiring the workflow engine and CLI commands, largely adhering to the hexagonal architecture patterns established in the codebase. The Container pattern provides clean dependency injection, and the separation of concerns between presentation, application, and domain layers is respected. However, there are several architectural concerns: (1) the use of package-level variables for global state in CLI commands creates tight coupling and complicates testing, (2) some CLI commands directly instantiate application services rather than using the container, (3) the Provider Initializer lives in the application layer but imports adapter-level concrete types, and (4) there are inconsistent port interface patterns between context storage ports (carried forward from Wave 7). Overall, the implementation is solid for an MVP but would benefit from refinement in the coupling patterns before production use.",
+  "summary": "The v0.1.0 release preparation maintains the codebase's well-structured hexagonal/clean architecture with clear separation between domain, application, adapters, and infrastructure layers. The session's 14 features were implemented with good architectural consistency, properly using the ports-and-adapters pattern throughout. Key improvements include proper integration of API key encryption at the provider initialization layer (AES-256-GCM with machine-derived keys), graceful handling of the experimental OpenCode backend with proper error types, well-designed terminal spawning infrastructure, and robust release infrastructure (goreleaser, GitHub Actions workflows) that properly handles CGO for SQLite. The git worktree manager now correctly validates branch existence using git show-ref. Minor architectural issues include code duplication between the workspace CLI command and infrastructure layer for terminal spawning and path sanitization, and the provider initializer could benefit from a factory pattern for better extensibility. Overall, the architecture is production-ready for v0.1.0 with solid foundations for observability, caching, and streaming.",
   "severity": "minor",
   "issues": [
     {
-      "category": "coupling",
+      "category": "abstraction",
       "severity": "warning",
-      "file": "internal/presentation/cli/commands/root.go",
-      "message": "Global package-level state (globalFlags, appCtx) creates tight coupling between CLI commands and makes unit testing difficult. This pattern prevents parallel test execution and requires careful cleanup.",
-      "suggestion": "Consider using a functional options pattern or dependency injection through command context. The cobra.Command already supports a Context() method that could carry the AppContext."
+      "file": "internal/presentation/cli/commands/workspace.go",
+      "message": "Terminal spawning logic is duplicated between workspace.go CLI command (spawnTerminal, spawnTerminalDarwin, spawnTerminalLinux) and infrastructure/terminal/spawner.go (Spawner type with identical functionality)",
+      "suggestion": "Remove the spawnTerminal*, spawnTerminalDarwin, and spawnTerminalLinux functions from workspace.go and use the terminal.Spawner from internal/infrastructure/terminal instead. The infrastructure layer already provides a proper abstraction with the Spawner type that supports auto-detection, multiple terminal types, and background execution."
     },
     {
       "category": "abstraction",
       "severity": "warning",
-      "file": "internal/application/provider/initializer.go",
-      "message": "The Initializer in the application layer directly imports and instantiates concrete adapter types (anthropic.NewProvider, ollama.NewProviderWithURL, etc.). This violates the hexagonal architecture principle where the application layer should depend only on port interfaces.",
-      "suggestion": "Create a factory interface or use a registration pattern where adapters register themselves. The container could accept provider factories through configuration rather than having the initializer know about concrete implementations."
-    },
-    {
-      "category": "consistency",
-      "severity": "warning",
-      "file": "internal/application/ports/context_storage.go",
-      "message": "There are duplicate port interfaces for similar concepts: WorkspaceStoragePort vs WorkspaceStateStoragePort, SessionStoragePort vs SessionStateStoragePort. This creates confusion about which interface to implement and use.",
-      "suggestion": "Consolidate to a single port interface per domain concept. The *StateStoragePort variants appear to be the more comprehensive versions and should be the canonical interfaces."
+      "file": "internal/presentation/cli/commands/workspace.go",
+      "message": "The sanitizePathForDeletion function is duplicated in both workspace.go CLI command (lines 23-98) and internal/application/workspace/manager.go (lines 21-52)",
+      "suggestion": "Extract sanitizePathForDeletion to a shared location such as internal/infrastructure/filesystem/security.go or a dedicated internal/infrastructure/security package. This ensures consistent security checks and single point of maintenance."
     },
     {
       "category": "coupling",
-      "severity": "warning",
-      "file": "internal/presentation/cli/commands/run.go",
-      "message": "The run command creates a new WorkflowExecutor directly instead of using the one from the Container. This bypasses the container's lifecycle management and could lead to resource leaks or inconsistent state.",
-      "suggestion": "Use container.WorkflowExecutor() and configure it with the selected provider, or add a method to the container to create an executor with a specific provider."
-    },
-    {
-      "category": "coupling",
-      "severity": "warning",
-      "file": "internal/presentation/cli/commands/ask.go",
-      "message": "The ask command directly instantiates appProvider.NewRouter and uses low-level provider selection logic. This duplicates routing logic that should be encapsulated in the application layer.",
-      "suggestion": "Create an application service that encapsulates single-phase execution with provider routing, similar to how WorkflowExecutor handles multi-phase workflows."
-    },
-    {
-      "category": "abstraction",
       "severity": "info",
-      "file": "internal/application/container.go",
-      "message": "The sessionStorageAdapter is defined inline in the container file rather than as a proper adapter in the adapters layer. This conflates the container's DI responsibility with adapter implementation.",
-      "suggestion": "Move the sessionStorageAdapter to internal/adapters/storage/ or create a proper adapter package that bridges the port interfaces."
+      "file": "internal/application/provider/initializer.go",
+      "message": "Provider initializer directly imports and instantiates concrete provider implementations (ollama, anthropic, openai, groq) rather than using a factory pattern",
+      "suggestion": "Consider introducing a ProviderFactory interface to decouple the initializer from concrete implementations. This would make it easier to add new providers (e.g., Gemini, Mistral) without modifying the initializer and improve testability."
     },
     {
       "category": "pattern",
       "severity": "info",
-      "file": "internal/application/skills/registry.go",
-      "message": "The SkillRegistry uses both mutex-protected methods and non-atomic operations on the loaded flag. The LoadAll() method releases and re-acquires the lock, creating a potential race condition between the skills map clear and the loaded flag update.",
-      "suggestion": "Consider using a single atomic operation or holding the lock throughout the entire LoadAll operation to ensure consistency."
+      "file": "internal/adapters/backend/opencode/backend.go",
+      "message": "The OpenCode backend implements an excellent experimental feature pattern with dedicated ExperimentalError type, IsExperimental() method, and informative error messages guiding users to alternatives",
+      "suggestion": "Document this as the standard approach for experimental features in CONTRIBUTING.md for future contributors. The pattern includes: custom error type, IsExperimental() marker method, clear user guidance in error messages."
     },
     {
       "category": "scalability",
       "severity": "info",
-      "file": "internal/presentation/cli/commands/status.go",
-      "message": "The getProviderStatuses function uses an anonymous interface type for the container parameter, which works but is unconventional and could complicate future refactoring.",
-      "suggestion": "Define a named interface or use the concrete Container type for clearer API contracts."
-    },
-    {
-      "category": "complexity",
-      "severity": "info",
-      "file": "internal/presentation/cli/commands/workspace.go",
-      "message": "The newWorkspaceCreateCmd function creates unused workspace.CreateOptions just to suppress linting warnings. This adds unnecessary complexity and confusion.",
-      "suggestion": "Either fully implement the workspace creation flow using the options struct or remove the unused code entirely."
+      "file": "internal/infrastructure/git/worktree.go",
+      "message": "Git worktree manager correctly implements BranchExists check using 'git show-ref --verify' for proper local branch existence validation (feature-11 fix)",
+      "suggestion": "This fixes a critical issue where workspace creation could fail due to incorrect branch detection. The implementation now properly handles both existing and new branches by checking refs/heads/[branch] explicitly."
     },
     {
       "category": "consistency",
       "severity": "info",
+      "file": ".goreleaser.yaml",
+      "message": "GoReleaser configuration properly handles CGO requirements by using matrix strategy for native platform builds rather than cross-compilation",
+      "suggestion": "Good architectural decision. The workflow correctly documents the CGO limitation and uses native runners (macos-13, macos-14, ubuntu-latest, ubuntu-24.04-arm) for each target platform."
+    },
+    {
+      "category": "complexity",
+      "severity": "warning",
+      "file": "internal/infrastructure/crypto/encryption.go",
+      "message": "Machine-derived encryption key uses hostname + random salt stored in ~/.skillrunner/.salt, creating implicit portability constraints",
+      "suggestion": "Document clearly in user-facing documentation (getting-started.md, configuration.md) that encrypted API keys are machine-specific and will need to be re-configured if: (1) salt file is lost, (2) hostname changes, or (3) config is moved between machines. Consider adding 'sr config export-keys' utility in future."
+    },
+    {
+      "category": "pattern",
+      "severity": "info",
+      "file": "internal/presentation/cli/commands/chat.go",
+      "message": "Chat service initialization (initChatService) correctly uses the container's already-configured provider registry and creates router on-demand",
+      "suggestion": "Good pattern - properly retrieves the registry from container.ProviderRegistry() rather than re-initializing providers, ensuring consistent state with the application lifecycle."
+    },
+    {
+      "category": "abstraction",
+      "severity": "info",
+      "file": "internal/application/ports/*.go",
+      "message": "Port interfaces (ProviderPort, BackendPort, storage ports) are well-defined with clear separation of concerns and appropriately minimal interfaces",
+      "suggestion": "Good architecture - the ports define stable contracts between layers. BackendPort correctly captures the AI coding assistant abstraction with Info(), Start(), Attach(), InjectContext() etc."
+    },
+    {
+      "category": "coupling",
+      "severity": "info",
       "file": "internal/application/container.go",
-      "message": "Error handling in initRegistries() silently swallows initialization errors with '_ = err'. This could mask important provider initialization failures that users should be aware of.",
-      "suggestion": "Log warnings for partial initialization failures or surface them through a HealthCheck/Status method so users can diagnose configuration issues."
+      "message": "Container manages all dependencies in a single struct with proper initialization order (database -> repositories -> registries -> observability -> services)",
+      "suggestion": "Current implementation is appropriate for v0.1.0 scale. For future releases, consider modular sub-containers (ObservabilityContainer, CacheContainer) that can be lazy-loaded to reduce startup overhead."
     }
   ],
   "recommendations": [
-    "Refactor CLI commands to use cobra.Command.Context() for passing AppContext instead of package-level global state. This will improve testability and enable parallel test execution.",
-    "Create a ProviderFactory interface in the ports package and move provider instantiation logic from Initializer to adapter-layer factories. This will properly isolate the application layer from adapter implementation details.",
-    "Consolidate duplicate port interfaces (WorkspaceStoragePort/WorkspaceStateStoragePort, etc.) to reduce API surface area and eliminate confusion about which interface to implement.",
-    "Create an AskService or SinglePhaseExecutor in the application layer to encapsulate the ask command's provider selection and execution logic, maintaining consistency with the WorkflowExecutor pattern.",
-    "Consider implementing a graceful shutdown mechanism in the Container that ensures all resources (database connections, active sessions) are properly cleaned up, especially for long-running operations.",
-    "Add integration tests that verify the full wiring from CLI commands through the container to the actual services, ensuring the dependency injection is working correctly end-to-end."
+    "Extract the duplicated sanitizePathForDeletion function to internal/infrastructure/filesystem/security.go to ensure consistent path validation and single maintenance point",
+    "Refactor workspace spawn command to use internal/infrastructure/terminal/Spawner rather than duplicating 150+ lines of terminal spawning logic",
+    "Consider adding a ProviderFactory interface for better extensibility when adding new LLM providers in future releases",
+    "Document the experimental backend pattern (ExperimentalError type, IsExperimental method) in CONTRIBUTING.md as the standard approach for feature gating",
+    "Add user documentation in getting-started.md explaining that encrypted API keys are machine-specific due to the hostname+salt key derivation strategy",
+    "The release infrastructure is well-architected - maintain the native build approach for CGO (SQLite) compatibility across all four target platforms"
   ]
 }
