@@ -1,53 +1,89 @@
 {
-  "projectDir": "/Users/joel.castillo.cq/conductor/workspaces/skillrunner-v2/beirut",
-  "taskDescription": "Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.",
-  "lastUpdated": "2025-12-26T19:07:40.835Z",
+  "projectDir": "/Users/joel.castillo.cq/conductor/workspaces/skillrunner-v2/machu-picchu",
+  "taskDescription": "Prepare Skillrunner for v0.1.0 open-source beta launch with Homebrew integration.\n\nThe project is a Go-based local-first AI workflow orchestration tool. We need to:\n1. Fix critical code issues (OpenCode backend stub, terminal spawner, chat provider registration, git branch check)\n2. Integrate API key encryption properly\n3. Add release infrastructure (goreleaser, GitHub Actions release workflow)\n4. Create missing documentation (LICENSE, CONTRIBUTING.md, CHANGELOG.md)\n5. Update CI to Go 1.24 and add release automation\n6. Integrate with homebrew tap at https://github.com/jbctechsolutions/homebrew-skillrunner\n7. Update version from 0.1.0-dev to 0.1.0 with proper ldflags injection",
+  "lastUpdated": "2025-12-31T06:02:35.961Z",
   "features": [
     {
       "id": "feature-1",
-      "description": "Feature 1: Create application container (internal/application/container.go) with dependency injection - Initialize SQLite connection, create repository instances, SessionManager, WorkflowExecutor, SkillLoader. Wire container into AppContext in root.go",
+      "description": "Add MIT LICENSE file to root directory",
       "status": "completed",
       "passes": true
     },
     {
       "id": "feature-2",
-      "description": "Feature 2: Create SkillRegistry (internal/application/skills/registry.go) - Cache loaded skills, load from ~/.skillrunner/skills and embedded skills. Modify list.go to replace getMockSkills() with actual skill loading",
+      "description": "Create CONTRIBUTING.md with contribution guidelines",
       "status": "completed",
       "passes": true
     },
     {
       "id": "feature-3",
-      "description": "Feature 3: Wire run command (run.go) - Load skill from registry, create provider from config, execute workflow with WorkflowExecutor, display phase progress with spinner, show results (phases, tokens, timing), support --stream flag",
+      "description": "Create CHANGELOG.md with initial release notes for v0.1.0",
       "status": "completed",
       "passes": true
     },
     {
       "id": "feature-4",
-      "description": "Feature 4: Wire session commands (session.go) - Get SessionManager from container, implement start/list/attach/detach/peek/kill/inject for managing AI coding sessions",
+      "description": "Add GitHub issue and PR templates (.github/ISSUE_TEMPLATE, .github/PULL_REQUEST_TEMPLATE.md)",
       "status": "completed",
       "passes": true
     },
     {
       "id": "feature-5",
-      "description": "Feature 5: Wire context commands (context_items.go, context_focus.go, context_checkpoint.go, context_rules.go) - Get repositories from container, implement add/list/remove for items, focus set/clear/show, checkpoint create/restore/list, rules management",
+      "description": "Create .goreleaser.yaml for multi-platform binary releases with ldflags version injection",
       "status": "completed",
       "passes": true
     },
     {
       "id": "feature-6",
-      "description": "Feature 6: Wire workspace commands (workspace.go) - Get WorkspaceRepository from container, implement init/list/show/switch, display workspace status with active sessions",
+      "description": "Create GitHub Actions release workflow (.github/workflows/release.yml) triggered on version tags",
       "status": "completed",
       "passes": true
     },
     {
       "id": "feature-7",
-      "description": "Feature 7: Create ProviderInitializer (internal/application/provider/initializer.go) - Set up providers from config, check health (Ollama connection, API keys). Modify status.go to display provider status and available models",
+      "description": "Update CI workflow to Go 1.24 and add security scanning",
       "status": "completed",
       "passes": true
     },
     {
       "id": "feature-8",
-      "description": "Feature 8: Wire ask command (ask.go) - Load skill from registry, execute first/specified phase only, route to provider based on profile, display response with optional streaming",
+      "description": "Fix OpenCode backend - implement basic functionality or mark as experimental with proper error messages",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-9",
+      "description": "Fix terminal spawner in workspace command to actually spawn terminal",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-10",
+      "description": "Fix chat command provider registration to properly wire providers",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-11",
+      "description": "Fix git branch existence check in workspace manager",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-12",
+      "description": "Integrate API key encryption into provider initialization flow",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-13",
+      "description": "Update Makefile with release targets and ldflags documentation",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-14",
+      "description": "Create Homebrew formula update script that generates SHA256 and updates homebrew-skillrunner repo",
       "status": "completed",
       "passes": true
     }

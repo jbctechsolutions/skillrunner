@@ -294,3 +294,30 @@ func (wm *WorktreeManager) GetRepositoryRoot(ctx context.Context, path string) (
 
 	return strings.TrimSpace(stdout.String()), nil
 }
+
+// BranchExists checks if a local branch exists in the repository.
+func (wm *WorktreeManager) BranchExists(ctx context.Context, repoPath, branch string) (bool, error) {
+	if repoPath == "" {
+		return false, fmt.Errorf("repository path is required")
+	}
+	if branch == "" {
+		return false, fmt.Errorf("branch name is required")
+	}
+
+	// Check if local branch exists using git show-ref
+	cmd := exec.CommandContext(ctx, wm.gitPath, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	cmd.Dir = repoPath
+
+	err := cmd.Run()
+	if err == nil {
+		return true, nil // Branch exists locally
+	}
+
+	// If the command failed, check if it's because the branch doesn't exist
+	exitErr, ok := err.(*exec.ExitError)
+	if ok && exitErr.ExitCode() == 1 {
+		return false, nil // Branch does not exist
+	}
+
+	return false, fmt.Errorf("failed to check branch existence: %w", err)
+}

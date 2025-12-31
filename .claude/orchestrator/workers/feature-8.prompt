@@ -1,10 +1,19 @@
 You are a worker agent focused on implementing a single feature.
 
 ## Your Task
-Feature 8: Wire ask command (ask.go) - Load skill from registry, execute first/specified phase only, route to provider based on profile, display response with optional streaming
+Fix OpenCode backend - implement basic functionality or mark as experimental with proper error messages
 
 ## Orchestration Context
-Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.
+Prepare Skillrunner for v0.1.0 open-source beta launch with Homebrew integration.
+
+The project is a Go-based local-first AI workflow orchestration tool. We need to:
+1. Fix critical code issues (OpenCode backend stub, terminal spawner, chat provider registration, git branch check)
+2. Integrate API key encryption properly
+3. Add release infrastructure (goreleaser, GitHub Actions release workflow)
+4. Create missing documentation (LICENSE, CONTRIBUTING.md, CHANGELOG.md)
+5. Update CI to Go 1.24 and add release automation
+6. Integrate with homebrew tap at https://github.com/jbctechsolutions/homebrew-skillrunner
+7. Update version from 0.1.0-dev to 0.1.0 with proper ldflags injection
 
 
 ## Instructions
@@ -27,26 +36,6 @@ Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastr
 
 
 ## Additional Context
-Wire the ask command for single-phase execution.
-
-Key files to read first:
-- internal/presentation/cli/commands/ask.go (command to modify)
-- internal/application/skills/registry.go (skill registry)
-- internal/application/workflow/phase_executor.go (phase executor)
-- internal/application/container.go (GetContainer)
-
-Tasks:
-1. Modify ask.go:
-   - Get Container from GetContainer()
-   - Get SkillRegistry and load skill by name
-   - Get the first phase (or specified phase via --phase flag)
-   - Execute single phase using provider
-   - Display response with optional streaming
-
-2. Add --phase flag to specify which phase to run
-
-3. Handle errors gracefully
-
-Ask is a simpler version of run - it executes only one phase.
+Fix internal/adapters/backend/opencode/backend.go - either implement basic OpenCode session management or mark all methods as returning a clear 'OpenCode backend is experimental and not yet implemented' error. The backend should at minimum properly report its status as unavailable rather than generic 'not implemented' errors.
 
 Begin implementing the feature now.

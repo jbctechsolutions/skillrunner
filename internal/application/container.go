@@ -95,8 +95,11 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	// Initialize repositories
 	c.initRepositories()
 
-	// Initialize registries
-	c.initRegistries()
+	// Initialize registries (includes provider encryption setup)
+	if err := c.initRegistries(); err != nil {
+		_ = c.Close() // Clean up on error
+		return nil, fmt.Errorf("failed to initialize registries: %w", err)
+	}
 
 	// Wave 11: Initialize observability
 	if err := c.initObservability(); err != nil {
@@ -146,17 +149,25 @@ func (c *Container) initRepositories() {
 }
 
 // initRegistries initializes the provider and backend registries.
-func (c *Container) initRegistries() {
+func (c *Container) initRegistries() error {
 	c.providerRegistry = adapterProvider.NewRegistry()
 	c.backendRegistry = backend.NewRegistry()
 
-	// Initialize provider initializer and register providers from config
-	c.providerInitializer = appProvider.NewInitializer(c.providerRegistry)
+	// Initialize provider initializer with encryption support
+	var err error
+	c.providerInitializer, err = appProvider.NewInitializer(c.providerRegistry)
+	if err != nil {
+		return fmt.Errorf("failed to create provider initializer: %w", err)
+	}
+
+	// Register providers from config
 	if err := c.providerInitializer.InitFromConfig(c.config); err != nil {
 		// Log warning but don't fail - some providers may have initialized successfully
 		// In production, this should be logged properly
 		_ = err
 	}
+
+	return nil
 }
 
 // initServices initializes application services.

@@ -1,59 +1,51 @@
-# Feature 6: Wire workspace commands (workspace.go)
+## Feature 6: GitHub Actions Release Workflow - COMPLETED
 
-## Summary
-Successfully wired all workspace CLI commands to the WorkspaceRepository from the container.
+### Summary
+Created `.github/workflows/release.yml` that triggers on version tags (v*) to automate the release process.
 
-## Implemented Commands
+### Implementation Details
 
-### 1. `workspace create NAME`
-- Creates a new workspace record in the database
-- Uses current directory if no --path specified
-- Supports --branch and --worktree flags
-- Validates path exists and workspace doesn't already exist
-- Generates unique 8-character workspace ID
+The workflow consists of three jobs:
 
-### 2. `workspace list`
-- Lists all workspaces from WorkspaceRepository
-- Displays in table format: NAME, STATUS, BRANCH, PATH, LAST ACTIVE
-- Shows only active workspaces by default
-- Use --all flag to show idle/archived workspaces
-- Includes relative time formatting for "last active"
+1. **build** - Builds on 4 platforms natively for CGO support:
+   - darwin/amd64 (macos-13)
+   - darwin/arm64 (macos-14)
+   - linux/amd64 (ubuntu-latest)
+   - linux/arm64 (ubuntu-24.04-arm)
 
-### 3. `workspace status [NAME]`
-- Shows detailed workspace information
-- If NAME provided, shows that workspace
-- Otherwise finds workspace for current directory
-- Displays: ID, Status, Path, Worktree, Branch, Focus, Default Backend, Created, Last Active
-- Shows active sessions for the workspace from SessionManager
+   Each build:
+   - Uses Go 1.24
+   - Compiles with CGO_ENABLED=1 for SQLite support
+   - Injects version, commit, and build date via ldflags
+   - Creates tar.gz archive with binary + README.md + LICENSE + CHANGELOG.md
+   - Uploads artifacts for the release job
 
-### 4. `workspace switch NAME`
-- Outputs `cd` command for shell evaluation
-- Usage: `eval $(sr workspace switch NAME)`
-- Updates workspace status to "active"
-- Handles both repo path and worktree path
+2. **release** - Creates the GitHub release:
+   - Downloads all build artifacts
+   - Generates SHA256 checksums
+   - Creates GitHub release with softprops/action-gh-release@v2
+   - Auto-detects pre-releases (tags containing `-`)
+   - Uses GitHub's automatic release notes generation
 
-### 5. `workspace delete NAME`
-- Removes workspace from registry
-- Optional --remove-files flag to delete workspace directory
-- Requires confirmation (type workspace name) unless --force
+3. **homebrew** - Updates the Homebrew tap:
+   - Only runs for stable releases (not pre-releases)
+   - Downloads checksums from the release
+   - Generates a Homebrew formula with platform-specific URLs and checksums
+   - Pushes to jbctechsolutions/homebrew-skillrunner
 
-### 6. `workspace spawn NAME`
-- Partially implemented (wired to repository)
-- Terminal spawner not yet available in container
-- Shows helpful message with workspace path
+### Required Secrets
+- `GITHUB_TOKEN` - Provided automatically by GitHub Actions
+- `HOMEBREW_TAP_GITHUB_TOKEN` - Personal access token with repo scope for the homebrew tap
 
-## Key Implementation Details
+### Files Created
+- `.github/workflows/release.yml`
 
-- All commands get `Container` via `GetContainer()`
-- Use `WorkspaceRepository()` for database operations
-- Use `SessionManager()` for session queries (in status command)
-- Proper error handling with user-friendly messages
-- Table formatting using `tabwriter` for consistent output
-- Added `formatRelativeTime()` helper for human-readable timestamps
+### Testing
+- YAML syntax validated successfully
+- Workflow triggers on push of tags matching `v*` pattern
 
-## Files Modified
-- `internal/presentation/cli/commands/workspace.go`
-
-## Build Status
-- Compiles successfully
-- No new test failures introduced
+### Notes
+- The workflow does NOT use goreleaser directly due to CGO cross-compilation complexity
+- Instead, it uses native runners for each platform to ensure proper CGO compilation
+- The Homebrew formula is generated dynamically with the correct checksums
+- ldflags match the pattern from .goreleaser.yaml for version injection

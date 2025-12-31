@@ -1,0 +1,40 @@
+# Feature 13: Update Makefile with release targets and ldflags documentation
+
+## Summary
+Updated the Makefile with release infrastructure and comprehensive ldflags documentation.
+
+## Changes Made
+
+### 1. Added LDFLAGS Documentation
+- Added a detailed documentation header explaining how ldflags inject version info
+- Documented the three version variables:
+  - `github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.Version`
+  - `github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.GitCommit`
+  - `github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.BuildDate`
+- Included example manual build command with ldflags
+
+### 2. Added Build Variables
+- `VERSION` - defaults to `git describe --tags --always --dirty`
+- `GIT_COMMIT` - defaults to `git rev-parse --short HEAD`
+- `BUILD_DATE` - defaults to current UTC timestamp
+- `LDFLAGS_PKG` - the package path for version variables
+- `LDFLAGS` - the complete ldflags string
+
+### 3. Added New Targets
+- `build-release` - builds binary with ldflags version injection
+- `release` - runs goreleaser (with GITHUB_TOKEN check)
+- `release-snapshot` - runs goreleaser in snapshot mode (for testing)
+
+### 4. Updated Help Target
+- Reorganized help into categories (Development, Release, Other)
+- Added documentation for build variables override
+
+## Testing
+- `make help` - works correctly, shows all new targets
+- `make -n build-release` - dry run shows correct ldflags expansion
+- `make -n release` - correctly checks for GITHUB_TOKEN
+
+## Note
+The actual build fails due to a separate code issue in `internal/application/container.go:154`
+(assignment mismatch with `appProvider.NewInitializer`). This is unrelated to the Makefile
+changes and should be addressed by another feature.

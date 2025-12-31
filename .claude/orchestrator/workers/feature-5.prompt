@@ -1,10 +1,19 @@
 You are a worker agent focused on implementing a single feature.
 
 ## Your Task
-Feature 5: Wire context commands (context_items.go, context_focus.go, context_checkpoint.go, context_rules.go) - Get repositories from container, implement add/list/remove for items, focus set/clear/show, checkpoint create/restore/list, rules management
+Create .goreleaser.yaml for multi-platform binary releases with ldflags version injection
 
 ## Orchestration Context
-Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.
+Prepare Skillrunner for v0.1.0 open-source beta launch with Homebrew integration.
+
+The project is a Go-based local-first AI workflow orchestration tool. We need to:
+1. Fix critical code issues (OpenCode backend stub, terminal spawner, chat provider registration, git branch check)
+2. Integrate API key encryption properly
+3. Add release infrastructure (goreleaser, GitHub Actions release workflow)
+4. Create missing documentation (LICENSE, CONTRIBUTING.md, CHANGELOG.md)
+5. Update CI to Go 1.24 and add release automation
+6. Integrate with homebrew tap at https://github.com/jbctechsolutions/homebrew-skillrunner
+7. Update version from 0.1.0-dev to 0.1.0 with proper ldflags injection
 
 
 ## Instructions
@@ -27,35 +36,6 @@ Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastr
 
 
 ## Additional Context
-Wire the context commands to their repositories.
-
-Key files to read first:
-- internal/presentation/cli/commands/context_items.go
-- internal/presentation/cli/commands/context_focus.go
-- internal/presentation/cli/commands/context_checkpoint.go
-- internal/presentation/cli/commands/context_rules.go
-- internal/application/container.go (repositories)
-- internal/infrastructure/storage/context_item_repo.go
-- internal/infrastructure/storage/checkpoint_repo.go
-- internal/infrastructure/storage/rules_repo.go
-
-Tasks:
-1. context items add/list/remove:
-   - Get ContextItemRepository from GetContainer()
-   - Implement CRUD operations
-
-2. context focus set/clear/show:
-   - Track current focus in workspace or config
-
-3. context checkpoint create/restore/list:
-   - Get CheckpointRepository from GetContainer()
-   - Create checkpoints with workspace state
-   - Restore from checkpoint
-
-4. context rules add/list/remove:
-   - Get RulesRepository from GetContainer()
-   - Manage context filtering rules
-
-Display results in appropriate format (table/JSON).
+Create .goreleaser.yaml for multi-platform releases (darwin/linux, amd64/arm64). Include ldflags to inject Version, GitCommit, BuildDate into internal/presentation/cli/commands.Version, .GitCommit, .BuildDate variables. Generate checksums, create GitHub releases with auto-generated changelog.
 
 Begin implementing the feature now.

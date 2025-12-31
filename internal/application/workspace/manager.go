@@ -187,8 +187,14 @@ func (m *Manager) createGitWorktree(ctx context.Context, id, name, path, branch,
 		}
 	}
 
-	// Create worktree
-	newBranch := true // TODO: Check if branch exists
+	// Check if branch already exists
+	branchExists, err := m.gitWorktree.BranchExists(ctx, repoRoot, branch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if branch exists: %w", err)
+	}
+
+	// Create worktree - only create new branch if it doesn't exist
+	newBranch := !branchExists
 	if err := m.gitWorktree.Create(ctx, repoRoot, path, branch, newBranch); err != nil {
 		return nil, fmt.Errorf("failed to create git worktree: %w", err)
 	}

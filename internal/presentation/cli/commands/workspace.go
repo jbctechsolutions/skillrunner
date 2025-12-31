@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -520,6 +522,164 @@ Displays workspace name, path, branch (if Git), status, and active sessions.`,
 	return cmd
 }
 
+// spawnTerminal spawns a new terminal window in the specified directory.
+// It handles platform-specific terminal spawning for darwin (macOS) and linux.
+// The terminalType can be "auto" (detect automatically), or a specific terminal:
+// - darwin: "terminal" (Terminal.app), "iterm2" (iTerm2)
+// - linux: "gnome-terminal", "konsole", "xterm", "xfce4-terminal"
+// If command is non-empty, it will be executed in the spawned terminal.
+// If background is true, the terminal process is detached.
+func spawnTerminal(dir, terminalType, command string, background bool) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = spawnTerminalDarwin(dir, terminalType, command)
+	case "linux":
+		var err error
+		cmd, err = spawnTerminalLinux(dir, terminalType, command)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+
+	if background {
+		// Start the process and don't wait for it
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("failed to spawn terminal: %w", err)
+		}
+		// Release resources so the process can run independently
+		return cmd.Process.Release()
+	}
+
+	// Run and wait for completion
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to spawn terminal: %w", err)
+	}
+	return nil
+}
+
+// spawnTerminalDarwin handles terminal spawning on macOS.
+func spawnTerminalDarwin(dir, terminalType, command string) *exec.Cmd {
+	// Build the AppleScript to run in terminal
+	var script string
+
+	if terminalType == "iterm2" {
+		// iTerm2 AppleScript
+		if command != "" {
+			script = fmt.Sprintf(`
+				tell application "iTerm"
+					create window with default profile
+					tell current session of current window
+						write text "cd %q && %s"
+					end tell
+				end tell
+			`, dir, command)
+		} else {
+			script = fmt.Sprintf(`
+				tell application "iTerm"
+					create window with default profile
+					tell current session of current window
+						write text "cd %q"
+					end tell
+				end tell
+			`, dir)
+		}
+		return exec.Command("osascript", "-e", script)
+	}
+
+	// Default: Terminal.app
+	if command != "" {
+		script = fmt.Sprintf(`
+			tell application "Terminal"
+				do script "cd %q && %s"
+				activate
+			end tell
+		`, dir, command)
+	} else {
+		script = fmt.Sprintf(`
+			tell application "Terminal"
+				do script "cd %q"
+				activate
+			end tell
+		`, dir)
+	}
+	return exec.Command("osascript", "-e", script)
+}
+
+// spawnTerminalLinux handles terminal spawning on Linux.
+func spawnTerminalLinux(dir, terminalType, command string) (*exec.Cmd, error) {
+	// If auto-detect, try common terminals in order of preference
+	if terminalType == "auto" || terminalType == "" {
+		terminals := []struct {
+			name string
+			args func(dir, cmd string) []string
+		}{
+			{"gnome-terminal", func(d, c string) []string {
+				if c != "" {
+					return []string{"--working-directory=" + d, "--", "bash", "-c", c + "; exec bash"}
+				}
+				return []string{"--working-directory=" + d}
+			}},
+			{"konsole", func(d, c string) []string {
+				if c != "" {
+					return []string{"--workdir", d, "-e", "bash", "-c", c + "; exec bash"}
+				}
+				return []string{"--workdir", d}
+			}},
+			{"xfce4-terminal", func(d, c string) []string {
+				if c != "" {
+					return []string{"--working-directory=" + d, "-x", "bash", "-c", c + "; exec bash"}
+				}
+				return []string{"--working-directory=" + d}
+			}},
+			{"xterm", func(d, c string) []string {
+				if c != "" {
+					return []string{"-e", "bash", "-c", fmt.Sprintf("cd %q && %s; exec bash", d, c)}
+				}
+				return []string{"-e", "bash", "-c", fmt.Sprintf("cd %q && exec bash", d)}
+			}},
+		}
+
+		for _, term := range terminals {
+			if path, err := exec.LookPath(term.name); err == nil {
+				args := term.args(dir, command)
+				return exec.Command(path, args...), nil
+			}
+		}
+
+		return nil, fmt.Errorf("no supported terminal emulator found (tried gnome-terminal, konsole, xfce4-terminal, xterm)")
+	}
+
+	// Specific terminal requested
+	switch terminalType {
+	case "gnome-terminal":
+		if command != "" {
+			return exec.Command("gnome-terminal", "--working-directory="+dir, "--", "bash", "-c", command+"; exec bash"), nil
+		}
+		return exec.Command("gnome-terminal", "--working-directory="+dir), nil
+	case "konsole":
+		if command != "" {
+			return exec.Command("konsole", "--workdir", dir, "-e", "bash", "-c", command+"; exec bash"), nil
+		}
+		return exec.Command("konsole", "--workdir", dir), nil
+	case "xfce4-terminal":
+		if command != "" {
+			return exec.Command("xfce4-terminal", "--working-directory="+dir, "-x", "bash", "-c", command+"; exec bash"), nil
+		}
+		return exec.Command("xfce4-terminal", "--working-directory="+dir), nil
+	case "xterm":
+		if command != "" {
+			return exec.Command("xterm", "-e", "bash", "-c", fmt.Sprintf("cd %q && %s; exec bash", dir, command)), nil
+		}
+		return exec.Command("xterm", "-e", "bash", "-c", fmt.Sprintf("cd %q && exec bash", dir)), nil
+	default:
+		return nil, fmt.Errorf("unsupported terminal type: %s", terminalType)
+	}
+}
+
 // newWorkspaceSpawnCmd creates the 'workspace spawn' command.
 func newWorkspaceSpawnCmd() *cobra.Command {
 	var (
@@ -569,19 +729,24 @@ Examples:
 				wsPath = ws.WorktreePath()
 			}
 
-			// Suppress unused variable warnings
-			_ = terminal
-			_ = command
-			_ = bg
-			_ = wsPath
+			// Verify workspace path exists
+			if _, err := os.Stat(wsPath); os.IsNotExist(err) {
+				return fmt.Errorf("workspace path does not exist: %s", wsPath)
+			}
 
-			// TODO: Terminal spawner not yet available in container
-			// When implemented, use the terminal spawner to open a new terminal
-			// in the workspace directory
+			// Spawn terminal in the workspace directory
 			formatter := GetFormatter()
-			formatter.Warning("Terminal spawn not yet implemented")
-			formatter.Info("Workspace path: %s", wsPath)
-			formatter.Info("Use 'eval $(sr workspace switch %s)' to change to this workspace", name)
+			formatter.Info("Spawning terminal in: %s", wsPath)
+
+			if err := spawnTerminal(wsPath, terminal, command, bg); err != nil {
+				return fmt.Errorf("failed to spawn terminal: %w", err)
+			}
+
+			if bg {
+				formatter.Success("Terminal spawned in background")
+			} else {
+				formatter.Success("Terminal spawned successfully")
+			}
 
 			return nil
 		},

@@ -1,10 +1,19 @@
 You are a worker agent focused on implementing a single feature.
 
 ## Your Task
-Feature 4: Wire session commands (session.go) - Get SessionManager from container, implement start/list/attach/detach/peek/kill/inject for managing AI coding sessions
+Add GitHub issue and PR templates (.github/ISSUE_TEMPLATE, .github/PULL_REQUEST_TEMPLATE.md)
 
 ## Orchestration Context
-Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastructure (workflow executor, session manager, storage repositories, skill loader) to CLI commands. Wire the stub CLI commands to actual services for a functional MVP.
+Prepare Skillrunner for v0.1.0 open-source beta launch with Homebrew integration.
+
+The project is a Go-based local-first AI workflow orchestration tool. We need to:
+1. Fix critical code issues (OpenCode backend stub, terminal spawner, chat provider registration, git branch check)
+2. Integrate API key encryption properly
+3. Add release infrastructure (goreleaser, GitHub Actions release workflow)
+4. Create missing documentation (LICENSE, CONTRIBUTING.md, CHANGELOG.md)
+5. Update CI to Go 1.24 and add release automation
+6. Integrate with homebrew tap at https://github.com/jbctechsolutions/homebrew-skillrunner
+7. Update version from 0.1.0-dev to 0.1.0 with proper ldflags injection
 
 
 ## Instructions
@@ -27,43 +36,6 @@ Wave 8: Workflow Engine Integration & CLI Wiring - Connect the existing infrastr
 
 
 ## Additional Context
-Wire the session manager to the session commands.
-
-Key files to read first:
-- internal/application/session/manager.go (session manager)
-- internal/presentation/cli/commands/session.go (command to modify)
-- internal/domain/session/session.go (session types)
-- internal/application/container.go (GetContainer, SessionManager)
-
-Tasks:
-Modify session.go to wire all session subcommands:
-
-1. session start:
-   - Get SessionManager from GetContainer()
-   - Call manager.Start() with options from flags
-   - Display session ID and status
-
-2. session list:
-   - Call manager.List() with filter from flags
-   - Display sessions in table format
-
-3. session attach:
-   - Call manager.Attach() with session ID
-   - This should connect to tmux session
-
-4. session detach:
-   - Call manager.Detach()
-
-5. session peek:
-   - Call manager.Peek() to get output lines
-   - Display the output
-
-6. session kill:
-   - Call manager.Kill() with force flag
-
-7. session inject:
-   - Call manager.Inject() with content type
-
-Handle errors gracefully and show user-friendly messages.
+Create GitHub issue templates for bug reports and feature requests in .github/ISSUE_TEMPLATE/, and a pull request template at .github/PULL_REQUEST_TEMPLATE.md. Make them appropriate for an AI workflow tool.
 
 Begin implementing the feature now.
