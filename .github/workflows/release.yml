@@ -70,9 +70,11 @@ jobs:
 
       - name: Create archive
         run: |
+          # Copy docs to dist to avoid ../ paths in archive
+          cp README.md LICENSE CHANGELOG.md dist/
           cd dist
-          tar -czvf skillrunner_${{ steps.version.outputs.version }}_${{ matrix.os }}_${{ matrix.arch }}.tar.gz sr ../README.md ../LICENSE ../CHANGELOG.md
-          rm sr
+          tar -czvf skillrunner_${{ steps.version.outputs.version }}_${{ matrix.os }}_${{ matrix.arch }}.tar.gz sr README.md LICENSE CHANGELOG.md
+          rm sr README.md LICENSE CHANGELOG.md
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
