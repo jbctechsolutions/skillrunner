@@ -1,0 +1,30 @@
+# Skillrunner Configuration Example
+# Copy this file to ~/.skillrunner/config.yaml
+
+providers:
+  ollama:
+    url: http://localhost:11434
+    enabled: true
+    timeout: 30s
+  anthropic:
+    api_key_encrypted: ""  # Set via 'sr config set anthropic.api_key'
+    enabled: false
+    timeout: 60s
+  openai:
+    api_key_encrypted: ""
+    enabled: false
+    timeout: 60s
+  groq:
+    api_key_encrypted: ""
+    enabled: false
+    timeout: 30s
+
+routing:
+  default_profile: balanced  # cheap, balanced, premium
+
+logging:
+  level: info   # debug, info, warn, error
+  format: text  # json, text
+
+skills:
+  directory: ~/.skillrunner/skills

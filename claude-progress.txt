@@ -1,0 +1,80 @@
+# Claude Orchestrator Progress Log
+# ===============================
+# Project: ~/conductor/workspaces/skillrunner-v2/machu-picchu
+# Started: 2025-12-31T05:49:37.670Z
+# Last Updated: 2025-12-31T06:02:35.961Z
+# Status: reviewing
+
+## Summary
+- Total Features: 14
+- Completed: 14
+- In Progress: 0
+- Pending: 0
+- Failed: 0
+
+## Task Description
+Prepare Skillrunner for v0.1.0 open-source beta launch with Homebrew integration.
+
+The project is a Go-based local-first AI workflow orchestration tool. We need to:
+1. Fix critical code issues (OpenCode backend stub, terminal spawner, chat provider registration, git branch check)
+2. Integrate API key encryption properly
+3. Add release infrastructure (goreleaser, GitHub Actions release workflow)
+4. Create missing documentation (LICENSE, CONTRIBUTING.md, CHANGELOG.md)
+5. Update CI to Go 1.24 and add release automation
+6. Integrate with homebrew tap at https://github.com/jbctechsolutions/homebrew-skillrunner
+7. Update version from 0.1.0-dev to 0.1.0 with proper ldflags injection
+
+## Feature Status
+✅ [COMPLETED] feature-1: Add MIT LICENSE file to root directory
+✅ [COMPLETED] feature-2: Create CONTRIBUTING.md with contribution guidelines
+✅ [COMPLETED] feature-3: Create CHANGELOG.md with initial release notes for v0.1.0
+✅ [COMPLETED] feature-4: Add GitHub issue and PR templates (.github/ISSUE_TEMPLATE, .github/PULL_REQUEST_TEMPLATE.md)
+✅ [COMPLETED] feature-5: Create .goreleaser.yaml for multi-platform binary releases with ldflags version injection
+✅ [COMPLETED] feature-6: Create GitHub Actions release workflow (.github/workflows/release.yml) triggered on version tags
+✅ [COMPLETED] feature-7: Update CI workflow to Go 1.24 and add security scanning
+✅ [COMPLETED] feature-8: Fix OpenCode backend - implement basic functionality or mark as experimental with proper error messages
+✅ [COMPLETED] feature-9: Fix terminal spawner in workspace command to actually spawn terminal
+✅ [COMPLETED] feature-10: Fix chat command provider registration to properly wire providers
+✅ [COMPLETED] feature-11: Fix git branch existence check in workspace manager
+✅ [COMPLETED] feature-12: Integrate API key encryption into provider initialization flow
+✅ [COMPLETED] feature-13: Update Makefile with release targets and ldflags documentation
+✅ [COMPLETED] feature-14: Create Homebrew formula update script that generates SHA256 and updates homebrew-skillrunner repo
+
+## Progress Log (last 37 entries)
+[2025-12-31T05:49:37.671Z] Orchestration initialized with 14 features
+[2025-12-31T05:49:44.735Z] Set dependencies for feature-6: feature-5
+[2025-12-31T05:49:44.745Z] Set dependencies for feature-14: feature-5, feature-6
+[2025-12-31T05:50:11.012Z] Started 9 parallel workers: feature-1, feature-2, feature-3, feature-4, feature-5, feature-7, feature-8, feature-9, feature-10
+[2025-12-31T05:50:22.895Z] Started 3 parallel workers: feature-11, feature-12, feature-13
+[2025-12-31T05:51:07.680Z] 🔔 Worker completed: feature-1 - use mark_complete to update status
+[2025-12-31T05:51:37.695Z] 🔔 Worker completed: feature-4 - use mark_complete to update status
+[2025-12-31T05:51:37.705Z] 🔔 Worker completed: feature-7 - use mark_complete to update status
+[2025-12-31T05:52:27.686Z] 🔔 Worker completed: feature-2 - use mark_complete to update status
+[2025-12-31T05:52:47.737Z] 🔔 Worker completed: feature-11 - use mark_complete to update status
+[2025-12-31T05:52:47.748Z] 🔔 Worker completed: feature-13 - use mark_complete to update status
+[2025-12-31T05:52:57.712Z] 🔔 Worker completed: feature-8 - use mark_complete to update status
+[2025-12-31T05:53:09.265Z] ✅ Completed: feature-1 - Add MIT LICENSE file to root directory
+[2025-12-31T05:53:09.280Z] ✅ Completed: feature-2 - Create CONTRIBUTING.md with contribution guidelines
+[2025-12-31T05:53:09.293Z] ✅ Completed: feature-4 - Add GitHub issue and PR templates (.github/ISSUE_TEMPLATE, .github/PULL_REQUEST_TEMPLATE.md)
+[2025-12-31T05:53:09.307Z] ✅ Completed: feature-7 - Update CI workflow to Go 1.24 and add security scanning
+[2025-12-31T05:53:09.320Z] ✅ Completed: feature-11 - Fix git branch existence check in workspace manager
+[2025-12-31T05:53:09.332Z] ✅ Completed: feature-13 - Update Makefile with release targets and ldflags documentation
+[2025-12-31T05:53:17.687Z] 🔔 Worker completed: feature-3 - use mark_complete to update status
+[2025-12-31T05:53:37.704Z] 🔔 Worker completed: feature-9 - use mark_complete to update status
+[2025-12-31T05:53:37.708Z] 🔔 Worker completed: feature-10 - use mark_complete to update status
+[2025-12-31T05:54:47.695Z] 🔔 Worker completed: feature-5 - use mark_complete to update status
+[2025-12-31T05:55:01.828Z] ✅ Completed: feature-3 - Create CHANGELOG.md with initial release notes for v0.1.0
+[2025-12-31T05:55:01.841Z] ✅ Completed: feature-5 - Create .goreleaser.yaml for multi-platform binary releases with ldflags version injection
+[2025-12-31T05:55:01.854Z] ✅ Completed: feature-8 - Fix OpenCode backend - implement basic functionality or mark as experimental with proper error messages
+[2025-12-31T05:55:01.866Z] ✅ Completed: feature-9 - Fix terminal spawner in workspace command to actually spawn terminal
+[2025-12-31T05:55:01.877Z] ✅ Completed: feature-10 - Fix chat command provider registration to properly wire providers
+[2025-12-31T05:55:12.124Z] Started worker for feature-6: Create GitHub Actions release workflow (.github/workflows/release.yml) triggered on version tags
+[2025-12-31T05:55:57.707Z] 🔔 Worker completed: feature-12 - use mark_complete to update status
+[2025-12-31T05:57:06.756Z] ✅ Completed: feature-12 - Integrate API key encryption into provider initialization flow
+[2025-12-31T05:58:17.712Z] 🔔 Worker completed: feature-6 - use mark_complete to update status
+[2025-12-31T05:59:01.841Z] ✅ Completed: feature-6 - Create GitHub Actions release workflow (.github/workflows/release.yml) triggered on version tags
+[2025-12-31T05:59:01.857Z] Started worker for feature-14: Create Homebrew formula update script that generates SHA256 and updates homebrew-skillrunner repo
+[2025-12-31T06:01:47.728Z] 🔔 Worker completed: feature-14 - use mark_complete to update status
+[2025-12-31T06:02:35.939Z] ✅ Completed: feature-14 - Create Homebrew formula update script that generates SHA256 and updates homebrew-skillrunner repo
+[2025-12-31T06:02:35.939Z] 🔍 All features done. Starting automated reviews...
+[2025-12-31T06:02:35.961Z] 🔍 Started 2 review worker(s)

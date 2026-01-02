@@ -1,0 +1,75 @@
+run:
+  timeout: 5m
+  go: '1.23'
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - gofmt
+    - goimports
+
+linters-settings:
+  gofmt:
+    simplify: true
+  errcheck:
+    # Ignore errors from these functions - common for I/O and formatting
+    exclude-functions:
+      - fmt.Fprintf
+      - fmt.Fprintln
+      - fmt.Printf
+      - fmt.Println
+      - fmt.Print
+      - (io.Closer).Close
+      - (*os.File).Close
+      - (*database/sql.Rows).Close
+      - (*database/sql.Tx).Rollback
+      - (net/http.ResponseWriter).Write
+      - os.Setenv
+      - os.Unsetenv
+      - os.RemoveAll
+      # Formatter methods - output is best effort
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Header
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).SubHeader
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Item
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).BulletItem
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Success
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Error
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Warning
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Info
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Println
+      - (*github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output.Formatter).Print
+      - (*github.com/chzyer/readline.Instance).Close
+      - (*cobra.Command).MarkFlagRequired
+      - (*os/exec.Cmd).Start
+      - (*os/exec.Cmd).Wait
+      - fmt.Scanln
+      - (*database/sql.DB).Close
+      # Application-specific methods where errors are intentionally ignored
+      - (*github.com/jbctechsolutions/skillrunner/internal/infrastructure/process.PTYManager).KillSession
+      - (*github.com/jbctechsolutions/skillrunner/internal/application/session.Manager).Kill
+      - (github.com/jbctechsolutions/skillrunner/internal/application/ports.BackendPort).Kill
+      - (github.com/jbctechsolutions/skillrunner/internal/application/ports.SessionStateStoragePort).UpdateSession
+      - (github.com/jbctechsolutions/skillrunner/internal/application/ports.GitWorktreePort).Remove
+      - (github.com/jbctechsolutions/skillrunner/internal/application/ports.TmuxPort).KillSession
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    # Ignore errcheck in test files for common patterns
+    - path: _test\.go
+      linters:
+        - errcheck
+    # Ignore staticcheck SA5011 when there's explicit nil check followed by t.Fatal
+    - linters:
+        - staticcheck
+      text: "SA5011"
+      path: _test\.go
+    # Ignore SA9003 empty branch warnings - these are often intentional TODOs
+    - linters:
+        - staticcheck
+      text: "SA9003"

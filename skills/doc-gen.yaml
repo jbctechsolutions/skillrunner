@@ -1,0 +1,106 @@
+# Documentation Generation Skill
+# Generates comprehensive documentation for code by analyzing its structure
+# and producing well-formatted documentation output.
+
+id: doc-gen
+name: Documentation Generator
+version: "1.0.0"
+description: |
+  A multi-phase skill for generating documentation from source code.
+  First analyzes the code structure to understand functions, classes,
+  and modules, then generates clear and comprehensive documentation.
+  Uses cost-aware routing to minimize API costs while maintaining quality.
+
+phases:
+  - id: analyze
+    name: Code Structure Analysis
+    prompt_template: |
+      Analyze the following code and extract its structure for documentation purposes.
+
+      ## Code to Analyze
+      {{.input}}
+
+      ## Instructions
+      Please extract and summarize:
+      1. **Module/File Overview**: What is the purpose of this code?
+      2. **Functions/Methods**: List each function with:
+         - Name
+         - Parameters (with types if available)
+         - Return type/value
+         - Brief description of what it does
+      3. **Classes/Types**: List each class or type with:
+         - Name
+         - Properties/fields
+         - Methods
+         - Purpose
+      4. **Dependencies**: What external modules or packages are used?
+      5. **Key Constants/Variables**: Any important configuration or state
+
+      ## Output Format
+      Provide a structured analysis in JSON format that can be used for documentation generation.
+    routing_profile: cheap
+    max_tokens: 2048
+    temperature: 0.3
+
+  - id: generate
+    name: Documentation Generation
+    prompt_template: |
+      Generate comprehensive documentation based on the code analysis.
+
+      ## Code Analysis
+      {{.phases.analyze.output}}
+
+      ## Original Code Context
+      {{.input}}
+
+      ## Instructions
+      Create well-formatted documentation that includes:
+
+      1. **Overview Section**
+         - Brief description of the module/file purpose
+         - Use cases and when to use this code
+
+      2. **API Reference**
+         - Document each public function/method with:
+           - Signature
+           - Description
+           - Parameters (name, type, description)
+           - Return value description
+           - Example usage (if applicable)
+
+      3. **Type Definitions**
+         - Document each class/struct/type
+         - Explain the purpose and usage
+
+      4. **Usage Examples**
+         - Provide practical code examples
+         - Show common patterns
+
+      5. **Notes and Considerations**
+         - Performance considerations
+         - Edge cases
+         - Related functions/types
+
+      ## Output Format
+      Generate documentation in Markdown format, suitable for inclusion in
+      project documentation or README files.
+    routing_profile: cheap
+    depends_on:
+      - analyze
+    max_tokens: 4096
+    temperature: 0.5
+
+routing:
+  default_profile: cheap
+  max_context_tokens: 8192
+  fallback_model: "llama3.2:3b"
+
+metadata:
+  category: documentation
+  tags:
+    - code-documentation
+    - api-reference
+    - developer-tools
+  author: skillrunner
+  license: MIT
+  cost_tier: low
