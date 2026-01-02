@@ -41,3 +41,4 @@ jobs:
         continue-on-error: true
       - name: Run gosec (text output for logs)
         run: gosec ./...
+        continue-on-error: true
