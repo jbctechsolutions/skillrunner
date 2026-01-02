@@ -10,7 +10,6 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/spf13/cobra"
 
-	adapterProvider "github.com/jbctechsolutions/skillrunner/internal/adapters/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/application/chat"
 	appProvider "github.com/jbctechsolutions/skillrunner/internal/application/provider"
 	domainChat "github.com/jbctechsolutions/skillrunner/internal/domain/chat"
@@ -272,23 +271,34 @@ func initChatService() (*chat.Service, error) {
 		return nil, fmt.Errorf("app context not initialized")
 	}
 
-	// Create provider registry
-	registry := adapterProvider.NewRegistry()
+	// Get the container which has the already-initialized provider registry
+	container := GetContainer()
+	if container == nil {
+		return nil, fmt.Errorf("application container not initialized")
+	}
 
-	// TODO: Register providers based on configuration
-	// For now, this is a stub - providers should be registered from config
+	// Get the provider registry from the container
+	// This registry is already populated with providers based on configuration
+	registry := container.ProviderRegistry()
+	if registry == nil {
+		return nil, fmt.Errorf("provider registry not available")
+	}
+
+	// Check if any providers are registered
+	if registry.Count() == 0 {
+		return nil, fmt.Errorf("no providers configured - please configure providers in ~/.skillrunner/config.yaml")
+	}
 
 	// Create routing configuration from app config
-	// Use default RoutingConfiguration with sensible defaults
 	routingCfg := config.NewRoutingConfiguration()
 
-	// Create router
+	// Create router with the populated registry
 	router, err := appProvider.NewRouter(routingCfg, registry)
 	if err != nil {
 		return nil, fmt.Errorf("could not create router: %w", err)
 	}
 
-	// Create chat service
+	// Create chat service with the properly initialized registry
 	chatService, err := chat.NewService(router, registry)
 	if err != nil {
 		return nil, fmt.Errorf("could not create chat service: %w", err)

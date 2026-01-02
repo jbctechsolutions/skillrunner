@@ -67,7 +67,11 @@ func (m *testProvider) HealthCheck(ctx context.Context, modelID string) (*ports.
 
 func TestNewInitializer(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	if initializer == nil {
 		t.Fatal("NewInitializer returned nil")
@@ -80,13 +84,20 @@ func TestNewInitializer(t *testing.T) {
 	if initializer.health == nil {
 		t.Error("initializer health map should be initialized")
 	}
+
+	if initializer.encryptor == nil {
+		t.Error("initializer encryptor should be initialized")
+	}
 }
 
 func TestInitFromConfig_NilConfig(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
-	err := initializer.InitFromConfig(nil)
+	err = initializer.InitFromConfig(nil)
 	if err == nil {
 		t.Error("expected error for nil config")
 	}
@@ -94,11 +105,14 @@ func TestInitFromConfig_NilConfig(t *testing.T) {
 
 func TestInitFromConfig_DefaultConfig(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	cfg := config.NewDefaultConfig()
 	// Default config has Ollama enabled but no API keys for cloud providers
-	err := initializer.InitFromConfig(cfg)
+	err = initializer.InitFromConfig(cfg)
 
 	// Ollama should be registered (default config has it enabled)
 	if registry.Get("ollama") == nil {
@@ -127,7 +141,10 @@ func TestInitFromConfig_DefaultConfig(t *testing.T) {
 
 func TestInitFromConfig_DisabledProviders(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	cfg := config.NewDefaultConfig()
 	cfg.Providers.Ollama.Enabled = false
@@ -151,14 +168,23 @@ func TestInitFromConfig_DisabledProviders(t *testing.T) {
 
 func TestInitFromConfig_CloudProviderWithKey(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	cfg := config.NewDefaultConfig()
 	cfg.Providers.Ollama.Enabled = false
 	cfg.Providers.Anthropic.Enabled = true
-	cfg.Providers.Anthropic.APIKeyEncrypted = "test-api-key"
 
-	err := initializer.InitFromConfig(cfg)
+	// Encrypt a test API key using the same encryptor
+	encryptedKey, err := initializer.encryptor.Encrypt("test-api-key")
+	if err != nil {
+		t.Fatalf("failed to encrypt test API key: %v", err)
+	}
+	cfg.Providers.Anthropic.APIKeyEncrypted = encryptedKey
+
+	err = initializer.InitFromConfig(cfg)
 
 	// Anthropic should be registered
 	if registry.Get("anthropic") == nil {
@@ -185,7 +211,10 @@ func TestInitFromConfig_CloudProviderWithKey(t *testing.T) {
 
 func TestCheckHealth(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	// Register a test provider
 	mock := &testProvider{
@@ -222,7 +251,10 @@ func TestCheckHealth(t *testing.T) {
 
 func TestCheckHealth_UnhealthyProvider(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	// Register an unhealthy test provider
 	mock := &testProvider{
@@ -252,7 +284,10 @@ func TestCheckHealth_UnhealthyProvider(t *testing.T) {
 
 func TestGetAllHealth(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	// Set up some health data
 	initializer.setProviderHealth("provider1", &ProviderHealth{
@@ -283,7 +318,10 @@ func TestGetAllHealth(t *testing.T) {
 
 func TestGetAvailableModels(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	// Register test providers
 	mock1 := &testProvider{
@@ -315,7 +353,10 @@ func TestGetAvailableModels(t *testing.T) {
 
 func TestRegistry(t *testing.T) {
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	if initializer.Registry() != registry {
 		t.Error("Registry() should return the underlying registry")
@@ -325,7 +366,10 @@ func TestRegistry(t *testing.T) {
 func TestProviderHealth_Type(t *testing.T) {
 	// Test that provider types are correctly identified
 	registry := adapterProvider.NewRegistry()
-	initializer := NewInitializer(registry)
+	initializer, err := NewInitializer(registry)
+	if err != nil {
+		t.Fatalf("NewInitializer returned error: %v", err)
+	}
 
 	localMock := &testProvider{
 		name:    "local-provider",

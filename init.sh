@@ -1,6 +1,6 @@
 #!/bin/bash
 # Claude Orchestrator - Init Script
-# Generated: 2025-12-26T18:19:25.654Z
+# Generated: 2025-12-31T05:49:37.672Z
 #
 # This script sets up the environment for the orchestration session.
 # Run this at the start of each session to ensure proper setup.
@@ -10,7 +10,7 @@ set -e
 echo "🚀 Initializing Claude Orchestrator environment..."
 
 # Navigate to project (safely quoted)
-cd '/Users/joel.castillo.cq/conductor/workspaces/skillrunner-v2/beirut'
+cd '/Users/joel.castillo.cq/conductor/workspaces/skillrunner-v2/machu-picchu'
 
 # Check git status
 if git rev-parse --git-dir > /dev/null 2>&1; then

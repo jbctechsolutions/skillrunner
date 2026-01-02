@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/google/uuid"
 
@@ -15,41 +14,8 @@ import (
 	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/workspace"
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/git"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/security"
 )
-
-// sanitizePathForDeletion validates that a path is safe to delete.
-func sanitizePathForDeletion(path string) error {
-	if !filepath.IsAbs(path) {
-		return fmt.Errorf("path must be absolute: %s", path)
-	}
-
-	cleanPath := filepath.Clean(path)
-
-	if cleanPath != path && strings.Contains(path, "..") {
-		return fmt.Errorf("path contains traversal components: %s", path)
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
-	}
-
-	if cleanPath == homeDir {
-		return fmt.Errorf("cannot delete home directory")
-	}
-
-	criticalPaths := []string{"/", "/bin", "/sbin", "/usr", "/etc", "/var", "/tmp", "/opt", "/lib", "/System", "/Library"}
-	if slices.Contains(criticalPaths, cleanPath) {
-		return fmt.Errorf("cannot delete system directory: %s", path)
-	}
-
-	skillrunnerDir := filepath.Join(homeDir, ".skillrunner")
-	if cleanPath == skillrunnerDir {
-		return fmt.Errorf("cannot delete skillrunner config directory")
-	}
-
-	return nil
-}
 
 // Manager manages development workspaces.
 type Manager struct {
@@ -187,8 +153,14 @@ func (m *Manager) createGitWorktree(ctx context.Context, id, name, path, branch,
 		}
 	}
 
-	// Create worktree
-	newBranch := true // TODO: Check if branch exists
+	// Check if branch already exists
+	branchExists, err := m.gitWorktree.BranchExists(ctx, repoRoot, branch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if branch exists: %w", err)
+	}
+
+	// Create worktree - only create new branch if it doesn't exist
+	newBranch := !branchExists
 	if err := m.gitWorktree.Create(ctx, repoRoot, path, branch, newBranch); err != nil {
 		return nil, fmt.Errorf("failed to create git worktree: %w", err)
 	}
@@ -321,7 +293,7 @@ func (m *Manager) Delete(ctx context.Context, workspaceID string, removeFiles bo
 	// Remove files if requested
 	if removeFiles {
 		// Sanitize path before deletion to prevent dangerous operations
-		if err := sanitizePathForDeletion(ws.Path); err != nil {
+		if err := security.SanitizePathForDeletion(ws.Path); err != nil {
 			return fmt.Errorf("cannot delete workspace files: %w", err)
 		}
 

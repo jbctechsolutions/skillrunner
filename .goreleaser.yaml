@@ -1,0 +1,141 @@
+# GoReleaser configuration for Skillrunner
+# https://goreleaser.com
+#
+# This config is designed to work with GitHub Actions matrix builds.
+# Each platform (darwin/linux x amd64/arm64) is built natively to handle CGO (SQLite).
+# See .github/workflows/release.yml for the full release workflow.
+#
+# Local usage:
+#   GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) goreleaser build --snapshot --clean
+#
+# CI usage (per-platform builds combined later):
+#   goreleaser build --snapshot --clean --single-target
+
+version: 2
+
+project_name: skillrunner
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: skillrunner
+    main: ./cmd/skillrunner
+    binary: sr
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # Skip cross-compilation - requires native builds per platform
+    # The release workflow uses matrix strategy to build each platform natively
+    ignore:
+      # When running on darwin/arm64, skip linux builds and vice versa
+      # This is overridden by --single-target in CI
+      []
+    ldflags:
+      - -s -w
+      - -X github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.Version={{.Version}}
+      - -X github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.GitCommit={{.ShortCommit}}
+      - -X github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.BuildDate={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+      - CHANGELOG.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Performance Improvements
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Documentation
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "^style:"
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: jbctechsolutions
+    name: skillrunner
+  name_template: "v{{.Version}}"
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Skillrunner v{{.Version}}
+
+    Welcome to Skillrunner v{{.Version}}! This release includes various improvements and fixes.
+
+    ### Installation
+
+    **Homebrew (macOS/Linux):**
+    ```bash
+    brew install jbctechsolutions/skillrunner/skillrunner
+    ```
+
+    **Manual Download:**
+    Download the appropriate archive for your platform from the assets below, extract it, and add the `sr` binary to your PATH.
+
+  footer: |
+
+    ---
+
+    **Full Changelog**: https://github.com/jbctechsolutions/skillrunner/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    For detailed documentation, visit: https://github.com/jbctechsolutions/skillrunner#readme
+
+brews:
+  - name: skillrunner
+    repository:
+      owner: jbctechsolutions
+      name: homebrew-skillrunner
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    folder: Formula
+    homepage: "https://github.com/jbctechsolutions/skillrunner"
+    description: "Local-first AI workflow orchestration tool"
+    license: "MIT"
+    install: |
+      bin.install "sr"
+    test: |
+      system "#{bin}/sr", "version"
+    commit_author:
+      name: skillrunner-bot
+      email: bot@skillrunner.dev
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"

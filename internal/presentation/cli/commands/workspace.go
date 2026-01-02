@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -16,84 +15,9 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	domainContext "github.com/jbctechsolutions/skillrunner/internal/domain/context"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/session"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/security"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/terminal"
 )
-
-// sanitizePathForDeletion validates that a path is safe to delete.
-// It ensures the path:
-// - Is absolute
-// - Does not traverse outside allowed directories
-// - Is not a system directory or home directory itself
-// Returns an error if the path is unsafe.
-func sanitizePathForDeletion(path string) error {
-	// Must be absolute
-	if !filepath.IsAbs(path) {
-		return fmt.Errorf("path must be absolute: %s", path)
-	}
-
-	// Clean the path to resolve any .. or . components
-	cleanPath := filepath.Clean(path)
-
-	// Check for path traversal after cleaning
-	if cleanPath != path && strings.Contains(path, "..") {
-		return fmt.Errorf("path contains traversal components: %s", path)
-	}
-
-	// Get home directory
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
-	}
-
-	// Don't allow deleting the home directory itself
-	if cleanPath == homeDir {
-		return fmt.Errorf("cannot delete home directory")
-	}
-
-	// Don't allow deleting critical system directories
-	criticalPaths := []string{
-		"/",
-		"/bin",
-		"/sbin",
-		"/usr",
-		"/etc",
-		"/var",
-		"/tmp",
-		"/opt",
-		"/lib",
-		"/System",
-		"/Library",
-		"/Applications",
-	}
-	for _, critical := range criticalPaths {
-		if cleanPath == critical || strings.HasPrefix(cleanPath, critical+"/") && len(cleanPath) <= len(critical)+5 {
-			return fmt.Errorf("cannot delete system directory: %s", path)
-		}
-	}
-
-	// Don't allow deleting .skillrunner config directory itself
-	skillrunnerDir := filepath.Join(homeDir, ".skillrunner")
-	if cleanPath == skillrunnerDir {
-		return fmt.Errorf("cannot delete skillrunner config directory")
-	}
-
-	// Path should be within home directory or a recognizable project directory
-	if !strings.HasPrefix(cleanPath, homeDir) {
-		// Allow paths in common project locations
-		allowed := false
-		commonRoots := []string{"/tmp/", "/var/tmp/", "/projects/", "/work/"}
-		for _, root := range commonRoots {
-			if strings.HasPrefix(cleanPath, root) {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			return fmt.Errorf("path is outside allowed directories: %s", path)
-		}
-	}
-
-	return nil
-}
 
 // NewWorkspaceCmd creates the workspace command group.
 func NewWorkspaceCmd() *cobra.Command {
@@ -520,12 +444,32 @@ Displays workspace name, path, branch (if Git), status, and active sessions.`,
 	return cmd
 }
 
+// mapTerminalType maps CLI terminal type string to infrastructure terminal.TerminalType.
+func mapTerminalType(termType string) terminal.TerminalType {
+	switch termType {
+	case "iterm2":
+		return terminal.TerminalITerm2
+	case "terminal":
+		return terminal.TerminalApp
+	case "tmux":
+		return terminal.TerminalTmux
+	case "gnome-terminal":
+		return terminal.TerminalGnome
+	case "kitty":
+		return terminal.TerminalKitty
+	case "alacritty":
+		return terminal.TerminalAlacritty
+	default:
+		return terminal.TerminalAuto
+	}
+}
+
 // newWorkspaceSpawnCmd creates the 'workspace spawn' command.
 func newWorkspaceSpawnCmd() *cobra.Command {
 	var (
-		terminal string
-		command  string
-		bg       bool
+		terminalType string
+		command      string
+		bg           bool
 	)
 
 	cmd := &cobra.Command{
@@ -569,25 +513,39 @@ Examples:
 				wsPath = ws.WorktreePath()
 			}
 
-			// Suppress unused variable warnings
-			_ = terminal
-			_ = command
-			_ = bg
-			_ = wsPath
+			// Verify workspace path exists
+			if _, err := os.Stat(wsPath); os.IsNotExist(err) {
+				return fmt.Errorf("workspace path does not exist: %s", wsPath)
+			}
 
-			// TODO: Terminal spawner not yet available in container
-			// When implemented, use the terminal spawner to open a new terminal
-			// in the workspace directory
+			// Create terminal spawner with the specified type
+			spawner := terminal.NewSpawner(mapTerminalType(terminalType))
+
+			// Spawn terminal in the workspace directory
 			formatter := GetFormatter()
-			formatter.Warning("Terminal spawn not yet implemented")
-			formatter.Info("Workspace path: %s", wsPath)
-			formatter.Info("Use 'eval $(sr workspace switch %s)' to change to this workspace", name)
+			formatter.Info("Spawning terminal in: %s", wsPath)
+
+			opts := terminal.SpawnOptions{
+				WorkingDir: wsPath,
+				Command:    command,
+				Background: bg,
+			}
+
+			if err := spawner.Spawn(ctx, opts); err != nil {
+				return fmt.Errorf("failed to spawn terminal: %w", err)
+			}
+
+			if bg {
+				formatter.Success("Terminal spawned in background")
+			} else {
+				formatter.Success("Terminal spawned successfully")
+			}
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&terminal, "terminal", "auto", "terminal type (auto, iterm2, terminal, tmux)")
+	cmd.Flags().StringVar(&terminalType, "terminal", "auto", "terminal type (auto, iterm2, terminal, tmux, kitty, alacritty, gnome-terminal)")
 	cmd.Flags().StringVar(&command, "command", "", "command to run in terminal")
 	cmd.Flags().BoolVar(&bg, "bg", false, "run in background")
 
@@ -655,7 +613,7 @@ Use --remove-files to also delete the workspace directory.`,
 			// Remove files if requested
 			if removeFiles {
 				// Sanitize path before deletion to prevent dangerous operations
-				if err := sanitizePathForDeletion(wsPath); err != nil {
+				if err := security.SanitizePathForDeletion(wsPath); err != nil {
 					return fmt.Errorf("cannot delete workspace files: %w", err)
 				}
 

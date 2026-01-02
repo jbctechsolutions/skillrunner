@@ -53,3 +53,6 @@ debug
 # Temporary files
 tmp/
 temp/
+
+# Claude orchestrator state (session-specific)
+.claude/

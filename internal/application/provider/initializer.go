@@ -14,6 +14,7 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/provider/openai"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
+	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/crypto"
 )
 
 // ProviderHealth contains health status information for a provider.
@@ -31,18 +32,26 @@ type ProviderHealth struct {
 
 // Initializer manages provider initialization from configuration.
 type Initializer struct {
-	registry *adapterProvider.Registry
-	config   *config.Config
-	mu       sync.RWMutex
-	health   map[string]*ProviderHealth
+	registry  *adapterProvider.Registry
+	config    *config.Config
+	encryptor *crypto.Encryptor
+	mu        sync.RWMutex
+	health    map[string]*ProviderHealth
 }
 
 // NewInitializer creates a new provider initializer.
-func NewInitializer(registry *adapterProvider.Registry) *Initializer {
-	return &Initializer{
-		registry: registry,
-		health:   make(map[string]*ProviderHealth),
+// Returns an error if the encryptor cannot be initialized.
+func NewInitializer(registry *adapterProvider.Registry) (*Initializer, error) {
+	encryptor, err := crypto.NewEncryptor()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize encryptor: %w", err)
 	}
+
+	return &Initializer{
+		registry:  registry,
+		encryptor: encryptor,
+		health:    make(map[string]*ProviderHealth),
+	}, nil
 }
 
 // InitFromConfig initializes providers based on the configuration.
@@ -155,9 +164,11 @@ func (i *Initializer) initAnthropic(cfg config.CloudConfig) error {
 		return fmt.Errorf("API key not configured")
 	}
 
-	// Note: In a real implementation, we'd decrypt the API key here
-	// For now, we assume the "encrypted" key is actually the plain key
-	apiKey := cfg.APIKeyEncrypted
+	// Decrypt the API key using AES-256-GCM
+	apiKey, err := i.encryptor.Decrypt(cfg.APIKeyEncrypted)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt API key: %w", err)
+	}
 
 	providerCfg := anthropic.DefaultConfig(apiKey)
 	if cfg.BaseURL != "" {
@@ -189,8 +200,11 @@ func (i *Initializer) initOpenAI(cfg config.CloudConfig) error {
 		return fmt.Errorf("API key not configured")
 	}
 
-	// Note: In a real implementation, we'd decrypt the API key here
-	apiKey := cfg.APIKeyEncrypted
+	// Decrypt the API key using AES-256-GCM
+	apiKey, err := i.encryptor.Decrypt(cfg.APIKeyEncrypted)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt API key: %w", err)
+	}
 
 	providerCfg := openai.DefaultConfig(apiKey)
 	if cfg.BaseURL != "" {
@@ -222,8 +236,11 @@ func (i *Initializer) initGroq(cfg config.CloudConfig) error {
 		return fmt.Errorf("API key not configured")
 	}
 
-	// Note: In a real implementation, we'd decrypt the API key here
-	apiKey := cfg.APIKeyEncrypted
+	// Decrypt the API key using AES-256-GCM
+	apiKey, err := i.encryptor.Decrypt(cfg.APIKeyEncrypted)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt API key: %w", err)
+	}
 
 	providerCfg := groq.DefaultConfig(apiKey)
 	if cfg.BaseURL != "" {

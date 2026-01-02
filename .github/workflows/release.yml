@@ -1,0 +1,266 @@
+# Release workflow for Skillrunner
+# Triggered on version tags (v*) to create GitHub releases with goreleaser
+#
+# This workflow builds on each platform natively to handle CGO (required for SQLite),
+# then creates a unified release with all platform binaries.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  GO_VERSION: "1.23"
+
+jobs:
+  # Build on each platform natively for CGO support
+  build:
+    name: Build (${{ matrix.os }}/${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+            runner: macos-13
+          - os: darwin
+            arch: arm64
+            runner: macos-14
+          - os: linux
+            arch: amd64
+            runner: ubuntu-latest
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build binary
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=1 go build \
+            -ldflags="-s -w \
+              -X github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.Version=${{ steps.version.outputs.version }} \
+              -X github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.GitCommit=${{ github.sha }} \
+              -X github.com/jbctechsolutions/skillrunner/internal/presentation/cli/commands.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o dist/sr \
+            ./cmd/skillrunner
+
+      - name: Create archive
+        run: |
+          cd dist
+          tar -czvf skillrunner_${{ steps.version.outputs.version }}_${{ matrix.os }}_${{ matrix.arch }}.tar.gz sr ../README.md ../LICENSE ../CHANGELOG.md
+          rm sr
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: skillrunner-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*.tar.gz
+          retention-days: 1
+
+  # Create release with all artifacts
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: skillrunner-*
+          merge-multiple: true
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p dist
+          mv artifacts/*.tar.gz dist/ 2>/dev/null || true
+
+          # Create checksums
+          cd dist
+          sha256sum *.tar.gz > checksums.txt
+
+          echo "=== Release Assets ==="
+          ls -la
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag for changelog comparison
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog from $PREV_TAG to ${{ github.ref_name }}"
+            CHANGELOG=$(git log --pretty=format:"- %s" $PREV_TAG..${{ github.ref_name }} | grep -v "^- Merge" | head -50)
+          else
+            echo "No previous tag found, using recent commits"
+            CHANGELOG=$(git log --pretty=format:"- %s" -20 | grep -v "^- Merge")
+          fi
+
+          # Write to file to handle multi-line
+          echo "$CHANGELOG" > /tmp/changelog.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Skillrunner v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/checksums.txt
+          body: |
+            ## Skillrunner v${{ steps.version.outputs.version }}
+
+            Welcome to Skillrunner v${{ steps.version.outputs.version }}! This release includes various improvements and fixes.
+
+            ### Installation
+
+            **Homebrew (macOS/Linux):**
+            ```bash
+            brew install jbctechsolutions/skillrunner/skillrunner
+            ```
+
+            **Manual Download:**
+            Download the appropriate archive for your platform from the assets below, extract it, and add the `sr` binary to your PATH.
+
+            ### Checksums
+
+            See `checksums.txt` for SHA256 checksums of all release assets.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Update Homebrew tap
+  homebrew:
+    name: Update Homebrew Tap
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-') }}  # Skip for pre-releases
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Download release assets for checksums
+        run: |
+          mkdir -p dist
+          cd dist
+
+          # Download checksums file
+          curl -sL "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/checksums.txt" -o checksums.txt
+
+          cat checksums.txt
+
+      - name: Update Homebrew formula
+        env:
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          REPO="${{ github.repository }}"
+
+          # Get checksums
+          DARWIN_ARM64_SHA=$(grep "darwin_arm64" dist/checksums.txt | awk '{print $1}')
+          DARWIN_AMD64_SHA=$(grep "darwin_amd64" dist/checksums.txt | awk '{print $1}')
+          LINUX_ARM64_SHA=$(grep "linux_arm64" dist/checksums.txt | awk '{print $1}')
+          LINUX_AMD64_SHA=$(grep "linux_amd64" dist/checksums.txt | awk '{print $1}')
+
+          # Create formula
+          cat > formula.rb << EOF
+          # typed: false
+          # frozen_string_literal: true
+
+          class Skillrunner < Formula
+            desc "Local-first AI workflow orchestration tool"
+            homepage "https://github.com/${REPO}"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/${REPO}/releases/download/v${VERSION}/skillrunner_${VERSION}_darwin_arm64.tar.gz"
+                sha256 "${DARWIN_ARM64_SHA}"
+              else
+                url "https://github.com/${REPO}/releases/download/v${VERSION}/skillrunner_${VERSION}_darwin_amd64.tar.gz"
+                sha256 "${DARWIN_AMD64_SHA}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/${REPO}/releases/download/v${VERSION}/skillrunner_${VERSION}_linux_arm64.tar.gz"
+                sha256 "${LINUX_ARM64_SHA}"
+              else
+                url "https://github.com/${REPO}/releases/download/v${VERSION}/skillrunner_${VERSION}_linux_amd64.tar.gz"
+                sha256 "${LINUX_AMD64_SHA}"
+              end
+            end
+
+            def install
+              bin.install "sr"
+            end
+
+            test do
+              system "#{bin}/sr", "version"
+            end
+          end
+          EOF
+
+          echo "=== Generated Formula ==="
+          cat formula.rb
+
+          # Clone and update homebrew tap
+          git clone "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/jbctechsolutions/homebrew-skillrunner.git" tap
+          cd tap
+
+          mkdir -p Formula
+          cp ../formula.rb Formula/skillrunner.rb
+
+          git config user.name "skillrunner-bot"
+          git config user.email "bot@skillrunner.dev"
+          git add Formula/skillrunner.rb
+          git commit -m "Update skillrunner to v${VERSION}"
+          git push origin main
