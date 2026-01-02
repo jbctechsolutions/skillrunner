@@ -1,6 +1,6 @@
-# Binary outputs
-skillrunner
-skillrunner.exe
+# Binary outputs (root level only)
+/skillrunner
+/skillrunner.exe
 *.exe
 *.exe~
 *.dll
