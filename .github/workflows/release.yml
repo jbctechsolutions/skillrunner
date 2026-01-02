@@ -28,10 +28,10 @@ jobs:
         include:
           - os: darwin
             arch: amd64
-            runner: macos-13
+            runner: macos-15-large
           - os: darwin
             arch: arm64
-            runner: macos-14
+            runner: macos-15
           - os: linux
             arch: amd64
             runner: ubuntu-latest
