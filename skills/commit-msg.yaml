@@ -1,0 +1,156 @@
+# Commit Message Skill
+# A multi-phase skill for generating conventional commit messages.
+# Phases execute in order: analyze -> generate
+
+id: commit-msg
+name: Commit Message
+version: "1.0.0"
+description: |
+  Generates conventional commit messages from staged changes. Provide
+  git diff output or a description of changes. Follows Conventional
+  Commits specification.
+
+routing:
+  default_profile: balanced
+  max_context_tokens: 8192
+
+phases:
+  - id: analyze
+    name: Analyze Changes
+    prompt_template: |
+      You are analyzing code changes to understand their purpose.
+
+      Analyze the following changes:
+      {{.input}}
+
+      Identify:
+
+      ## Change Summary
+      - Files modified
+      - Lines added/removed (approximate)
+      - Primary area of the codebase affected
+
+      ## Change Type
+      Determine the primary commit type:
+      - **feat**: A new feature for the user
+      - **fix**: A bug fix for the user
+      - **docs**: Documentation only changes
+      - **style**: Formatting, missing semi-colons, etc. (no code change)
+      - **refactor**: Refactoring production code (no behavior change)
+      - **perf**: Performance improvement
+      - **test**: Adding or updating tests
+      - **build**: Build system or external dependencies
+      - **ci**: CI/CD configuration
+      - **chore**: Maintenance tasks
+
+      ## Scope
+      Identify the scope (module, component, or feature area):
+      - Examples: auth, api, ui, database, config
+
+      ## Impact Analysis
+      - Is this a breaking change?
+      - Does this close any issues?
+      - Are there related changes?
+
+      ## Key Changes
+      List the most significant changes (max 5):
+      1. Change description
+      2. Change description
+      ...
+
+      Example analysis:
+      ```
+      Type: feat
+      Scope: auth
+      Breaking: No
+      Key changes:
+      1. Add OAuth2 client configuration
+      2. Implement token refresh logic
+      3. Add Google provider support
+      ```
+    routing_profile: cheap
+    max_tokens: 2048
+    temperature: 0.3
+
+  - id: generate
+    name: Generate Commit Message
+    prompt_template: |
+      You are generating a conventional commit message.
+
+      Change analysis:
+      {{.phases.analyze}}
+
+      Original changes:
+      {{.input}}
+
+      Generate a commit message following the Conventional Commits format:
+
+      ## Format
+      ```
+      <type>(<scope>): <subject>
+
+      <body>
+
+      <footer>
+      ```
+
+      ## Rules
+      1. **Type**: Required. One of: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+      2. **Scope**: Optional. The area of the codebase (in parentheses)
+      3. **Subject**: Required. Imperative, present tense, no period, max 50 chars
+         - "add feature" not "added feature" or "adds feature"
+      4. **Body**: Optional. Explain what and why (not how). Wrap at 72 chars
+      5. **Footer**: Optional. Breaking changes and issue references
+
+      ## Examples
+
+      Simple:
+      ```
+      fix(auth): prevent race condition in token refresh
+      ```
+
+      With body:
+      ```
+      feat(api): add rate limiting to public endpoints
+
+      Implement token bucket algorithm with configurable limits per endpoint.
+      Default limit is 100 requests per minute for unauthenticated users.
+      ```
+
+      With breaking change:
+      ```
+      feat(api)!: change authentication to use JWT
+
+      BREAKING CHANGE: API now requires Bearer token authentication.
+      Basic auth is no longer supported. See migration guide in docs.
+
+      Closes #234
+      ```
+
+      ## Output
+      Provide 2-3 commit message options from most to least detailed.
+
+      ### Option 1 (Recommended)
+      ```
+      <commit message>
+      ```
+
+      ### Option 2 (Concise)
+      ```
+      <commit message>
+      ```
+    routing_profile: balanced
+    depends_on:
+      - analyze
+    max_tokens: 2048
+    temperature: 0.5
+
+metadata:
+  category: workflow
+  tags:
+    - git
+    - commit
+    - conventional-commits
+    - automation
+  author: skillrunner
+  license: MIT

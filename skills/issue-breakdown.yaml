@@ -1,0 +1,200 @@
+# Issue Breakdown Skill
+# A multi-phase skill for breaking issues into actionable tasks.
+# Phases execute in order: analyze -> decompose -> estimate
+
+id: issue-breakdown
+name: Issue Breakdown
+version: "1.0.0"
+description: |
+  Breaks down issues or feature requests into actionable subtasks with
+  complexity estimates. Provide the issue description, requirements,
+  or user story.
+
+routing:
+  default_profile: balanced
+  generation_model: claude
+  max_context_tokens: 16384
+
+phases:
+  - id: analyze
+    name: Analyze Requirements
+    prompt_template: |
+      You are a technical analyst understanding issue requirements.
+
+      Analyze the following issue:
+      {{.input}}
+
+      Extract and clarify:
+
+      ## Issue Overview
+      - **Type**: Feature / Bug / Improvement / Task
+      - **Summary**: One-line description
+      - **Goal**: What problem does this solve?
+
+      ## Requirements
+      List explicit and implicit requirements:
+      1. Functional requirements (what it should do)
+      2. Non-functional requirements (performance, security, etc.)
+      3. Constraints and limitations
+
+      ## Stakeholders
+      - Who is affected by this change?
+      - Who needs to be consulted?
+
+      ## Dependencies
+      - External dependencies (APIs, services)
+      - Internal dependencies (other features, modules)
+      - Blockers (what must be done first)
+
+      ## Scope Boundaries
+      - What is IN scope
+      - What is OUT of scope
+      - Edge cases to consider
+
+      ## Acceptance Criteria
+      Define clear, testable acceptance criteria:
+      - [ ] Criterion 1
+      - [ ] Criterion 2
+      ...
+
+      ## Questions/Clarifications Needed
+      List any ambiguities that need clarification.
+    routing_profile: balanced
+    max_tokens: 4096
+    temperature: 0.3
+
+  - id: decompose
+    name: Decompose Into Tasks
+    prompt_template: |
+      You are breaking down a technical issue into subtasks.
+
+      Requirements analysis:
+      {{.phases.analyze}}
+
+      Original issue:
+      {{.input}}
+
+      Decompose into actionable subtasks:
+
+      ## Decomposition Strategy
+      Follow these principles:
+      1. Each task should be completable in 1-4 hours
+      2. Tasks should be independently testable
+      3. Dependencies between tasks should be clear
+      4. Tasks should be ordered by dependency
+
+      ## Task Breakdown
+
+      ### Phase 1: Setup & Foundation
+      Tasks that need to be done first:
+
+      #### Task 1.1: [Task Name]
+      - **Description**: What needs to be done
+      - **Files likely affected**: List of files/modules
+      - **Definition of done**: How to verify completion
+      - **Dependencies**: None / Task X.Y
+
+      ### Phase 2: Core Implementation
+      Main implementation tasks:
+
+      #### Task 2.1: [Task Name]
+      ...
+
+      ### Phase 3: Testing & Validation
+      Testing tasks:
+
+      #### Task 3.1: Write unit tests for [feature]
+      ...
+
+      ### Phase 4: Documentation & Cleanup
+      Final tasks:
+
+      #### Task 4.1: Update documentation
+      ...
+
+      ## Task Summary
+      Total tasks: X
+      - Setup: N tasks
+      - Implementation: N tasks
+      - Testing: N tasks
+      - Documentation: N tasks
+
+      ## Critical Path
+      Identify the sequence of dependent tasks that determines minimum completion time.
+    routing_profile: premium
+    depends_on:
+      - analyze
+    max_tokens: 8192
+    temperature: 0.4
+
+  - id: estimate
+    name: Estimate Complexity
+    prompt_template: |
+      You are estimating task complexity and effort.
+
+      Task breakdown:
+      {{.phases.decompose}}
+
+      Requirements:
+      {{.phases.analyze}}
+
+      Add complexity estimates to each task:
+
+      ## Estimation Framework
+
+      Use T-shirt sizes for relative complexity:
+      - **XS**: Trivial (< 1 hour) - Simple config change, typo fix
+      - **S**: Small (1-2 hours) - Single function, straightforward
+      - **M**: Medium (2-4 hours) - Multiple functions, some complexity
+      - **L**: Large (4-8 hours) - Feature slice, significant work
+      - **XL**: Extra Large (8+ hours) - Should be broken down further
+
+      ## Confidence Levels
+      - **High**: Well-understood, done similar before
+      - **Medium**: Mostly clear, some unknowns
+      - **Low**: Significant unknowns, may need spike
+
+      ## Task Estimates
+
+      | Task ID | Task Name | Size | Confidence | Notes |
+      |---------|-----------|------|------------|-------|
+      | 1.1 | [Name] | S | High | Straightforward |
+      | 1.2 | [Name] | M | Medium | Need to check API |
+      ...
+
+      ## Risk Assessment
+
+      ### High-Risk Tasks
+      Tasks with low confidence or high complexity:
+      - Task X.Y: [Risk and mitigation]
+
+      ### Unknown Unknowns
+      Areas that might reveal additional work:
+      - [Area]: [Potential impact]
+
+      ## Total Effort Estimate
+      - **Optimistic**: X hours (if everything goes smoothly)
+      - **Realistic**: Y hours (expected case)
+      - **Pessimistic**: Z hours (if significant issues arise)
+
+      ## Recommendations
+      - Tasks to prioritize
+      - Tasks that could be parallelized
+      - Tasks that might benefit from pairing
+      - Suggestions for reducing scope if needed
+    routing_profile: cheap
+    depends_on:
+      - analyze
+      - decompose
+    max_tokens: 4096
+    temperature: 0.3
+
+metadata:
+  category: workflow
+  tags:
+    - planning
+    - estimation
+    - project-management
+    - agile
+  author: skillrunner
+  license: MIT

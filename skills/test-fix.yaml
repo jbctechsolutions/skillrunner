@@ -1,0 +1,174 @@
+# Test Fix Skill
+# A multi-phase skill for diagnosing and fixing failing tests.
+# Phases execute in order: diagnose -> fix -> verify
+
+id: test-fix
+name: Test Fix
+version: "1.0.0"
+description: |
+  Diagnoses failing tests and generates fixes. Provide the failing test output
+  along with the relevant test code and source code for best results.
+
+routing:
+  default_profile: balanced
+  generation_model: claude
+  max_context_tokens: 32000
+
+phases:
+  - id: diagnose
+    name: Diagnose Test Failures
+    prompt_template: |
+      You are a testing expert diagnosing test failures.
+
+      Analyze the following test failure information:
+      {{.input}}
+
+      For each failing test, identify:
+
+      ## Failure Summary
+      - Test name and location
+      - Failure type (assertion, exception, timeout, etc.)
+      - Error message
+
+      ## Root Cause Analysis
+      1. **Immediate Cause**: What directly caused the failure?
+      2. **Underlying Issue**: Is this a test bug or a code bug?
+         - Test bug: Test expectations are wrong or test setup is incorrect
+         - Code bug: The code under test has a defect
+         - Environment: Missing dependencies, config issues, etc.
+
+      3. **Affected Code**:
+         - Which function/method is failing?
+         - What are the inputs that cause the failure?
+         - What is the expected vs actual behavior?
+
+      ## Diagnosis Categories
+      Classify each failure:
+      - ASSERTION_MISMATCH: Expected value differs from actual
+      - NULL_REFERENCE: Null/undefined access
+      - EXCEPTION_THROWN: Unexpected exception
+      - TIMEOUT: Test took too long
+      - SETUP_FAILURE: Test setup/teardown issue
+      - MOCK_ISSUE: Mock not configured correctly
+      - FLAKY: Intermittent failure
+
+      Example diagnosis:
+      ```
+      Test: test_user_creation
+      Type: ASSERTION_MISMATCH
+      Cause: Expected user.email to be "test@example.com" but got "TEST@EXAMPLE.COM"
+      Root cause: Code bug - email normalization is lowercasing the email
+      Fix approach: Either update the assertion or fix the normalization logic
+      ```
+    routing_profile: balanced
+    max_tokens: 4096
+    temperature: 0.3
+
+  - id: fix
+    name: Generate Test Fixes
+    prompt_template: |
+      You are a testing expert generating fixes for failing tests.
+
+      Diagnosis:
+      {{.phases.diagnose}}
+
+      Original test and code:
+      {{.input}}
+
+      For each diagnosed issue, generate a fix:
+
+      ## Fix Strategy
+      Determine the appropriate fix based on root cause:
+      - If TEST BUG: Fix the test expectations, setup, or assertions
+      - If CODE BUG: Fix the source code under test
+      - If BOTH: Fix both with clear separation
+
+      ## Fixes
+
+      For each failing test:
+
+      ### [Test Name]
+
+      **Fix Type**: Test fix / Code fix / Both
+
+      **Changes Required**:
+      ```diff
+      - old code
+      + new code
+      ```
+
+      **Explanation**: Why this fix resolves the issue
+
+      ## Complete Fixed Code
+      Provide the complete fixed test file and/or source file.
+
+      ## Additional Recommendations
+      - Any related tests that might need updating
+      - Suggestions for preventing similar issues
+    routing_profile: premium
+    depends_on:
+      - diagnose
+    max_tokens: 8192
+    temperature: 0.4
+
+  - id: verify
+    name: Verify Test Fixes
+    prompt_template: |
+      You are verifying that test fixes are correct.
+
+      Diagnosis:
+      {{.phases.diagnose}}
+
+      Proposed fixes:
+      {{.phases.fix}}
+
+      Verify the fixes:
+
+      ## Fix Validation
+
+      For each fix, check:
+      - [ ] Fix addresses the diagnosed root cause
+      - [ ] Fix doesn't change intended behavior
+      - [ ] No new test failures would be introduced
+      - [ ] Test still validates the correct behavior
+
+      ## Code Quality Check
+      - [ ] Fixes follow testing best practices
+      - [ ] Assertions are clear and meaningful
+      - [ ] Test names accurately describe what's being tested
+      - [ ] No hardcoded values that could cause flakiness
+
+      ## Coverage Impact
+      - Does the fix maintain test coverage?
+      - Are there any untested code paths now?
+
+      ## Verification Summary
+      - Tests fixed: X
+      - Fix quality: High / Medium / Low
+      - Confidence level: High / Medium / Low
+
+      ## Final Verdict
+      - READY: Fixes are correct and ready to apply
+      - REVIEW: Fixes need human review for edge cases
+      - INCOMPLETE: Additional fixes needed
+
+      ## Suggested Test Commands
+      ```
+      # Commands to run to verify the fixes
+      ```
+    routing_profile: cheap
+    depends_on:
+      - diagnose
+      - fix
+    max_tokens: 2048
+    temperature: 0.3
+
+metadata:
+  category: testing
+  tags:
+    - testing
+    - debugging
+    - fix
+    - automation
+  author: skillrunner
+  license: MIT

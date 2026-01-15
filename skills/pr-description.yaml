@@ -1,0 +1,189 @@
+# PR Description Skill
+# A multi-phase skill for generating pull request descriptions.
+# Phases execute in order: diff -> summarize -> checklist
+
+id: pr-description
+name: PR Description
+version: "1.0.0"
+description: |
+  Generates comprehensive pull request descriptions from branch diffs.
+  Provide git diff output, commit history, or a description of changes.
+
+routing:
+  default_profile: balanced
+  max_context_tokens: 32000
+
+phases:
+  - id: diff
+    name: Analyze Branch Diff
+    prompt_template: |
+      You are analyzing a branch diff for a pull request.
+
+      Analyze the following changes:
+      {{.input}}
+
+      Extract:
+
+      ## Files Changed
+      List all modified files grouped by type:
+      - Source files
+      - Test files
+      - Configuration files
+      - Documentation
+
+      ## Change Statistics
+      - Total files changed
+      - Lines added
+      - Lines removed
+
+      ## Change Categories
+      Identify the nature of changes:
+      - [ ] New feature
+      - [ ] Bug fix
+      - [ ] Refactoring
+      - [ ] Performance improvement
+      - [ ] Documentation update
+      - [ ] Test additions/updates
+      - [ ] Dependency update
+      - [ ] Configuration change
+
+      ## Key Modifications
+      For each significant change:
+      1. File: `path/to/file`
+         - What changed: Description
+         - Why: Purpose of change
+
+      ## Dependencies
+      - Any new dependencies added?
+      - Any dependencies updated or removed?
+
+      ## Breaking Changes
+      - Any API changes?
+      - Any configuration changes?
+      - Any migration needed?
+    routing_profile: cheap
+    max_tokens: 4096
+    temperature: 0.3
+
+  - id: summarize
+    name: Summarize Changes
+    prompt_template: |
+      You are summarizing changes for a pull request description.
+
+      Diff analysis:
+      {{.phases.diff}}
+
+      Original changes:
+      {{.input}}
+
+      Create a clear, comprehensive summary:
+
+      ## Title
+      Generate a concise PR title (max 72 characters):
+      - Format: `<type>: <description>` or `<type>(<scope>): <description>`
+      - Use imperative mood ("Add feature" not "Added feature")
+
+      ## Summary
+      Write a 2-3 sentence overview of what this PR does and why.
+
+      ## Changes
+      Describe the changes in bullet points:
+      - Group related changes together
+      - Start each point with a verb
+      - Be specific but concise
+
+      Example:
+      ```
+      ### Changes
+      - Add OAuth2 authentication support for Google and GitHub
+      - Implement token refresh with automatic retry logic
+      - Update user model to store OAuth provider information
+      - Add comprehensive tests for auth flow
+      ```
+
+      ## Technical Details
+      Include any important technical information:
+      - Architecture decisions
+      - Performance considerations
+      - Security implications
+
+      ## Related Issues
+      - Link any related issues or tickets
+      - Note if this closes any issues
+    routing_profile: balanced
+    depends_on:
+      - diff
+    max_tokens: 4096
+    temperature: 0.4
+
+  - id: checklist
+    name: Generate Review Checklist
+    prompt_template: |
+      You are generating a review checklist for a pull request.
+
+      Summary:
+      {{.phases.summarize}}
+
+      Diff analysis:
+      {{.phases.diff}}
+
+      Generate a comprehensive PR description with checklist:
+
+      ## Pull Request Description
+
+      ### Summary
+      [2-3 sentence summary from previous phase]
+
+      ### Changes
+      [Bullet points from previous phase]
+
+      ### Type of Change
+      - [ ] Bug fix (non-breaking change that fixes an issue)
+      - [ ] New feature (non-breaking change that adds functionality)
+      - [ ] Breaking change (fix or feature that would cause existing functionality to change)
+      - [ ] Documentation update
+      - [ ] Refactoring (no functional changes)
+      - [ ] Performance improvement
+
+      ### Testing
+      - [ ] Unit tests added/updated
+      - [ ] Integration tests added/updated
+      - [ ] Manual testing performed
+
+      Describe testing done:
+      ```
+      [Testing steps or commands]
+      ```
+
+      ### Checklist
+      - [ ] My code follows the project's style guidelines
+      - [ ] I have performed a self-review of my code
+      - [ ] I have commented my code, particularly in hard-to-understand areas
+      - [ ] I have made corresponding changes to the documentation
+      - [ ] My changes generate no new warnings
+      - [ ] Any dependent changes have been merged and published
+
+      ### Screenshots (if applicable)
+      [Placeholder for UI changes]
+
+      ### Additional Notes
+      [Any additional context for reviewers]
+
+      ---
+      Format the output as markdown ready to paste into a PR description.
+    routing_profile: cheap
+    depends_on:
+      - diff
+      - summarize
+    max_tokens: 4096
+    temperature: 0.3
+
+metadata:
+  category: workflow
+  tags:
+    - git
+    - pull-request
+    - code-review
+    - documentation
+  author: skillrunner
+  license: MIT
