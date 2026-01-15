@@ -108,13 +108,13 @@ func (s *WatchService) Start(ctx context.Context) error {
 	var dirs []string
 	if s.config.UserDir != "" {
 		// Create directory if it doesn't exist
-		if err := os.MkdirAll(s.config.UserDir, 0755); err == nil {
+		if err := os.MkdirAll(s.config.UserDir, 0750); err == nil {
 			dirs = append(dirs, s.config.UserDir)
 		}
 	}
 	if s.config.ProjectDir != "" {
 		// Create directory if it doesn't exist
-		if err := os.MkdirAll(s.config.ProjectDir, 0755); err == nil {
+		if err := os.MkdirAll(s.config.ProjectDir, 0750); err == nil {
 			dirs = append(dirs, s.config.ProjectDir)
 		}
 	}

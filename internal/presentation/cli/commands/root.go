@@ -151,7 +151,7 @@ func initializeApp() error {
 	// Start skill hot reload watcher in background
 	if err := container.StartSkillWatching(ctx); err != nil {
 		if globalFlags.Verbose {
-			formatter.Warning("Could not start skill hot reload: %v", err)
+			_ = formatter.Warning("Could not start skill hot reload: %v", err)
 		}
 	}
 
