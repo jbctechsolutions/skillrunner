@@ -83,22 +83,20 @@ func NewWatcher(cfg WatcherConfig) (*Watcher, error) {
 		cfg.DebounceDuration = 100 * time.Millisecond
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	w := &Watcher{
 		fsWatcher: fsWatcher,
 		config:    cfg,
 		events:    make(chan WatchEvent, cfg.BufferSize),
 		errors:    make(chan error, cfg.BufferSize),
 		pending:   make(map[string]pendingEvent),
-		ctx:       ctx,
-		cancel:    cancel,
 	}
 
 	return w, nil
 }
 
 // Watch starts watching the given directories for skill file changes.
+// The provided context controls the watcher lifecycle - when cancelled,
+// the watcher will stop processing events.
 // Non-existent directories are skipped without error.
 func (w *Watcher) Watch(ctx context.Context, dirs ...string) error {
 	w.mu.Lock()
@@ -106,6 +104,8 @@ func (w *Watcher) Watch(ctx context.Context, dirs ...string) error {
 		w.mu.Unlock()
 		return nil
 	}
+	// Create internal context derived from the passed context
+	w.ctx, w.cancel = context.WithCancel(ctx)
 	w.mu.Unlock()
 
 	// Add directories to watcher
@@ -151,7 +151,9 @@ func (w *Watcher) Close() error {
 	w.closed = true
 	w.mu.Unlock()
 
-	w.cancel()
+	if w.cancel != nil {
+		w.cancel()
+	}
 	err := w.fsWatcher.Close()
 	w.wg.Wait()
 
