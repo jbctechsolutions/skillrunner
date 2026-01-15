@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/backend"
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/cache"
@@ -249,7 +250,7 @@ func (c *Container) initSkillWatcher() error {
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
-		userDir = homeDir + "/.skillrunner/skills"
+		userDir = filepath.Join(homeDir, ".skillrunner", "skills")
 	}
 
 	// Get current working directory for project skills
@@ -257,7 +258,7 @@ func (c *Container) initSkillWatcher() error {
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
-	projectDir := cwd + "/.skillrunner/skills"
+	projectDir := filepath.Join(cwd, ".skillrunner", "skills")
 
 	cfg := appSkills.WatchServiceConfig{
 		UserDir:          userDir,
