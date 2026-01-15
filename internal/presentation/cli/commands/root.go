@@ -135,7 +135,7 @@ func initializeApp() error {
 	}
 
 	// Create cancellable context for graceful shutdown
-	_, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
 	// Store app context with mutex protection
 	appCtxMu.Lock()
@@ -147,6 +147,13 @@ func initializeApp() error {
 		cancelFunc: cancel,
 	}
 	appCtxMu.Unlock()
+
+	// Start skill hot reload watcher in background
+	if err := container.StartSkillWatching(ctx); err != nil {
+		if globalFlags.Verbose {
+			_ = formatter.Warning("Could not start skill hot reload: %v", err)
+		}
+	}
 
 	return nil
 }

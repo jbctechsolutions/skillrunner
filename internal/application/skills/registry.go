@@ -6,29 +6,37 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 	infraSkills "github.com/jbctechsolutions/skillrunner/internal/infrastructure/skills"
 )
 
 // Registry provides caching and lookup for skill definitions.
-// It manages skills from both built-in and user directories.
+// It manages skills from built-in, user, and project directories.
 type Registry struct {
 	loader *infraSkills.Loader
 	skills map[string]*skill.Skill
 	mu     sync.RWMutex
 	loaded bool
 
+	// Source tracking for hot reload support
+	sourceMap map[string]*skill.SkillSource // skillID -> source info
+	pathMap   map[string]string             // filePath -> skillID (for deletion handling)
+
 	// Directory paths
 	builtInDir string
 	userDir    string
+	projectDir string
 }
 
 // NewRegistry creates a new SkillRegistry with the given loader.
 func NewRegistry(loader *infraSkills.Loader) *Registry {
 	return &Registry{
-		loader: loader,
-		skills: make(map[string]*skill.Skill),
+		loader:    loader,
+		skills:    make(map[string]*skill.Skill),
+		sourceMap: make(map[string]*skill.SkillSource),
+		pathMap:   make(map[string]string),
 	}
 }
 
@@ -44,6 +52,45 @@ func (r *Registry) SetUserDir(dir string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.userDir = dir
+}
+
+// SetProjectDir sets the path to the project skills directory.
+func (r *Registry) SetProjectDir(dir string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.projectDir = dir
+}
+
+// ProjectDir returns the project skills directory path.
+func (r *Registry) ProjectDir() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.projectDir
+}
+
+// UserDir returns the user skills directory path.
+func (r *Registry) UserDir() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.userDir != "" {
+		return r.userDir
+	}
+	// Default: ~/.skillrunner/skills
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(homeDir, ".skillrunner", "skills")
+}
+
+// BuiltInDir returns the built-in skills directory path.
+func (r *Registry) BuiltInDir() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.builtInDir != "" {
+		return r.builtInDir
+	}
+	return "skills"
 }
 
 // LoadBuiltInSkills loads skills from the built-in skills directory.
@@ -120,6 +167,8 @@ func (r *Registry) LoadAll() error {
 	// Clear existing cache
 	r.mu.Lock()
 	r.skills = make(map[string]*skill.Skill)
+	r.sourceMap = make(map[string]*skill.SkillSource)
+	r.pathMap = make(map[string]string)
 	r.loaded = false
 	r.mu.Unlock()
 
@@ -215,6 +264,11 @@ func (r *Registry) Unregister(id string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.skills, id)
+	// Also clean up source tracking
+	if source, ok := r.sourceMap[id]; ok {
+		delete(r.pathMap, source.FilePath())
+		delete(r.sourceMap, id)
+	}
 }
 
 // Clear removes all skills from the registry.
@@ -222,5 +276,91 @@ func (r *Registry) Clear() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.skills = make(map[string]*skill.Skill)
+	r.sourceMap = make(map[string]*skill.SkillSource)
+	r.pathMap = make(map[string]string)
 	r.loaded = false
+}
+
+// RegisterWithSource registers a skill with its source information.
+// This enables proper handling of skill overrides and deletions.
+func (r *Registry) RegisterWithSource(s *skill.Skill, filePath string, sourceType skill.SourceType) error {
+	if s == nil {
+		return fmt.Errorf("cannot register nil skill")
+	}
+	if s.ID() == "" {
+		return fmt.Errorf("skill must have an ID")
+	}
+	if filePath == "" {
+		return fmt.Errorf("file path is required for source tracking")
+	}
+
+	source, err := skill.NewSkillSource(s.ID(), filePath, sourceType, time.Now())
+	if err != nil {
+		return fmt.Errorf("failed to create skill source: %w", err)
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Check if we should register based on priority
+	if existing, ok := r.sourceMap[s.ID()]; ok {
+		// Only replace if new source has higher or equal priority
+		if sourceType.Priority() < existing.Source().Priority() {
+			return nil // Don't replace higher-priority skill
+		}
+		// Remove old path mapping
+		delete(r.pathMap, existing.FilePath())
+	}
+
+	r.skills[s.ID()] = s
+	r.sourceMap[s.ID()] = source
+	r.pathMap[filePath] = s.ID()
+	return nil
+}
+
+// GetSource returns the source information for a skill.
+// Returns nil if the skill is not found or has no source tracking.
+func (r *Registry) GetSource(skillID string) *skill.SkillSource {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.sourceMap[skillID]
+}
+
+// UnregisterByPath removes a skill by its file path.
+// Returns the skill ID that was removed, and true if a skill was found.
+func (r *Registry) UnregisterByPath(filePath string) (string, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	skillID, ok := r.pathMap[filePath]
+	if !ok {
+		return "", false
+	}
+
+	// Remove the skill and its source tracking
+	delete(r.skills, skillID)
+	delete(r.sourceMap, skillID)
+	delete(r.pathMap, filePath)
+
+	return skillID, true
+}
+
+// GetSkillIDByPath returns the skill ID for a given file path.
+// Returns empty string if no skill is registered from that path.
+func (r *Registry) GetSkillIDByPath(filePath string) string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.pathMap[filePath]
+}
+
+// HasSourceTracking returns true if the registry has source tracking data.
+func (r *Registry) HasSourceTracking() bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.sourceMap) > 0
+}
+
+// Loader returns the skill loader used by the registry.
+func (r *Registry) Loader() *infraSkills.Loader {
+	return r.loader
 }

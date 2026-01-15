@@ -55,7 +55,9 @@ type LoggingConfig struct {
 
 // SkillsConfig holds configuration for skill management.
 type SkillsConfig struct {
-	Directory string `yaml:"directory"`
+	Directory        string        `yaml:"directory"`
+	HotReload        bool          `yaml:"hot_reload"`
+	DebounceDuration time.Duration `yaml:"debounce_duration"`
 }
 
 // CacheConfig holds configuration for response caching.
@@ -105,12 +107,14 @@ type MemoryConfig struct {
 
 // Default configuration values.
 const (
-	DefaultOllamaURL       = "http://localhost:11434"
-	DefaultTimeout         = 30 * time.Second
-	DefaultLogLevel        = "info"
-	DefaultLogFormat       = "text"
-	DefaultSkillsDirectory = "~/.skillrunner/skills"
-	DefaultRoutingProfile  = "default"
+	DefaultOllamaURL              = "http://localhost:11434"
+	DefaultTimeout                = 30 * time.Second
+	DefaultLogLevel               = "info"
+	DefaultLogFormat              = "text"
+	DefaultSkillsDirectory        = "~/.skillrunner/skills"
+	DefaultSkillsHotReload        = true
+	DefaultSkillsDebounceDuration = 100 * time.Millisecond
+	DefaultRoutingProfile         = "default"
 
 	// Cache defaults
 	DefaultCacheEnabled       = true
@@ -197,7 +201,9 @@ func NewDefaultConfig() *Config {
 			Format: DefaultLogFormat,
 		},
 		Skills: SkillsConfig{
-			Directory: DefaultSkillsDirectory,
+			Directory:        DefaultSkillsDirectory,
+			HotReload:        DefaultSkillsHotReload,
+			DebounceDuration: DefaultSkillsDebounceDuration,
 		},
 		Cache: CacheConfig{
 			Enabled:       DefaultCacheEnabled,
@@ -376,9 +382,20 @@ func (r *RoutingConfig) Validate() error {
 
 // Validate checks if the SkillsConfig is valid.
 func (s *SkillsConfig) Validate() error {
+	var errs []error
+
 	if s.Directory == "" {
-		return errors.New("directory is required")
+		errs = append(errs, errors.New("directory is required"))
 	}
+
+	if s.HotReload && s.DebounceDuration <= 0 {
+		errs = append(errs, errors.New("debounce_duration must be positive when hot_reload is enabled"))
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
 	return nil
 }
 

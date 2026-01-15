@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/backend"
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/cache"
@@ -51,6 +52,7 @@ type Container struct {
 	streamingExecutor workflow.StreamingExecutor
 	skillLoader       *skills.Loader
 	skillRegistry     *appSkills.Registry
+	skillWatchService *appSkills.WatchService
 
 	// Registries
 	providerRegistry    *adapterProvider.Registry
@@ -228,6 +230,62 @@ func (c *Container) initServices() error {
 		_ = err // Ignore loading errors for now
 	}
 
+	// Initialize skill hot reload if enabled
+	if c.config.Skills.HotReload {
+		if err := c.initSkillWatcher(); err != nil {
+			// Log warning but don't fail - hot reload is optional
+			c.logger.Warn("failed to initialize skill watcher", "error", err)
+		}
+	}
+
+	return nil
+}
+
+// initSkillWatcher initializes the skill watch service for hot reload.
+func (c *Container) initSkillWatcher() error {
+	// Resolve user skills directory
+	userDir := c.config.Skills.Directory
+	if userDir == "~/.skillrunner/skills" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		userDir = filepath.Join(homeDir, ".skillrunner", "skills")
+	}
+
+	// Get current working directory for project skills
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+	projectDir := filepath.Join(cwd, ".skillrunner", "skills")
+
+	cfg := appSkills.WatchServiceConfig{
+		UserDir:          userDir,
+		ProjectDir:       projectDir,
+		DebounceDuration: c.config.Skills.DebounceDuration,
+		OnReload: func(event appSkills.SkillReloadEvent) {
+			if event.Error != nil {
+				c.logger.Warn("skill reload failed",
+					"path", event.FilePath,
+					"error", event.Error,
+				)
+			} else {
+				c.logger.Info("skill reloaded",
+					"skill_id", event.SkillID,
+					"event", event.EventType,
+					"path", event.FilePath,
+				)
+			}
+		},
+	}
+
+	watchService, err := appSkills.NewWatchService(cfg, c.skillRegistry, c.skillLoader, c.logger)
+	if err != nil {
+		return fmt.Errorf("failed to create watch service: %w", err)
+	}
+
+	c.skillWatchService = watchService
 	return nil
 }
 
@@ -304,6 +362,11 @@ func (c *Container) initObservability() error {
 func (c *Container) Close() error {
 	ctx := context.Background()
 
+	// Stop skill watcher
+	if c.skillWatchService != nil {
+		_ = c.skillWatchService.Stop()
+	}
+
 	// Shutdown MCP servers
 	if c.mcpRegistry != nil {
 		_ = c.mcpRegistry.Close(ctx)
@@ -323,6 +386,29 @@ func (c *Container) Close() error {
 		return c.dbConn.Close()
 	}
 	return nil
+}
+
+// StartSkillWatching starts the skill hot reload watcher.
+// This should be called after the container is fully initialized.
+func (c *Container) StartSkillWatching(ctx context.Context) error {
+	if c.skillWatchService == nil {
+		return nil // Hot reload not enabled
+	}
+	return c.skillWatchService.Start(ctx)
+}
+
+// StopSkillWatching stops the skill hot reload watcher.
+func (c *Container) StopSkillWatching() error {
+	if c.skillWatchService == nil {
+		return nil
+	}
+	return c.skillWatchService.Stop()
+}
+
+// SkillWatchService returns the skill watch service.
+// Returns nil if hot reload is not enabled.
+func (c *Container) SkillWatchService() *appSkills.WatchService {
+	return c.skillWatchService
 }
 
 // Config returns the application configuration.
