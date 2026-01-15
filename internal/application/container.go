@@ -9,6 +9,7 @@ import (
 
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/backend"
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/cache"
+	adapterMCP "github.com/jbctechsolutions/skillrunner/internal/adapters/mcp"
 	adapterProvider "github.com/jbctechsolutions/skillrunner/internal/adapters/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/adapters/sync/sqlite"
 	"github.com/jbctechsolutions/skillrunner/internal/application/observability"
@@ -56,6 +57,9 @@ type Container struct {
 	providerInitializer *appProvider.Initializer
 	backendRegistry     *backend.Registry
 
+	// MCP (Model Context Protocol)
+	mcpRegistry *adapterMCP.Registry
+
 	// Wave 10: Cache
 	memoryCache    *cache.MemoryCache
 	sqliteCache    *cache.SQLiteCache
@@ -99,6 +103,12 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	if err := c.initRegistries(); err != nil {
 		_ = c.Close() // Clean up on error
 		return nil, fmt.Errorf("failed to initialize registries: %w", err)
+	}
+
+	// Initialize MCP (Model Context Protocol)
+	if err := c.initMCP(); err != nil {
+		_ = c.Close() // Clean up on error
+		return nil, fmt.Errorf("failed to initialize MCP: %w", err)
 	}
 
 	// Wave 11: Initialize observability
@@ -164,6 +174,22 @@ func (c *Container) initRegistries() error {
 	if err := c.providerInitializer.InitFromConfig(c.config); err != nil {
 		// Log warning but don't fail - some providers may have initialized successfully
 		// In production, this should be logged properly
+		_ = err
+	}
+
+	return nil
+}
+
+// initMCP initializes the MCP (Model Context Protocol) subsystem.
+func (c *Container) initMCP() error {
+	manager := adapterMCP.NewServerManager()
+	loader := adapterMCP.NewConfigLoader()
+	c.mcpRegistry = adapterMCP.NewRegistry(manager, loader)
+
+	// Load configs but don't start servers yet (they start on-demand)
+	if err := c.mcpRegistry.LoadConfigs(context.Background()); err != nil {
+		// Log warning but don't fail - MCP is optional
+		// Configs may not exist if user hasn't configured any MCP servers
 		_ = err
 	}
 
@@ -278,6 +304,11 @@ func (c *Container) initObservability() error {
 func (c *Container) Close() error {
 	ctx := context.Background()
 
+	// Shutdown MCP servers
+	if c.mcpRegistry != nil {
+		_ = c.mcpRegistry.Close(ctx)
+	}
+
 	// Wave 11: Shutdown tracer
 	if c.tracer != nil {
 		_ = c.tracer.Shutdown(ctx)
@@ -377,6 +408,12 @@ func (c *Container) ProviderInitializer() *appProvider.Initializer {
 // BackendRegistry returns the backend registry.
 func (c *Container) BackendRegistry() *backend.Registry {
 	return c.backendRegistry
+}
+
+// MCPRegistry returns the MCP server registry for tool access.
+// Returns nil if MCP is not initialized.
+func (c *Container) MCPRegistry() *adapterMCP.Registry {
+	return c.mcpRegistry
 }
 
 // MachineID returns the machine identifier.

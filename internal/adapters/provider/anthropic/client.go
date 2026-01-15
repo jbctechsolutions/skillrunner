@@ -37,7 +37,13 @@ func (c *Client) SendMessage(ctx context.Context, req *MessagesRequest) (*Messag
 		return nil, errors.NewError(errors.CodeProvider, "failed to marshal request", err)
 	}
 
-	resp, err := c.doRequestWithRetry(ctx, http.MethodPost, "/messages", body)
+	// Check if we need the Tool Search Tool beta header
+	betaHeader := ""
+	if hasDeferredLoadingTools(req.Tools) {
+		betaHeader = BetaToolSearch
+	}
+
+	resp, err := c.doRequestWithRetry(ctx, http.MethodPost, "/messages", body, betaHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +59,16 @@ func (c *Client) SendMessage(ctx context.Context, req *MessagesRequest) (*Messag
 	}
 
 	return &result, nil
+}
+
+// hasDeferredLoadingTools checks if any tool has deferred loading enabled.
+func hasDeferredLoadingTools(tools []Tool) bool {
+	for _, tool := range tools {
+		if tool.DeferLoading {
+			return true
+		}
+	}
+	return false
 }
 
 // StreamMessage sends a streaming message request to the Anthropic API.
@@ -124,8 +140,8 @@ func (c *Client) parseSSEStream(reader io.Reader, callback func(event *StreamEve
 	return nil
 }
 
-// doRequestWithRetry performs an HTTP request with exponential backoff retry.
-func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, body []byte) (*http.Response, error) {
+// doRequestWithRetry performs an HTTP request with exponential backoff retry and optional beta header.
+func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, body []byte, betaHeader string) (*http.Response, error) {
 	var lastErr error
 	baseDelay := 500 * time.Millisecond
 
@@ -140,7 +156,7 @@ func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, bo
 			}
 		}
 
-		req, err := c.newRequest(ctx, method, path, body)
+		req, err := c.newRequestWithBeta(ctx, method, path, body, betaHeader)
 		if err != nil {
 			return nil, err
 		}
@@ -167,6 +183,11 @@ func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, bo
 
 // newRequest creates a new HTTP request with required headers.
 func (c *Client) newRequest(ctx context.Context, method, path string, body []byte) (*http.Request, error) {
+	return c.newRequestWithBeta(ctx, method, path, body, "")
+}
+
+// newRequestWithBeta creates a new HTTP request with required headers and optional beta header.
+func (c *Client) newRequestWithBeta(ctx context.Context, method, path string, body []byte, betaHeader string) (*http.Request, error) {
 	url := c.config.BaseURL + path
 
 	var bodyReader io.Reader
@@ -182,6 +203,11 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body []byt
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", c.config.APIKey)
 	req.Header.Set("anthropic-version", c.config.Version)
+
+	// Add beta header if provided (for Tool Search Tool feature)
+	if betaHeader != "" {
+		req.Header.Set("anthropic-beta", betaHeader)
+	}
 
 	return req, nil
 }
