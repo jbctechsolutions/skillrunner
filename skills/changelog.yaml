@@ -1,0 +1,178 @@
+# Changelog Skill
+# A multi-phase skill for generating changelogs from git commits.
+# Phases execute in order: extract -> summarize -> format
+
+id: changelog
+name: Changelog
+version: "1.0.0"
+description: |
+  Generates a changelog from git commit history. Provide git log output
+  or a list of commits. Follows Keep a Changelog format by default.
+
+routing:
+  default_profile: balanced
+  max_context_tokens: 16384
+
+phases:
+  - id: extract
+    name: Extract Commit Information
+    prompt_template: |
+      You are extracting structured information from git commits.
+
+      Parse the following commit information:
+      {{.input}}
+
+      Extract for each commit:
+      1. **Commit hash** (short form)
+      2. **Type**: Detect the commit type
+         - feat: New feature
+         - fix: Bug fix
+         - docs: Documentation
+         - style: Code style (formatting, etc.)
+         - refactor: Code refactoring
+         - perf: Performance improvement
+         - test: Tests
+         - build: Build system
+         - ci: CI/CD
+         - chore: Maintenance
+         - revert: Reverts
+
+      3. **Scope**: Area of the codebase affected (if mentioned)
+      4. **Subject**: Brief description
+      5. **Breaking change**: Yes/No
+      6. **Related issues**: Issue/PR references
+
+      Output format:
+      ```
+      Commit: abc1234
+      Type: feat
+      Scope: auth
+      Subject: Add OAuth2 support for Google login
+      Breaking: No
+      Issues: #123, #145
+
+      Commit: def5678
+      Type: fix
+      Scope: api
+      Subject: Fix rate limiting not applied to webhooks
+      Breaking: No
+      Issues: #167
+      ```
+
+      Group commits by type for the next phase.
+    routing_profile: cheap
+    max_tokens: 4096
+    temperature: 0.2
+
+  - id: summarize
+    name: Summarize Changes
+    prompt_template: |
+      You are summarizing commits for a changelog.
+
+      Extracted commits:
+      {{.phases.extract}}
+
+      Create human-readable changelog entries:
+
+      ## Grouping
+      Group changes by category:
+      - **Added**: New features (feat)
+      - **Changed**: Changes to existing functionality (refactor, perf)
+      - **Deprecated**: Features to be removed
+      - **Removed**: Removed features
+      - **Fixed**: Bug fixes (fix)
+      - **Security**: Security fixes
+
+      ## Entry Guidelines
+      - Write in present tense ("Add" not "Added")
+      - Start with a verb
+      - Be concise but descriptive
+      - Include scope in parentheses if relevant
+      - Reference issues/PRs at the end
+
+      Example entries:
+      ```
+      ### Added
+      - Add OAuth2 authentication support for Google login (#123)
+      - Add rate limiting configuration options
+
+      ### Fixed
+      - Fix rate limiting not being applied to webhook endpoints (#167)
+      - Fix memory leak in connection pool
+
+      ### Changed
+      - Improve error messages for validation failures
+      - Update dependencies to latest versions
+      ```
+
+      If there are breaking changes, highlight them prominently.
+    routing_profile: balanced
+    depends_on:
+      - extract
+    max_tokens: 4096
+    temperature: 0.4
+
+  - id: format
+    name: Format Changelog
+    prompt_template: |
+      You are formatting a changelog following Keep a Changelog format.
+
+      Summarized changes:
+      {{.phases.summarize}}
+
+      Format the changelog as:
+
+      ```markdown
+      ## [Version] - YYYY-MM-DD
+
+      ### Added
+      - Entry 1
+      - Entry 2
+
+      ### Changed
+      - Entry 1
+
+      ### Deprecated
+      - Entry 1
+
+      ### Removed
+      - Entry 1
+
+      ### Fixed
+      - Entry 1
+      - Entry 2
+
+      ### Security
+      - Entry 1
+      ```
+
+      Guidelines:
+      1. Use semantic versioning format [X.Y.Z] or [Unreleased]
+      2. Use ISO 8601 date format (YYYY-MM-DD)
+      3. Only include sections that have entries
+      4. Order sections: Added, Changed, Deprecated, Removed, Fixed, Security
+      5. Each entry is a bullet point starting with a verb
+      6. Reference issues/PRs in parentheses at the end
+
+      If breaking changes exist, add a prominent notice:
+      ```markdown
+      ### BREAKING CHANGES
+      - Description of breaking change and migration path
+      ```
+
+      Output the formatted changelog ready for CHANGELOG.md.
+    routing_profile: cheap
+    depends_on:
+      - summarize
+    max_tokens: 4096
+    temperature: 0.3
+
+metadata:
+  category: documentation
+  tags:
+    - changelog
+    - git
+    - release
+    - documentation
+  author: skillrunner
+  license: MIT

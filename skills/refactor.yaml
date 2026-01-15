@@ -1,0 +1,179 @@
+# Refactor Skill
+# A multi-phase skill for applying refactoring patterns to code.
+# Phases execute in order: analyze -> transform -> validate
+
+id: refactor
+name: Refactor
+version: "1.0.0"
+description: |
+  Applies refactoring patterns to improve code structure without changing behavior.
+
+  Supported patterns:
+  - extract-function: Extract code into a new function
+  - inline: Inline a function or variable
+  - rename: Rename identifiers for clarity
+  - simplify: Simplify complex expressions or logic
+
+  Input format:
+  Pattern: <pattern-name>
+
+  Code:
+  <your code here>
+
+routing:
+  default_profile: balanced
+  max_context_tokens: 16384
+
+phases:
+  - id: analyze
+    name: Analyze Code Structure
+    prompt_template: |
+      You are a refactoring expert analyzing code for transformation.
+
+      Parse the input to identify the refactoring pattern and code:
+      {{.input}}
+
+      First, identify:
+      1. **Requested Pattern**: Which refactoring pattern is requested?
+         - extract-function: Extract code into a new function
+         - inline: Inline a function or variable
+         - rename: Rename identifiers for clarity
+         - simplify: Simplify complex expressions or logic
+
+      2. **Code Analysis**:
+         - Language detected
+         - Current structure and dependencies
+         - Scope of the refactoring
+
+      3. **Refactoring Targets**:
+         - What specific code will be transformed?
+         - What are the dependencies and usages?
+
+      4. **Considerations**:
+         - Potential risks or edge cases
+         - Impact on other code
+
+      Example analysis for extract-function:
+      ```
+      Pattern: extract-function
+      Language: Python
+      Target: Lines 15-25 (validation logic)
+      Dependencies: Uses 'config' parameter, calls 'validate_field()'
+      New function name suggestion: validate_user_input()
+      Parameters needed: data, config
+      Return value: validated_data or raises ValidationError
+      ```
+    routing_profile: balanced
+    max_tokens: 2048
+    temperature: 0.3
+
+  - id: transform
+    name: Apply Refactoring
+    prompt_template: |
+      You are a refactoring expert applying code transformations.
+
+      Analysis results:
+      {{.phases.analyze}}
+
+      Original code:
+      {{.input}}
+
+      Apply the requested refactoring pattern. Show:
+
+      ## Refactoring Steps
+      1. Step-by-step description of the transformation
+      2. Any preparatory changes needed
+
+      ## Transformed Code
+      Provide the complete refactored code.
+
+      ## Changes Made
+      - List each change with before/after snippets
+      - Explain why each change was necessary
+
+      Example for extract-function:
+      ```
+      Before (lines 15-25):
+      if data.get('email'):
+          if '@' not in data['email']:
+              raise ValidationError('Invalid email')
+          if len(data['email']) > 255:
+              raise ValidationError('Email too long')
+
+      After:
+      def validate_email(email: str) -> None:
+          if '@' not in email:
+              raise ValidationError('Invalid email')
+          if len(email) > 255:
+              raise ValidationError('Email too long')
+
+      # In original location:
+      if data.get('email'):
+          validate_email(data['email'])
+      ```
+
+      Ensure the refactoring:
+      - Preserves existing behavior
+      - Follows language conventions
+      - Improves readability/maintainability
+    routing_profile: balanced
+    depends_on:
+      - analyze
+    max_tokens: 4096
+    temperature: 0.4
+
+  - id: validate
+    name: Validate Refactoring
+    prompt_template: |
+      You are validating a refactoring to ensure correctness.
+
+      Analysis:
+      {{.phases.analyze}}
+
+      Transformation:
+      {{.phases.transform}}
+
+      Validate the refactoring by checking:
+
+      ## Behavior Preservation
+      - [ ] Original functionality is maintained
+      - [ ] All code paths are preserved
+      - [ ] Error handling remains intact
+      - [ ] Edge cases are still handled
+
+      ## Code Quality
+      - [ ] Follows language conventions
+      - [ ] Naming is clear and consistent
+      - [ ] No code duplication introduced
+      - [ ] Complexity is reduced (or not increased)
+
+      ## Dependencies
+      - [ ] All usages are updated
+      - [ ] Imports/exports are correct
+      - [ ] No broken references
+
+      ## Test Impact
+      - [ ] Existing tests should still pass
+      - [ ] Suggest any new tests needed
+
+      ## Verification Summary
+      Provide a final assessment:
+      - SAFE: Refactoring is correct and safe to apply
+      - CAUTION: Review needed for specific concerns
+      - UNSAFE: Issues found that would change behavior
+    routing_profile: cheap
+    depends_on:
+      - analyze
+      - transform
+    max_tokens: 2048
+    temperature: 0.3
+
+metadata:
+  category: code-quality
+  tags:
+    - refactoring
+    - code-structure
+    - clean-code
+    - automation
+  author: skillrunner
+  license: MIT
