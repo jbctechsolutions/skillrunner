@@ -21,9 +21,9 @@ type serverInstance struct {
 
 // ServerManager manages the lifecycle of MCP servers.
 type ServerManager struct {
-	mu       sync.RWMutex
-	servers  map[string]*serverInstance
-	configs  map[string]domainMCP.ServerConfig
+	mu      sync.RWMutex
+	servers map[string]*serverInstance
+	configs map[string]domainMCP.ServerConfig
 }
 
 // NewServerManager creates a new ServerManager.
@@ -95,7 +95,7 @@ func (m *ServerManager) Start(ctx context.Context, config domainMCP.ServerConfig
 
 	// Initialize the server
 	if err := client.Initialize(ctx); err != nil {
-		client.Close(ctx)
+		_ = client.Close(ctx)
 		m.updateState(config.Name, domainMCP.ServerStateError, err)
 		return err
 	}
@@ -103,7 +103,7 @@ func (m *ServerManager) Start(ctx context.Context, config domainMCP.ServerConfig
 	// Discover tools
 	tools, err := client.DiscoverTools(ctx)
 	if err != nil {
-		client.Close(ctx)
+		_ = client.Close(ctx)
 		m.updateState(config.Name, domainMCP.ServerStateError, err)
 		return err
 	}

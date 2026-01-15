@@ -239,7 +239,7 @@ func (c *Client) Close(ctx context.Context) error {
 		case <-time.After(10 * time.Second):
 			// Force kill if still running
 			if c.cmd.Process != nil {
-				c.cmd.Process.Kill()
+				_ = c.cmd.Process.Kill()
 			}
 			closeErr = <-done
 		}

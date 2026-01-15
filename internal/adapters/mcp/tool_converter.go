@@ -1,8 +1,8 @@
 package mcp
 
 import (
-	domainMCP "github.com/jbctechsolutions/skillrunner/internal/domain/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	domainMCP "github.com/jbctechsolutions/skillrunner/internal/domain/mcp"
 )
 
 // ToProviderTools converts MCP tools to provider-agnostic tools.

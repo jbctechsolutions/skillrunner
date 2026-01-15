@@ -43,7 +43,7 @@ func (c *Client) SendMessage(ctx context.Context, req *MessagesRequest) (*Messag
 		betaHeader = BetaToolSearch
 	}
 
-	resp, err := c.doRequestWithRetryAndBeta(ctx, http.MethodPost, "/messages", body, betaHeader)
+	resp, err := c.doRequestWithRetry(ctx, http.MethodPost, "/messages", body, betaHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -140,13 +140,8 @@ func (c *Client) parseSSEStream(reader io.Reader, callback func(event *StreamEve
 	return nil
 }
 
-// doRequestWithRetry performs an HTTP request with exponential backoff retry.
-func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, body []byte) (*http.Response, error) {
-	return c.doRequestWithRetryAndBeta(ctx, method, path, body, "")
-}
-
-// doRequestWithRetryAndBeta performs an HTTP request with exponential backoff retry and optional beta header.
-func (c *Client) doRequestWithRetryAndBeta(ctx context.Context, method, path string, body []byte, betaHeader string) (*http.Response, error) {
+// doRequestWithRetry performs an HTTP request with exponential backoff retry and optional beta header.
+func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, body []byte, betaHeader string) (*http.Response, error) {
 	var lastErr error
 	baseDelay := 500 * time.Millisecond
 

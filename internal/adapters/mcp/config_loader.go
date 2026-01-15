@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	domainMCP "github.com/jbctechsolutions/skillrunner/internal/domain/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	domainMCP "github.com/jbctechsolutions/skillrunner/internal/domain/mcp"
 )
 
 // Compile-time interface assertion.

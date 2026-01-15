@@ -25,9 +25,9 @@ const (
 type ContentBlock struct {
 	Type      string          `json:"type"`
 	Text      string          `json:"text,omitempty"`
-	ID        string          `json:"id,omitempty"`         // For tool_use blocks
-	Name      string          `json:"name,omitempty"`       // For tool_use blocks
-	Input     json.RawMessage `json:"input,omitempty"`      // For tool_use blocks
+	ID        string          `json:"id,omitempty"`          // For tool_use blocks
+	Name      string          `json:"name,omitempty"`        // For tool_use blocks
+	Input     json.RawMessage `json:"input,omitempty"`       // For tool_use blocks
 	ToolUseID string          `json:"tool_use_id,omitempty"` // For tool_result blocks
 	Content   string          `json:"content,omitempty"`     // For tool_result blocks
 }
