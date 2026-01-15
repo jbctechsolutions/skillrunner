@@ -11,9 +11,16 @@ Skillrunner (sr) is a local-first AI workflow orchestration tool that enables mu
   - [list](#list)
   - [run](#run)
   - [ask](#ask)
+  - [plan](#plan)
+  - [chat](#chat)
+  - [memory](#memory)
   - [status](#status)
   - [import](#import)
   - [metrics](#metrics)
+  - [cache](#cache)
+  - [session](#session)
+  - [context](#context)
+  - [workspace](#workspace)
 - [Exit Codes](#exit-codes)
 - [Environment Variables](#environment-variables)
 
@@ -309,7 +316,9 @@ The run command handles:
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
 | `--profile` | `-p` | string | `balanced` | Routing profile: `cheap`, `balanced`, `premium` |
+| `--phase` | | string | | Specific phase to execute |
 | `--stream` | `-s` | bool | `false` | Enable streaming output |
+| `--no-memory` | | bool | `false` | Disable memory injection |
 
 #### Routing Profiles
 
@@ -405,6 +414,9 @@ Ideal for:
 |------|-------|------|---------|-------------|
 | `--model` | `-m` | string | (auto) | Override model selection (e.g., `claude-3-opus`, `gpt-4`, `llama3`) |
 | `--profile` | `-p` | string | `balanced` | Routing profile: `cheap`, `balanced`, `premium` |
+| `--phase` | | string | (first) | Specific phase to execute |
+| `--stream` | `-s` | bool | `false` | Enable streaming output |
+| `--no-memory` | | bool | `false` | Disable memory injection |
 
 #### Examples
 
@@ -844,6 +856,349 @@ Cost estimates are calculated based on:
 - Success rate includes both successful completions and partial successes
 - Latency is measured as time-to-first-token for streaming responses
 - Costs are estimates and may not reflect exact billing
+
+---
+
+### plan
+
+Preview execution plan before running a skill.
+
+#### Synopsis
+
+```bash
+sr plan <skill> <request> [flags]
+```
+
+#### Description
+
+Shows the execution plan for a skill, including phase dependencies, model selection, and cost estimates. Useful for understanding what will happen before committing to execution.
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--approve` | `-a` | bool | `false` | Auto-approve and execute after showing plan |
+| `--profile` | `-p` | string | `balanced` | Routing profile: `cheap`, `balanced`, `premium` |
+| `--no-memory` | | bool | `false` | Disable memory injection |
+
+#### Examples
+
+```bash
+# Preview execution plan
+sr plan code-review "Review auth.go for security issues"
+
+# Preview and auto-execute
+sr plan code-review "Review auth.go" --approve
+
+# Preview with premium profile
+sr plan code-review "Review auth.go" --profile premium
+```
+
+#### Output
+
+```
+Skill: code-review
+Input: "Review auth.go for security issues"
+
+Execution Plan:
+┌─────────────────────────────────────────────┐
+│  Phase 1: patterns (cheap)                  │
+│  Model: llama3.1:8b via ollama              │
+│  Est. tokens: ~2,000                        │
+├─────────────────────────────────────────────┤
+│  Phase 2: security (premium)                │
+│  Model: claude-3-5-sonnet via anthropic     │
+│  Est. tokens: ~4,000                        │
+│  Depends on: patterns                       │
+├─────────────────────────────────────────────┤
+│  Phase 3: report (balanced)                 │
+│  Model: gpt-4o via openai                   │
+│  Est. tokens: ~3,000                        │
+│  Depends on: patterns, security             │
+└─────────────────────────────────────────────┘
+
+Estimated Cost: $0.08
+Estimated Time: 15-25 seconds
+
+Proceed? [y/N]
+```
+
+---
+
+### chat
+
+Start an interactive chat session.
+
+#### Synopsis
+
+```bash
+sr chat [flags]
+```
+
+#### Description
+
+Launches an interactive REPL for conversational AI interactions. Supports multi-turn conversations with context retention.
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--profile` | `-p` | string | `balanced` | Routing profile |
+| `--model` | `-m` | string | | Specific model to use |
+| `--no-memory` | | bool | `false` | Disable memory injection |
+
+#### Examples
+
+```bash
+# Start interactive chat
+sr chat
+
+# Chat with premium models
+sr chat --profile premium
+
+# Chat with specific model
+sr chat --model claude-3-5-sonnet-20241022
+```
+
+#### Interactive Commands
+
+Within the chat session:
+- `/exit` or `/quit` - End the session
+- `/clear` - Clear conversation history
+- `/model <name>` - Switch model
+- `/help` - Show available commands
+
+---
+
+### memory
+
+Manage persistent memory files.
+
+#### Synopsis
+
+```bash
+sr memory <subcommand> [flags]
+```
+
+#### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `view` | Display current memory content |
+| `edit` | Open memory file in editor |
+
+#### Description
+
+Memory files (MEMORY.md) persist context across sessions. Global memory is stored at `~/.skillrunner/MEMORY.md`, and project-specific memory at `.skillrunner/MEMORY.md`.
+
+#### Examples
+
+```bash
+# View all memory content
+sr memory view
+
+# Edit global memory
+sr memory edit
+
+# Edit project memory
+sr memory edit --project
+```
+
+#### Memory File Format
+
+```markdown
+# Memory
+
+## User Preferences
+- Prefer concise responses
+- Use TypeScript for examples
+
+## Project Context
+- This is a Go project using hexagonal architecture
+- Tests use testify/assert
+
+## Common Patterns
+- Error handling: wrap with fmt.Errorf
+```
+
+---
+
+### cache
+
+Manage the response cache.
+
+#### Synopsis
+
+```bash
+sr cache <subcommand> [flags]
+```
+
+#### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `stats` | Show cache statistics |
+| `clear` | Clear all cached responses |
+| `list` | List cached entries |
+| `config` | Show cache configuration |
+
+#### Examples
+
+```bash
+# View cache statistics
+sr cache stats
+
+# Clear all cache
+sr cache clear
+
+# List recent cache entries
+sr cache list --limit 10
+
+# Show cache config
+sr cache config
+```
+
+#### Cache Stats Output
+
+```
+Cache Statistics
+────────────────
+L1 (Memory):
+  Entries: 45
+  Size: 12.3 MB / 100 MB
+  Hit Rate: 78.5%
+
+L2 (SQLite):
+  Entries: 1,234
+  Size: 156.7 MB / 1 GB
+  Hit Rate: 45.2%
+
+Cost Savings: $12.45 (estimated)
+```
+
+---
+
+### session
+
+Manage AI coding sessions.
+
+#### Synopsis
+
+```bash
+sr session <subcommand> [flags]
+```
+
+#### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `start` | Start a new session |
+| `list` | List active sessions |
+| `attach` | Attach to a session |
+| `peek` | View session output |
+| `kill` | Terminate a session |
+
+#### Examples
+
+```bash
+# Start a new Aider session
+sr session start --backend aider
+
+# Start a Claude Code session
+sr session start --backend claude-code
+
+# List all sessions
+sr session list
+
+# Attach to a session
+sr session attach <session-id>
+
+# View session output without attaching
+sr session peek <session-id>
+
+# Terminate a session
+sr session kill <session-id>
+```
+
+---
+
+### context
+
+Manage context items, focus, and checkpoints.
+
+#### Synopsis
+
+```bash
+sr context <subcommand> [flags]
+```
+
+#### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `items` | Manage context items (files, snippets) |
+| `focus` | Manage focus areas |
+| `checkpoint` | Save/restore context state |
+| `rules` | Manage execution rules |
+| `init` | Initialize context for current directory |
+
+#### Examples
+
+```bash
+# Add a file to context
+sr context items add auth.go
+
+# List context items
+sr context items list
+
+# Set focus area
+sr context focus set "authentication module"
+
+# Create checkpoint
+sr context checkpoint create "before-refactor"
+
+# Restore checkpoint
+sr context checkpoint restore "before-refactor"
+
+# Add a rule
+sr context rules add "Do not modify database schema"
+
+# Initialize context
+sr context init
+```
+
+---
+
+### workspace
+
+Manage project workspaces.
+
+#### Synopsis
+
+```bash
+sr workspace <subcommand> [flags]
+```
+
+#### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `init` | Initialize workspace |
+| `list` | List workspaces |
+| `show` | Show workspace details |
+
+#### Examples
+
+```bash
+# Initialize workspace in current directory
+sr workspace init
+
+# List all workspaces
+sr workspace list
+
+# Show current workspace details
+sr workspace show
+```
 
 ---
 

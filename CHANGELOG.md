@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### Memory System ([#1](https://github.com/jbctechsolutions/skillrunner/pull/1))
+- Persistent context across sessions via MEMORY.md files
+- Global memory at `~/.skillrunner/MEMORY.md` for user preferences
+- Project memory at `.skillrunner/MEMORY.md` for project-specific context
+- Automatic memory injection into prompts
+- `sr memory edit` and `sr memory view` commands
+- `--no-memory` flag to disable memory injection
+
+#### MCP Server Support ([#2](https://github.com/jbctechsolutions/skillrunner/pull/2))
+- Model Context Protocol (MCP) server integration
+- Read MCP config from `.claude/mcp.json` for Claude Code compatibility
+- MCP tool registry with dynamic tool discovery
+- Tool execution via JSON-RPC protocol
+
+#### New Default Skills ([#3](https://github.com/jbctechsolutions/skillrunner/pull/3))
+- 7 additional built-in skills (10 total):
+  - `changelog` - Generate changelog entries from git history
+  - `commit-msg` - Generate conventional commit messages
+  - `pr-description` - Generate pull request descriptions
+  - `lint-fix` - Identify and fix linting errors
+  - `test-fix` - Debug and fix failing tests
+  - `refactor` - Apply refactoring patterns
+  - `issue-breakdown` - Break down issues into subtasks
+
+#### Skill Hot Reload ([#4](https://github.com/jbctechsolutions/skillrunner/pull/4))
+- Automatic skill reload when YAML files change
+- fsnotify-based file watching for `~/.skillrunner/skills/` and `.skillrunner/skills/`
+- Debounced reload to handle rapid changes
+- No CLI restart required for skill updates
+
+#### Plan Mode ([#5](https://github.com/jbctechsolutions/skillrunner/pull/5))
+- `sr plan` command to preview execution before running
+- DAG visualization showing phase dependencies
+- Cost estimation before execution
+- `--approve` flag for automatic approval
+- Token count and model selection preview
+
+---
+
 ## [0.1.0] - 2025-01-01
 
 ### Added
