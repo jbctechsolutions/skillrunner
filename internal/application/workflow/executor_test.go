@@ -528,7 +528,7 @@ func TestExecutor_Execute_MaxParallelLimit(t *testing.T) {
 }
 
 func TestPhaseExecutor_BuildPrompt(t *testing.T) {
-	pe := newPhaseExecutor(newMockProvider())
+	pe := newPhaseExecutor(newMockProvider(), "")
 
 	tests := []struct {
 		name     string
@@ -586,7 +586,7 @@ func TestPhaseExecutor_BuildPrompt(t *testing.T) {
 }
 
 func TestPhaseExecutor_SelectModel(t *testing.T) {
-	pe := newPhaseExecutor(newMockProvider())
+	pe := newPhaseExecutor(newMockProvider(), "")
 
 	tests := []struct {
 		profile  string
@@ -694,5 +694,72 @@ func TestDefaultExecutorConfig(t *testing.T) {
 
 	if config.Timeout <= 0 {
 		t.Errorf("expected positive Timeout, got %v", config.Timeout)
+	}
+}
+
+func TestPhaseExecutor_BuildMessages_WithMemory(t *testing.T) {
+	tests := []struct {
+		name             string
+		memoryContent    string
+		prompt           string
+		dependencyOutput map[string]string
+		wantMemoryMsg    bool
+		wantMemoryFirst  bool
+	}{
+		{
+			name:             "no memory content",
+			memoryContent:    "",
+			prompt:           "Test prompt",
+			dependencyOutput: nil,
+			wantMemoryMsg:    false,
+		},
+		{
+			name:             "with memory content",
+			memoryContent:    "Remember this context",
+			prompt:           "Test prompt",
+			dependencyOutput: nil,
+			wantMemoryMsg:    true,
+			wantMemoryFirst:  true,
+		},
+		{
+			name:             "memory with dependencies",
+			memoryContent:    "Project rules",
+			prompt:           "Test prompt",
+			dependencyOutput: map[string]string{"phase1": "Previous output"},
+			wantMemoryMsg:    true,
+			wantMemoryFirst:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pe := newPhaseExecutor(newMockProvider(), tt.memoryContent)
+			messages := pe.buildMessages(tt.prompt, tt.dependencyOutput)
+
+			// Check if memory message is present
+			hasMemoryMsg := false
+			memoryMsgIndex := -1
+			for i, msg := range messages {
+				if msg.Role == "system" && len(msg.Content) > 0 {
+					if len(msg.Content) >= len("Project Memory:") && msg.Content[:len("Project Memory:")] == "Project Memory:" {
+						hasMemoryMsg = true
+						memoryMsgIndex = i
+						break
+					}
+				}
+			}
+
+			if tt.wantMemoryMsg && !hasMemoryMsg {
+				t.Error("expected memory message but not found")
+			}
+			if !tt.wantMemoryMsg && hasMemoryMsg {
+				t.Error("did not expect memory message but found one")
+			}
+
+			// Check if memory is first message
+			if tt.wantMemoryFirst && memoryMsgIndex != 0 {
+				t.Errorf("expected memory message to be first, but it was at index %d", memoryMsgIndex)
+			}
+		})
 	}
 }

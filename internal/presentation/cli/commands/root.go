@@ -87,6 +87,7 @@ Key features:
 	rootCmd.AddCommand(NewInitCmd())
 	rootCmd.AddCommand(NewMetricsCmd())
 	rootCmd.AddCommand(NewContextCmd())
+	rootCmd.AddCommand(NewMemoryCmd())
 
 	// Session and workspace management
 	rootCmd.AddCommand(NewSessionCmd())

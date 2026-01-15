@@ -412,7 +412,7 @@ func TestStreamingPhaseExecutor_Execute(t *testing.T) {
 	chunks := []string{"Hello", " ", "streaming", " ", "world"}
 	provider := newMockStreamingProvider(chunks)
 
-	executor := newStreamingPhaseExecutor(provider)
+	executor := newStreamingPhaseExecutor(provider, "")
 
 	phase := &skill.Phase{
 		ID:             "test-phase",
@@ -459,7 +459,7 @@ func TestStreamingPhaseExecutor_Error(t *testing.T) {
 	provider.shouldError = true
 	provider.errorMessage = "streaming failed"
 
-	executor := newStreamingPhaseExecutor(provider)
+	executor := newStreamingPhaseExecutor(provider, "")
 
 	phase := &skill.Phase{
 		ID:             "error-phase",

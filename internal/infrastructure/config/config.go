@@ -16,6 +16,7 @@ type Config struct {
 	Skills        SkillsConfig        `yaml:"skills"`
 	Cache         CacheConfig         `yaml:"cache"`
 	Observability ObservabilityConfig `yaml:"observability"`
+	Memory        MemoryConfig        `yaml:"memory"`
 }
 
 // ProviderConfigs holds configuration for all supported LLM providers.
@@ -96,6 +97,12 @@ type TracingConfig struct {
 	ServiceName  string  `yaml:"service_name"`  // Service name for traces
 }
 
+// MemoryConfig holds configuration for the memory system (MEMORY.md/CLAUDE.md).
+type MemoryConfig struct {
+	Enabled   bool `yaml:"enabled"`    // Whether memory injection is enabled (default: true)
+	MaxTokens int  `yaml:"max_tokens"` // Maximum tokens for memory content (default: 2000)
+}
+
 // Default configuration values.
 const (
 	DefaultOllamaURL       = "http://localhost:11434"
@@ -125,6 +132,10 @@ const (
 	DefaultTracingExporterType     = "none"
 	DefaultTracingSampleRate       = 1.0
 	DefaultTracingServiceName      = "skillrunner"
+
+	// Memory defaults
+	DefaultMemoryEnabled   = true
+	DefaultMemoryMaxTokens = 2000
 )
 
 // Valid log levels.
@@ -208,6 +219,10 @@ func NewDefaultConfig() *Config {
 				ServiceName:  DefaultTracingServiceName,
 			},
 		},
+		Memory: MemoryConfig{
+			Enabled:   DefaultMemoryEnabled,
+			MaxTokens: DefaultMemoryMaxTokens,
+		},
 	}
 }
 
@@ -243,6 +258,11 @@ func (c *Config) Validate() error {
 	// Validate observability config
 	if err := c.Observability.Validate(); err != nil {
 		errs = append(errs, fmt.Errorf("observability: %w", err))
+	}
+
+	// Validate memory config
+	if err := c.Memory.Validate(); err != nil {
+		errs = append(errs, fmt.Errorf("memory: %w", err))
 	}
 
 	if len(errs) > 0 {
@@ -470,5 +490,13 @@ func (t *TracingConfig) Validate() error {
 		return errors.Join(errs...)
 	}
 
+	return nil
+}
+
+// Validate checks if the MemoryConfig is valid.
+func (m *MemoryConfig) Validate() error {
+	if m.Enabled && m.MaxTokens <= 0 {
+		return errors.New("max_tokens must be positive when memory is enabled")
+	}
 	return nil
 }
