@@ -406,6 +406,257 @@ phases:
 	}
 }
 
+func TestRegisterWithSource(t *testing.T) {
+	loader := infraSkills.NewLoader()
+	registry := NewRegistry(loader)
+
+	// Create a test skill
+	phase, err := skill.NewPhase("test-phase", "Test Phase", "Do something: {{.input}}")
+	if err != nil {
+		t.Fatalf("failed to create phase: %v", err)
+	}
+
+	testSkill, err := skill.NewSkill("test-skill", "Test Skill", "1.0.0", []skill.Phase{*phase})
+	if err != nil {
+		t.Fatalf("failed to create skill: %v", err)
+	}
+
+	t.Run("registers skill with source", func(t *testing.T) {
+		err := registry.RegisterWithSource(testSkill, "/path/to/skill.yaml", skill.SourceUser)
+		if err != nil {
+			t.Fatalf("failed to register skill with source: %v", err)
+		}
+
+		// Verify skill is registered
+		s := registry.GetSkill("test-skill")
+		if s == nil {
+			t.Fatal("expected to find skill")
+		}
+
+		// Verify source tracking
+		source := registry.GetSource("test-skill")
+		if source == nil {
+			t.Fatal("expected to find source")
+		}
+		if source.SkillID() != "test-skill" {
+			t.Errorf("expected skill ID 'test-skill', got %q", source.SkillID())
+		}
+		if source.FilePath() != "/path/to/skill.yaml" {
+			t.Errorf("expected file path '/path/to/skill.yaml', got %q", source.FilePath())
+		}
+		if source.Source() != skill.SourceUser {
+			t.Errorf("expected source type User, got %q", source.Source())
+		}
+	})
+
+	t.Run("path mapping works", func(t *testing.T) {
+		skillID := registry.GetSkillIDByPath("/path/to/skill.yaml")
+		if skillID != "test-skill" {
+			t.Errorf("expected skill ID 'test-skill', got %q", skillID)
+		}
+	})
+
+	t.Run("returns empty string for unknown path", func(t *testing.T) {
+		skillID := registry.GetSkillIDByPath("/unknown/path.yaml")
+		if skillID != "" {
+			t.Errorf("expected empty string, got %q", skillID)
+		}
+	})
+
+	t.Run("returns error for nil skill", func(t *testing.T) {
+		err := registry.RegisterWithSource(nil, "/path/to/skill.yaml", skill.SourceUser)
+		if err == nil {
+			t.Error("expected error for nil skill")
+		}
+	})
+
+	t.Run("returns error for empty file path", func(t *testing.T) {
+		err := registry.RegisterWithSource(testSkill, "", skill.SourceUser)
+		if err == nil {
+			t.Error("expected error for empty file path")
+		}
+	})
+}
+
+func TestUnregisterByPath(t *testing.T) {
+	loader := infraSkills.NewLoader()
+	registry := NewRegistry(loader)
+
+	// Create and register a test skill
+	phase, _ := skill.NewPhase("test-phase", "Test Phase", "template")
+	testSkill, _ := skill.NewSkill("test-skill", "Test Skill", "1.0.0", []skill.Phase{*phase})
+
+	err := registry.RegisterWithSource(testSkill, "/path/to/skill.yaml", skill.SourceUser)
+	if err != nil {
+		t.Fatalf("failed to register skill: %v", err)
+	}
+
+	t.Run("removes skill by path", func(t *testing.T) {
+		skillID, found := registry.UnregisterByPath("/path/to/skill.yaml")
+		if !found {
+			t.Fatal("expected to find skill by path")
+		}
+		if skillID != "test-skill" {
+			t.Errorf("expected skill ID 'test-skill', got %q", skillID)
+		}
+
+		// Verify skill is removed
+		s := registry.GetSkill("test-skill")
+		if s != nil {
+			t.Error("expected skill to be removed")
+		}
+
+		// Verify source tracking is cleaned up
+		source := registry.GetSource("test-skill")
+		if source != nil {
+			t.Error("expected source to be removed")
+		}
+
+		// Verify path mapping is cleaned up
+		pathSkillID := registry.GetSkillIDByPath("/path/to/skill.yaml")
+		if pathSkillID != "" {
+			t.Error("expected path mapping to be removed")
+		}
+	})
+
+	t.Run("returns false for unknown path", func(t *testing.T) {
+		_, found := registry.UnregisterByPath("/unknown/path.yaml")
+		if found {
+			t.Error("expected not to find skill for unknown path")
+		}
+	})
+}
+
+func TestSourcePriorityOverride(t *testing.T) {
+	loader := infraSkills.NewLoader()
+	registry := NewRegistry(loader)
+
+	// Create test skills
+	phase, _ := skill.NewPhase("test-phase", "Test Phase", "template")
+	builtInSkill, _ := skill.NewSkill("same-skill", "Built-in Version", "1.0.0", []skill.Phase{*phase})
+	userSkill, _ := skill.NewSkill("same-skill", "User Version", "2.0.0", []skill.Phase{*phase})
+	projectSkill, _ := skill.NewSkill("same-skill", "Project Version", "3.0.0", []skill.Phase{*phase})
+
+	t.Run("higher priority overrides lower priority", func(t *testing.T) {
+		// Register built-in skill first
+		err := registry.RegisterWithSource(builtInSkill, "/builtin/skill.yaml", skill.SourceBuiltIn)
+		if err != nil {
+			t.Fatalf("failed to register built-in skill: %v", err)
+		}
+
+		// User skill should override built-in
+		err = registry.RegisterWithSource(userSkill, "/user/skill.yaml", skill.SourceUser)
+		if err != nil {
+			t.Fatalf("failed to register user skill: %v", err)
+		}
+
+		s := registry.GetSkill("same-skill")
+		if s.Name() != "User Version" {
+			t.Errorf("expected User Version, got %q", s.Name())
+		}
+
+		// Project skill should override user
+		err = registry.RegisterWithSource(projectSkill, "/project/skill.yaml", skill.SourceProject)
+		if err != nil {
+			t.Fatalf("failed to register project skill: %v", err)
+		}
+
+		s = registry.GetSkill("same-skill")
+		if s.Name() != "Project Version" {
+			t.Errorf("expected Project Version, got %q", s.Name())
+		}
+	})
+
+	t.Run("lower priority does not override higher priority", func(t *testing.T) {
+		registry.Clear()
+
+		// Register project skill first
+		err := registry.RegisterWithSource(projectSkill, "/project/skill.yaml", skill.SourceProject)
+		if err != nil {
+			t.Fatalf("failed to register project skill: %v", err)
+		}
+
+		// Try to register user skill - should not override
+		err = registry.RegisterWithSource(userSkill, "/user/skill.yaml", skill.SourceUser)
+		if err != nil {
+			t.Fatalf("failed to register user skill: %v", err)
+		}
+
+		// Should still be project version
+		s := registry.GetSkill("same-skill")
+		if s.Name() != "Project Version" {
+			t.Errorf("expected Project Version, got %q", s.Name())
+		}
+
+		// Path mapping should still point to project file
+		source := registry.GetSource("same-skill")
+		if source.FilePath() != "/project/skill.yaml" {
+			t.Errorf("expected project path, got %q", source.FilePath())
+		}
+	})
+}
+
+func TestHasSourceTracking(t *testing.T) {
+	loader := infraSkills.NewLoader()
+	registry := NewRegistry(loader)
+
+	t.Run("returns false when empty", func(t *testing.T) {
+		if registry.HasSourceTracking() {
+			t.Error("expected no source tracking for empty registry")
+		}
+	})
+
+	t.Run("returns true after RegisterWithSource", func(t *testing.T) {
+		phase, _ := skill.NewPhase("test-phase", "Test Phase", "template")
+		testSkill, _ := skill.NewSkill("test-skill", "Test Skill", "1.0.0", []skill.Phase{*phase})
+
+		registry.RegisterWithSource(testSkill, "/path/to/skill.yaml", skill.SourceUser)
+
+		if !registry.HasSourceTracking() {
+			t.Error("expected source tracking after RegisterWithSource")
+		}
+	})
+
+	t.Run("returns false after Register (without source)", func(t *testing.T) {
+		registry.Clear()
+
+		phase, _ := skill.NewPhase("test-phase", "Test Phase", "template")
+		testSkill, _ := skill.NewSkill("test-skill", "Test Skill", "1.0.0", []skill.Phase{*phase})
+
+		registry.Register(testSkill)
+
+		if registry.HasSourceTracking() {
+			t.Error("expected no source tracking after Register")
+		}
+	})
+}
+
+func TestDirectoryAccessors(t *testing.T) {
+	loader := infraSkills.NewLoader()
+	registry := NewRegistry(loader)
+
+	t.Run("ProjectDir returns set value", func(t *testing.T) {
+		registry.SetProjectDir("/project/skills")
+		if registry.ProjectDir() != "/project/skills" {
+			t.Errorf("expected '/project/skills', got %q", registry.ProjectDir())
+		}
+	})
+
+	t.Run("UserDir returns set value", func(t *testing.T) {
+		registry.SetUserDir("/user/skills")
+		if registry.UserDir() != "/user/skills" {
+			t.Errorf("expected '/user/skills', got %q", registry.UserDir())
+		}
+	})
+
+	t.Run("BuiltInDir returns set value", func(t *testing.T) {
+		registry.SetBuiltInDir("/builtin/skills")
+		if registry.BuiltInDir() != "/builtin/skills" {
+			t.Errorf("expected '/builtin/skills', got %q", registry.BuiltInDir())
+		}
+	})
+}
+
 func TestReload(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "skillrunner-reload-*")
 	if err != nil {
@@ -430,6 +681,8 @@ phases:
 	loader := infraSkills.NewLoader()
 	registry := NewRegistry(loader)
 	registry.SetBuiltInDir(tmpDir)
+	// Set user dir to non-existent path to isolate test from environment
+	registry.SetUserDir("/non/existent/user/dir")
 
 	// Initial load
 	if err := registry.LoadAll(); err != nil {
