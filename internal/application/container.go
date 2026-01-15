@@ -40,11 +40,12 @@ type Container struct {
 	db     *sql.DB
 
 	// Repositories
-	sessionRepo    ports.SessionStateStoragePort
-	workspaceRepo  ports.WorkspaceStateStoragePort
-	checkpointRepo ports.CheckpointStateStoragePort
-	contextRepo    ports.ContextItemStoragePort
-	rulesRepo      ports.RuleStoragePort
+	sessionRepo            ports.SessionStateStoragePort
+	workspaceRepo          ports.WorkspaceStateStoragePort
+	checkpointRepo         ports.CheckpointStateStoragePort
+	workflowCheckpointRepo ports.WorkflowCheckpointPort
+	contextRepo            ports.ContextItemStoragePort
+	rulesRepo              ports.RuleStoragePort
 
 	// Application services
 	sessionManager    *session.Manager
@@ -156,6 +157,7 @@ func (c *Container) initRepositories() {
 	c.sessionRepo = storage.NewSessionRepository(c.db)
 	c.workspaceRepo = storage.NewWorkspaceRepository(c.db)
 	c.checkpointRepo = storage.NewCheckpointRepository(c.db)
+	c.workflowCheckpointRepo = storage.NewWorkflowCheckpointRepository(c.db)
 	c.contextRepo = storage.NewContextItemRepository(c.db)
 	c.rulesRepo = storage.NewRuleRepository(c.db)
 }
@@ -434,6 +436,11 @@ func (c *Container) WorkspaceRepository() ports.WorkspaceStateStoragePort {
 // CheckpointRepository returns the checkpoint repository.
 func (c *Container) CheckpointRepository() ports.CheckpointStateStoragePort {
 	return c.checkpointRepo
+}
+
+// WorkflowCheckpointRepository returns the workflow checkpoint repository for crash recovery.
+func (c *Container) WorkflowCheckpointRepository() ports.WorkflowCheckpointPort {
+	return c.workflowCheckpointRepo
 }
 
 // ContextItemRepository returns the context item repository.
