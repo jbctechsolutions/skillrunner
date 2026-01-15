@@ -90,8 +90,9 @@ func runMemoryEdit(_ *cobra.Command, _ []string) error {
 		}
 		skillrunnerDir := filepath.Join(homeDir, ".skillrunner")
 
-		// Ensure directory exists
-		if err := os.MkdirAll(skillrunnerDir, 0755); err != nil {
+		// Ensure directory exists with restrictive permissions
+		// #nosec G301 -- 0700 is appropriate for user config directory
+		if err := os.MkdirAll(skillrunnerDir, 0700); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 
@@ -116,10 +117,11 @@ Add instructions, context, and rules that should be included in all LLM prompts.
 Content in this file is automatically injected into every skill execution.
 Use @include: ./path/to/file.md to include additional files.
 `
-		if err := os.WriteFile(memoryPath, []byte(initialContent), 0644); err != nil {
+		// #nosec G306 -- 0600 provides user-only access for sensitive context
+		if err := os.WriteFile(memoryPath, []byte(initialContent), 0600); err != nil {
 			return fmt.Errorf("failed to create memory file: %w", err)
 		}
-		formatter.Success("Created %s", memoryPath)
+		_ = formatter.Success("Created %s", memoryPath)
 	}
 
 	// Get editor from environment
@@ -142,8 +144,9 @@ Use @include: ./path/to/file.md to include additional files.
 	}
 
 	// Open editor
-	formatter.Item("Opening", memoryPath)
+	_ = formatter.Item("Opening", memoryPath)
 
+	// #nosec G204 -- editor is from trusted $EDITOR environment variable
 	cmd := exec.Command(editor, memoryPath)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -176,46 +179,46 @@ func runMemoryView(_ *cobra.Command, _ []string) error {
 	}
 
 	if mem.IsEmpty() {
-		formatter.Warning("No memory files found")
-		formatter.Println("")
-		formatter.Item("Create project memory", "./MEMORY.md")
-		formatter.Item("Create global memory", "~/.skillrunner/MEMORY.md")
-		formatter.Println("")
-		formatter.Println("Run 'sr memory edit' to create a memory file.")
+		_ = formatter.Warning("No memory files found")
+		_ = formatter.Println("")
+		_ = formatter.Item("Create project memory", "./MEMORY.md")
+		_ = formatter.Item("Create global memory", "~/.skillrunner/MEMORY.md")
+		_ = formatter.Println("")
+		_ = formatter.Println("Run 'sr memory edit' to create a memory file.")
 		return nil
 	}
 
 	if memoryOpts.Global {
 		// Show only global memory
 		if mem.GlobalContent() == "" {
-			formatter.Warning("No global memory found")
-			formatter.Println("Run 'sr memory edit --global' to create one.")
+			_ = formatter.Warning("No global memory found")
+			_ = formatter.Println("Run 'sr memory edit --global' to create one.")
 			return nil
 		}
 
-		formatter.Header("Global Memory")
-		formatter.Println("")
-		formatter.Println("%s", mem.GlobalContent())
+		_ = formatter.Header("Global Memory")
+		_ = formatter.Println("")
+		_ = formatter.Println("%s", mem.GlobalContent())
 	} else {
 		// Show combined memory
-		formatter.Header("Memory Content")
-		formatter.Println("")
+		_ = formatter.Header("Memory Content")
+		_ = formatter.Println("")
 
 		sources := mem.Sources()
 		if len(sources) > 0 {
-			formatter.SubHeader("Sources")
+			_ = formatter.SubHeader("Sources")
 			for _, src := range sources {
-				formatter.BulletItem(src)
+				_ = formatter.BulletItem(src)
 			}
-			formatter.Println("")
+			_ = formatter.Println("")
 		}
 
-		formatter.SubHeader("Content")
-		formatter.Println("")
-		formatter.Println("%s", mem.Combined())
+		_ = formatter.SubHeader("Content")
+		_ = formatter.Println("")
+		_ = formatter.Println("%s", mem.Combined())
 
-		formatter.Println("")
-		formatter.Item("Estimated tokens", fmt.Sprintf("%d / %d", mem.EstimatedTokens(), maxTokens))
+		_ = formatter.Println("")
+		_ = formatter.Item("Estimated tokens", fmt.Sprintf("%d / %d", mem.EstimatedTokens(), maxTokens))
 	}
 
 	return nil

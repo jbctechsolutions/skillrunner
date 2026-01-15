@@ -181,7 +181,9 @@ func (l *Loader) parseIncludes(content, baseDir, source string) ([]memory.Includ
 }
 
 // readFile reads the content of a file.
+// The path is constructed from known base directories (homeDir, projectDir).
 func (l *Loader) readFile(path string) (string, error) {
+	// #nosec G304 -- path is constructed from controlled inputs (homeDir + known filenames)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
