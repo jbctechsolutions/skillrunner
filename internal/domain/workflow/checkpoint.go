@@ -26,6 +26,27 @@ const (
 	CheckpointStatusAbandoned CheckpointStatus = "abandoned"
 )
 
+// MaxInputSize is the maximum allowed size for checkpoint input (1MB).
+const MaxInputSize = 1 << 20 // 1MB
+
+// ValidCheckpointStatuses contains all valid checkpoint status values.
+var ValidCheckpointStatuses = []CheckpointStatus{
+	CheckpointStatusInProgress,
+	CheckpointStatusCompleted,
+	CheckpointStatusFailed,
+	CheckpointStatusAbandoned,
+}
+
+// IsValidStatus checks if a status string is a valid checkpoint status.
+func IsValidStatus(status string) bool {
+	for _, s := range ValidCheckpointStatuses {
+		if string(s) == status {
+			return true
+		}
+	}
+	return false
+}
+
 // PhaseResultData is a JSON-serializable version of PhaseResult for checkpoint storage.
 // Unlike PhaseResult, it stores error as a string since error types cannot be serialized.
 type PhaseResultData struct {
@@ -86,6 +107,9 @@ func NewWorkflowCheckpoint(id, executionID, skillID, skillName, input string, to
 	}
 	if totalBatches < 1 {
 		return nil, errors.New("workflow_checkpoint", "total batches must be at least 1")
+	}
+	if len(input) > MaxInputSize {
+		return nil, errors.New("workflow_checkpoint", "input exceeds maximum size limit")
 	}
 
 	now := time.Now()

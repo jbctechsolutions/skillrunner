@@ -814,3 +814,53 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+func TestNewWorkflowCheckpoint_InputSizeLimit(t *testing.T) {
+	// Test input at the limit (should succeed)
+	largeInput := make([]byte, MaxInputSize)
+	for i := range largeInput {
+		largeInput[i] = 'a'
+	}
+	_, err := NewWorkflowCheckpoint("cp-1", "exec-1", "skill-1", "Skill", string(largeInput), 1)
+	if err != nil {
+		t.Errorf("input at max size should succeed, got error: %v", err)
+	}
+
+	// Test input exceeding limit (should fail)
+	oversizedInput := make([]byte, MaxInputSize+1)
+	for i := range oversizedInput {
+		oversizedInput[i] = 'a'
+	}
+	_, err = NewWorkflowCheckpoint("cp-2", "exec-2", "skill-1", "Skill", string(oversizedInput), 1)
+	if err == nil {
+		t.Error("input exceeding max size should fail")
+	}
+	if !contains(err.Error(), "exceeds maximum size") {
+		t.Errorf("expected error about size limit, got: %v", err)
+	}
+}
+
+func TestIsValidStatus(t *testing.T) {
+	tests := []struct {
+		status string
+		valid  bool
+	}{
+		{"in_progress", true},
+		{"completed", true},
+		{"failed", true},
+		{"abandoned", true},
+		{"invalid", false},
+		{"", false},
+		{"IN_PROGRESS", false}, // case sensitive
+		{"completed ", false},  // whitespace matters
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.status, func(t *testing.T) {
+			got := IsValidStatus(tt.status)
+			if got != tt.valid {
+				t.Errorf("IsValidStatus(%q) = %v, want %v", tt.status, got, tt.valid)
+			}
+		})
+	}
+}

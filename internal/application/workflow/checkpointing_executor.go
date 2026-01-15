@@ -163,7 +163,7 @@ func (e *CheckpointingExecutor) executeWithCheckpoint(ctx context.Context, s *do
 	for batchIndex := startBatchIndex; batchIndex < len(batches); batchIndex++ {
 		batch := batches[batchIndex]
 
-		if err := e.executeBatchWithCheckpoint(ctx, dag, batch, result, phaseOutputs, checkpoint, batchIndex); err != nil {
+		if err := e.executeBatch(ctx, dag, batch, result, phaseOutputs); err != nil {
 			result.Status = PhaseStatusFailed
 			result.Error = err
 			result.EndTime = time.Now()
@@ -175,7 +175,9 @@ func (e *CheckpointingExecutor) executeWithCheckpoint(ctx context.Context, s *do
 			// Update checkpoint to failed if we have one
 			if checkpoint != nil {
 				checkpoint.MarkFailed()
-				_ = e.cpConfig.Port.Update(ctx, checkpoint)
+				if updateErr := e.cpConfig.Port.Update(ctx, checkpoint); updateErr != nil {
+					e.log("warn", "failed to update checkpoint status to failed", "error", updateErr)
+				}
 			}
 
 			if ctx.Err() != nil {
@@ -355,15 +357,13 @@ func (e *CheckpointingExecutor) updateCheckpoint(
 	}
 }
 
-// executeBatchWithCheckpoint executes a batch of phases in parallel.
-func (e *CheckpointingExecutor) executeBatchWithCheckpoint(
+// executeBatch executes a batch of phases in parallel.
+func (e *CheckpointingExecutor) executeBatch(
 	ctx context.Context,
 	dag *workflow.DAG,
 	batch []string,
 	result *ExecutionResult,
 	phaseOutputs map[string]string,
-	_ *workflow.WorkflowCheckpoint, // checkpoint - reserved for future per-phase checkpointing
-	_ int, // batchIndex - reserved for future use
 ) error {
 	if len(batch) == 0 {
 		return nil

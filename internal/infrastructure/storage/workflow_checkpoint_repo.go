@@ -234,10 +234,12 @@ func (r *WorkflowCheckpointRepository) List(ctx context.Context, filter *ports.W
 
 	if filter != nil {
 		if filter.Limit > 0 {
-			query += fmt.Sprintf(" LIMIT %d", filter.Limit)
+			query += " LIMIT ?"
+			args = append(args, filter.Limit)
 		}
 		if filter.Offset > 0 {
-			query += fmt.Sprintf(" OFFSET %d", filter.Offset)
+			query += " OFFSET ?"
+			args = append(args, filter.Offset)
 		}
 	}
 
@@ -454,6 +456,11 @@ func buildWorkflowCheckpoint(
 	var machine string
 	if machineID.Valid {
 		machine = machineID.String
+	}
+
+	// Validate status is a known value
+	if !workflow.IsValidStatus(status) {
+		return nil, fmt.Errorf("invalid checkpoint status: %s", status)
 	}
 
 	// Use ReconstructCheckpoint to build the entity

@@ -26,6 +26,7 @@ type runFlags struct {
 	NoMemory     bool
 	Resume       bool
 	NoCheckpoint bool
+	Force        bool
 }
 
 var runOpts runFlags
@@ -56,6 +57,9 @@ Examples:
   # Run without checkpoint persistence
   sr run quick-task "Simple task" --no-checkpoint
 
+  # Force new execution even if checkpoint exists
+  sr run analysis "Data analysis" --force
+
 Routing Profiles:
   cheap     - Prioritize cost, use local/cheaper models
   balanced  - Balance between cost and quality (default)
@@ -64,7 +68,11 @@ Routing Profiles:
 Crash Recovery:
   By default, execution state is checkpointed after each phase batch.
   Use --resume to continue from the last checkpoint if available.
-  Use --no-checkpoint to disable checkpointing (for testing or short tasks).`,
+  Use --no-checkpoint to disable checkpointing (for testing or short tasks).
+  Use --force to start a new execution even if a checkpoint exists.
+
+Note: Streaming mode (--stream) does not support checkpointing. Use standard
+mode for long-running tasks that may need crash recovery.`,
 		Args: cobra.ExactArgs(2),
 		RunE: runSkill,
 	}
@@ -76,6 +84,7 @@ Crash Recovery:
 	cmd.Flags().BoolVar(&runOpts.NoMemory, "no-memory", false, "disable memory injection (MEMORY.md/CLAUDE.md)")
 	cmd.Flags().BoolVar(&runOpts.Resume, "resume", false, "resume from last checkpoint if available")
 	cmd.Flags().BoolVar(&runOpts.NoCheckpoint, "no-checkpoint", false, "disable checkpoint persistence")
+	cmd.Flags().BoolVarP(&runOpts.Force, "force", "f", false, "start new execution even if checkpoint exists")
 
 	return cmd
 }
@@ -151,11 +160,13 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		MachineID: container.MachineID(),
 	}
 
-	// Check for existing checkpoint if not resuming
-	if cpConfig.Enabled && !runOpts.Resume && cpConfig.Port != nil {
+	// Check for existing checkpoint if not resuming and not forcing
+	if cpConfig.Enabled && !runOpts.Resume && !runOpts.Force && cpConfig.Port != nil {
 		existingCP, _ := workflow.GetExistingCheckpoint(ctx, cpConfig.Port, sk.ID(), request)
 		if existingCP != nil {
-			formatter.Warning("An incomplete execution exists for this skill/input. Use --resume to continue from checkpoint.")
+			formatter.Warning("An incomplete execution exists for this skill/input (progress: %s).", existingCP.Progress())
+			formatter.Warning("Use --resume to continue, or --force to start fresh.")
+			return fmt.Errorf("checkpoint exists; use --resume or --force")
 		}
 	}
 
@@ -167,7 +178,9 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		return runSkillJSON(ctx, executor, sk, request, provider)
 	}
 
-	// Streaming output mode (checkpointing not supported for streaming yet)
+	// Streaming output mode
+	// Note: Checkpointing is not supported in streaming mode. For long-running
+	// tasks that need crash recovery, use standard (non-streaming) mode.
 	if runOpts.Stream {
 		streamingConfig := workflow.DefaultExecutorConfig()
 		streamingConfig.MemoryContent = memoryContent
