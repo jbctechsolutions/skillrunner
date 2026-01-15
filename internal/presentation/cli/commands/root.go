@@ -80,6 +80,7 @@ Key features:
 	rootCmd.AddCommand(NewVersionCmd())
 	rootCmd.AddCommand(NewListCmd())
 	rootCmd.AddCommand(NewRunCmd())
+	rootCmd.AddCommand(NewPlanCmd())
 	rootCmd.AddCommand(NewStatusCmd())
 	rootCmd.AddCommand(NewAskCmd())
 	rootCmd.AddCommand(NewChatCmd())
