@@ -316,6 +316,7 @@ The run command handles:
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
 | `--profile` | `-p` | string | `balanced` | Routing profile: `cheap`, `balanced`, `premium` |
+| `--phase` | | string | | Specific phase to execute |
 | `--stream` | `-s` | bool | `false` | Enable streaming output |
 | `--no-memory` | | bool | `false` | Disable memory injection |
 

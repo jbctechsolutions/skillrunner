@@ -948,7 +948,7 @@ List all available skills:
 sr list
 ```
 
-View skill details (with verbose output):
+List skills with detailed information:
 
 ```bash
 sr list --verbose

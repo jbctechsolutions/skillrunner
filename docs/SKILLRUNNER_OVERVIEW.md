@@ -1,7 +1,7 @@
 # Skillrunner: Complete Project Overview
 
 **Version:** 2.0 MVP
-**Status:** Wave 11 Complete (Memory, MCP, Plan Mode, Hot Reload)
+**Status:** Wave 11 Complete (Unreleased)
 **Last Updated:** 2026-01-15
 
 ---
