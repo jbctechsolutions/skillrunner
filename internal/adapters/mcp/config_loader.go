@@ -46,7 +46,7 @@ func (l *ConfigLoader) Load(ctx context.Context) (map[string]domainMCP.ServerCon
 
 // LoadFromPath reads MCP configuration from a specific path.
 func (l *ConfigLoader) LoadFromPath(ctx context.Context, path string) (map[string]domainMCP.ServerConfig, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- Path is from trusted configuration sources
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("%w: %s", domainMCP.ErrConfigNotFound, path)

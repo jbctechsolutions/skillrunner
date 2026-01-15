@@ -42,7 +42,7 @@ func NewClient(ctx context.Context, config domainMCP.ServerConfig) (*Client, err
 		return nil, err
 	}
 
-	cmd := exec.CommandContext(ctx, config.Command, config.Args...)
+	cmd := exec.CommandContext(ctx, config.Command, config.Args...) // #nosec G204 -- Command comes from trusted user configuration
 
 	// Set environment variables
 	if len(config.Env) > 0 {
@@ -60,21 +60,21 @@ func NewClient(ctx context.Context, config domainMCP.ServerConfig) (*Client, err
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		stdin.Close()
+		_ = stdin.Close()
 		return nil, fmt.Errorf("%w: failed to create stdout pipe: %v", domainMCP.ErrServerStartFailed, err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		stdin.Close()
-		stdout.Close()
+		_ = stdin.Close()
+		_ = stdout.Close()
 		return nil, fmt.Errorf("%w: failed to create stderr pipe: %v", domainMCP.ErrServerStartFailed, err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		stdin.Close()
-		stdout.Close()
-		stderr.Close()
+		_ = stdin.Close()
+		_ = stdout.Close()
+		_ = stderr.Close()
 		return nil, fmt.Errorf("%w: %v", domainMCP.ErrServerStartFailed, err)
 	}
 
@@ -220,9 +220,9 @@ func (c *Client) Close(ctx context.Context) error {
 		_, _ = c.call(shutdownCtx, domainMCP.MethodShutdown, nil)
 
 		// Close streams
-		c.stdin.Close()
-		c.stdout.Close()
-		c.stderr.Close()
+		_ = c.stdin.Close()
+		_ = c.stdout.Close()
+		_ = c.stderr.Close()
 
 		// Signal read loop to stop
 		close(c.done)
