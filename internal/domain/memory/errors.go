@@ -4,6 +4,9 @@ package memory
 import "errors"
 
 // Domain-specific errors for memory operations.
+// Note: The infrastructure Loader handles these conditions gracefully (skipping missing
+// files, preventing cycles via deduplication, truncating on limit exceeded) rather than
+// returning errors. These are defined for use by callers who need stricter error handling.
 var (
 	// ErrMemoryEmpty indicates that the memory content is empty.
 	ErrMemoryEmpty = errors.New("memory content is empty")

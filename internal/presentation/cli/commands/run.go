@@ -119,10 +119,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	if memoryEnabled && !runOpts.NoMemory {
 		cwd, err := os.Getwd()
 		if err == nil {
-			maxTokens := 2000
-			if appCtx.Config != nil {
-				maxTokens = appCtx.Config.Memory.MaxTokens
-			}
+			maxTokens := appCtx.Config.Memory.MaxTokens
 			loader := infraMemory.NewLoader(maxTokens)
 			mem, err := loader.Load(cwd)
 			if err == nil && !mem.IsEmpty() {

@@ -62,6 +62,8 @@ func (l *Loader) Load(projectDir string) (*memory.Memory, error) {
 	var includes []memory.IncludedFile
 
 	// Parse global includes
+	// Note: parseIncludes only returns scanner errors which are unlikely;
+	// missing include files are gracefully skipped within parseIncludes itself.
 	if globalContent != "" && globalSource != "" {
 		globalDir := filepath.Dir(globalSource)
 		globalIncludes, _ := l.parseIncludes(globalContent, globalDir, "global")
@@ -207,15 +209,39 @@ func (l *Loader) truncateMemory(mem *memory.Memory) *memory.Memory {
 
 	// Keep as much project content as possible
 	if len(projectContent) > remaining {
-		projectContent = projectContent[:remaining]
+		projectContent = truncateAtWordBoundary(projectContent, remaining)
 		globalContent = ""
 	} else {
 		remaining -= len(projectContent)
 		if len(globalContent) > remaining {
-			globalContent = globalContent[:remaining]
+			globalContent = truncateAtWordBoundary(globalContent, remaining)
 		}
 	}
 
 	// Create new memory without includes (they would exceed the limit)
 	return memory.NewMemory(globalContent, projectContent, nil)
+}
+
+// truncateAtWordBoundary truncates content at a word boundary, adding ellipsis if truncated.
+func truncateAtWordBoundary(content string, limit int) string {
+	if len(content) <= limit {
+		return content
+	}
+
+	// Reserve space for ellipsis
+	const ellipsis = "..."
+	if limit <= len(ellipsis) {
+		return ellipsis[:limit]
+	}
+
+	targetLen := limit - len(ellipsis)
+
+	// Find the last space before the limit
+	lastSpace := strings.LastIndex(content[:targetLen], " ")
+	if lastSpace > 0 {
+		return content[:lastSpace] + ellipsis
+	}
+
+	// No space found, truncate at the limit
+	return content[:targetLen] + ellipsis
 }

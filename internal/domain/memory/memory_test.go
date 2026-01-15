@@ -284,15 +284,15 @@ func TestMemory_Sources(t *testing.T) {
 		global       string
 		project      string
 		includes     []IncludedFile
-		wantSources  []string
+		wantNil      bool
 		wantContains []string
 	}{
 		{
-			name:        "empty",
-			global:      "",
-			project:     "",
-			includes:    nil,
-			wantSources: nil,
+			name:     "empty",
+			global:   "",
+			project:  "",
+			includes: nil,
+			wantNil:  true,
 		},
 		{
 			name:         "project only",
@@ -331,7 +331,7 @@ func TestMemory_Sources(t *testing.T) {
 			m := NewMemory(tt.global, tt.project, tt.includes)
 			sources := m.Sources()
 
-			if tt.wantSources != nil {
+			if tt.wantNil {
 				if sources != nil {
 					t.Errorf("Sources() = %v, want nil", sources)
 				}

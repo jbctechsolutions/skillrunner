@@ -524,3 +524,68 @@ func TestLoader_TruncateMemory_TruncatesGlobal(t *testing.T) {
 func newTestMemory(global, project string, includes []domainmemory.IncludedFile) *domainmemory.Memory {
 	return domainmemory.NewMemory(global, project, includes)
 }
+
+func TestTruncateAtWordBoundary(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		limit    int
+		expected string
+	}{
+		{
+			name:     "no truncation needed",
+			content:  "short text",
+			limit:    100,
+			expected: "short text",
+		},
+		{
+			name:     "truncate at word boundary",
+			content:  "hello world foo bar",
+			limit:    15,
+			expected: "hello world...",
+		},
+		{
+			name:     "truncate with no space",
+			content:  "verylongwordwithoutspaces",
+			limit:    15,
+			expected: "verylongword...",
+		},
+		{
+			name:     "very short limit",
+			content:  "hello world",
+			limit:    3,
+			expected: "...",
+		},
+		{
+			name:     "limit equals ellipsis length",
+			content:  "hello",
+			limit:    3,
+			expected: "...",
+		},
+		{
+			name:     "limit less than ellipsis",
+			content:  "hello",
+			limit:    2,
+			expected: "..",
+		},
+		{
+			name:     "empty content",
+			content:  "",
+			limit:    10,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateAtWordBoundary(tt.content, tt.limit)
+			if result != tt.expected {
+				t.Errorf("truncateAtWordBoundary(%q, %d) = %q, want %q",
+					tt.content, tt.limit, result, tt.expected)
+			}
+			if len(result) > tt.limit {
+				t.Errorf("result length %d exceeds limit %d", len(result), tt.limit)
+			}
+		})
+	}
+}
