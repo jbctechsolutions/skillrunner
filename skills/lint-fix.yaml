@@ -1,0 +1,136 @@
+# Lint Fix Skill
+# A multi-phase skill for identifying and fixing linting errors.
+# Phases execute in order: identify -> fix -> verify
+
+id: lint-fix
+name: Lint Fix
+version: "1.0.0"
+description: |
+  Identifies linting errors in code and generates fixes. Supports common linters
+  like ESLint, Pylint, golangci-lint, and others. Provide the code along with
+  linter output for best results.
+
+routing:
+  default_profile: balanced
+  max_context_tokens: 8192
+
+phases:
+  - id: identify
+    name: Identify Linting Issues
+    prompt_template: |
+      You are a code quality expert analyzing linting issues.
+
+      Analyze the following code and/or linter output to identify all linting issues:
+
+      {{.input}}
+
+      For each issue found, provide:
+      1. **Location**: File and line number (if available)
+      2. **Rule**: The linting rule being violated
+      3. **Severity**: error, warning, or info
+      4. **Description**: What the issue is
+      5. **Category**: style, bug-risk, complexity, security, or performance
+
+      Example output format:
+      ```
+      Issue 1:
+      - Location: line 15
+      - Rule: no-unused-vars
+      - Severity: warning
+      - Description: Variable 'temp' is declared but never used
+      - Category: style
+      ```
+
+      List all issues in order of severity (errors first, then warnings, then info).
+    routing_profile: cheap
+    max_tokens: 2048
+    temperature: 0.3
+
+  - id: fix
+    name: Generate Fixes
+    prompt_template: |
+      You are a code quality expert generating fixes for linting issues.
+
+      Identified linting issues:
+      {{.phases.identify}}
+
+      Original code:
+      {{.input}}
+
+      Generate fixes for each identified issue. For each fix:
+      1. Show the original problematic code
+      2. Show the corrected code
+      3. Explain why the fix resolves the issue
+
+      Example format:
+      ```
+      Fix for Issue 1 (no-unused-vars on line 15):
+
+      Before:
+      const temp = getValue();
+      return result;
+
+      After:
+      return result;
+
+      Explanation: Removed unused variable 'temp' that was declared but never used.
+      ```
+
+      Then provide the complete fixed code at the end.
+    routing_profile: balanced
+    depends_on:
+      - identify
+    max_tokens: 4096
+    temperature: 0.4
+
+  - id: verify
+    name: Verify Fixes
+    prompt_template: |
+      You are verifying that linting fixes are correct and complete.
+
+      Original issues identified:
+      {{.phases.identify}}
+
+      Proposed fixes:
+      {{.phases.fix}}
+
+      Verify the fixes by checking:
+      1. **Completeness**: Are all identified issues addressed?
+      2. **Correctness**: Do the fixes properly resolve each issue?
+      3. **Side Effects**: Do any fixes introduce new issues?
+      4. **Best Practices**: Do the fixes follow language best practices?
+
+      Provide a verification report:
+
+      ## Verification Summary
+      - Total issues: X
+      - Issues fixed: Y
+      - Issues remaining: Z
+
+      ## Fix Validation
+      For each fix, confirm if it:
+      - [ ] Resolves the original issue
+      - [ ] Maintains code functionality
+      - [ ] Follows best practices
+
+      ## New Issues Introduced
+      List any new linting issues the fixes may have introduced.
+
+      ## Final Verdict
+      PASS / NEEDS_REVISION with explanation.
+    routing_profile: cheap
+    depends_on:
+      - identify
+      - fix
+    max_tokens: 2048
+    temperature: 0.3
+
+metadata:
+  category: code-quality
+  tags:
+    - linting
+    - code-style
+    - fix
+    - automation
+  author: skillrunner
+  license: MIT

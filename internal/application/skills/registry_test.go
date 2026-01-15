@@ -664,6 +664,13 @@ func TestReload(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
+	// Create empty user dir to isolate from real user skills
+	emptyUserDir, err := os.MkdirTemp("", "skillrunner-user-empty-*")
+	if err != nil {
+		t.Fatalf("failed to create empty user dir: %v", err)
+	}
+	defer os.RemoveAll(emptyUserDir)
+
 	// Write initial skill
 	skillYAML := `
 id: initial-skill
@@ -681,8 +688,7 @@ phases:
 	loader := infraSkills.NewLoader()
 	registry := NewRegistry(loader)
 	registry.SetBuiltInDir(tmpDir)
-	// Set user dir to non-existent path to isolate test from environment
-	registry.SetUserDir("/non/existent/user/dir")
+	registry.SetUserDir(emptyUserDir)
 
 	// Initial load
 	if err := registry.LoadAll(); err != nil {
