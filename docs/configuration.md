@@ -10,12 +10,13 @@ Skillrunner uses YAML-based configuration to manage provider settings, routing p
 4. [Routing Configuration](#routing-configuration)
 5. [Logging Configuration](#logging-configuration)
 6. [Skills Configuration](#skills-configuration)
-7. [Cache Configuration](#cache-configuration)
-8. [Observability Configuration](#observability-configuration)
-9. [Environment Variables](#environment-variables)
-10. [Complete Example](#complete-example)
-11. [Security Best Practices](#security-best-practices)
-12. [Advanced Topics](#advanced-topics)
+7. [Memory Configuration](#memory-configuration)
+8. [Cache Configuration](#cache-configuration)
+9. [Observability Configuration](#observability-configuration)
+10. [Environment Variables](#environment-variables)
+11. [Complete Example](#complete-example)
+12. [Security Best Practices](#security-best-practices)
+13. [Advanced Topics](#advanced-topics)
 
 ---
 
@@ -483,6 +484,80 @@ Currently, Skillrunner supports a single skill directory. To use skills from mul
 ```bash
 cd ~/.skillrunner/skills
 ln -s /path/to/project/skills/custom-skill.yaml
+```
+
+---
+
+## Memory Configuration
+
+Skillrunner supports persistent memory via MEMORY.md files, allowing context to persist across sessions.
+
+### Configuration Options
+
+```yaml
+memory:
+  enabled: true       # Enable/disable memory injection
+  max_tokens: 2000    # Maximum tokens to inject from memory
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable memory injection into prompts |
+| `max_tokens` | int | `2000` | Maximum tokens to inject from memory files |
+
+### Memory File Locations
+
+Memory files are automatically loaded from:
+
+1. **Global memory:** `~/.skillrunner/MEMORY.md`
+   - User preferences and common patterns
+   - Applies to all skills and projects
+
+2. **Project memory:** `.skillrunner/MEMORY.md`
+   - Project-specific context
+   - Overrides/extends global memory
+
+3. **Claude.md compatibility:** `.claude/CLAUDE.md` or `CLAUDE.md`
+   - For compatibility with Claude Code projects
+
+### Memory File Format
+
+```markdown
+# Memory
+
+## User Preferences
+- Prefer concise responses
+- Use TypeScript for examples
+- Follow conventional commits
+
+## Project Context
+- This is a Go project using hexagonal architecture
+- Tests use testify/assert
+
+## Common Patterns
+- Error handling: wrap with fmt.Errorf
+- Logging: use slog for structured logs
+```
+
+### Memory Injection
+
+When enabled, memory content is automatically injected into prompts as context. Use `--no-memory` flag to disable for specific commands:
+
+```bash
+sr run code-review "Review this code" --no-memory
+```
+
+### Managing Memory
+
+```bash
+# View current memory content
+sr memory view
+
+# Edit global memory
+sr memory edit
+
+# Edit project memory
+sr memory edit --project
 ```
 
 ---

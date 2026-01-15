@@ -398,7 +398,7 @@ phases:
 
 ## Built-in Skills
 
-Skillrunner includes several pre-built skills ready to use out of the box.
+Skillrunner includes 10 pre-built skills ready to use out of the box, covering common development workflows.
 
 ### 1. Code Review (`code-review`)
 
@@ -556,6 +556,153 @@ phases:
 - Usage examples
 - Performance considerations
 - Markdown-formatted output
+
+---
+
+### 4. Changelog Generator (`changelog`)
+
+**Purpose:** Generate changelog entries from git history
+
+**Phases:** 2
+1. `analyze` - Analyze git commits and categorize changes
+2. `format` - Format into Keep a Changelog format
+
+**Usage:**
+```bash
+sr run changelog "Generate changelog for v1.2.0"
+```
+
+**Output Includes:**
+- Categorized changes (Added, Changed, Fixed, etc.)
+- Commit attribution
+- Breaking change warnings
+
+---
+
+### 5. Commit Message Generator (`commit-msg`)
+
+**Purpose:** Generate conventional commit messages from staged changes
+
+**Phases:** 2
+1. `analyze` - Analyze diff and understand changes
+2. `generate` - Generate conventional commit message
+
+**Usage:**
+```bash
+sr run commit-msg "$(git diff --staged)"
+```
+
+**Output Includes:**
+- Type prefix (feat, fix, refactor, etc.)
+- Scope identification
+- Breaking change indicators
+- Detailed body when needed
+
+---
+
+### 6. PR Description Generator (`pr-description`)
+
+**Purpose:** Generate pull request descriptions from branch changes
+
+**Phases:** 3
+1. `analyze` - Analyze commit history and file changes
+2. `summarize` - Create summary of changes
+3. `format` - Format as PR description
+
+**Usage:**
+```bash
+sr run pr-description "Describe changes for auth feature"
+```
+
+**Output Includes:**
+- Summary of changes
+- List of modified files
+- Testing checklist
+- Breaking change notes
+
+---
+
+### 7. Lint Fix (`lint-fix`)
+
+**Purpose:** Identify and fix linting errors
+
+**Phases:** 3
+1. `identify` - Identify linting issues
+2. `fix` - Apply fixes
+3. `verify` - Verify fixes don't introduce new issues
+
+**Usage:**
+```bash
+sr run lint-fix "Fix linting errors in auth.go"
+```
+
+**Output Includes:**
+- List of identified issues
+- Applied fixes
+- Verification results
+
+---
+
+### 8. Test Fix (`test-fix`)
+
+**Purpose:** Debug and fix failing tests
+
+**Phases:** 3
+1. `analyze` - Analyze test failures
+2. `diagnose` - Identify root cause
+3. `fix` - Suggest or apply fixes
+
+**Usage:**
+```bash
+sr run test-fix "Fix TestUserAuth failure"
+```
+
+**Output Includes:**
+- Failure analysis
+- Root cause explanation
+- Suggested fix with code
+
+---
+
+### 9. Refactor (`refactor`)
+
+**Purpose:** Apply refactoring patterns to code
+
+**Phases:** 3
+1. `analyze` - Analyze code structure
+2. `transform` - Apply refactoring
+3. `validate` - Validate no behavior changes
+
+**Usage:**
+```bash
+sr run refactor "Extract method from handleAuth"
+```
+
+**Supports patterns:**
+- Extract function/method
+- Inline function
+- Rename variable/function
+- Simplify conditionals
+
+---
+
+### 10. Issue Breakdown (`issue-breakdown`)
+
+**Purpose:** Break down large issues into smaller subtasks
+
+**Phases:** 2
+1. `analyze` - Analyze issue complexity
+2. `decompose` - Create subtask breakdown
+
+**Usage:**
+```bash
+sr run issue-breakdown "Break down: Add user authentication"
+```
+
+**Output Includes:**
+- Subtask list with estimates
+- Dependencies between tasks
+- Suggested implementation order
 
 ---
 
@@ -801,10 +948,10 @@ List all available skills:
 sr list
 ```
 
-View skill details:
+View skill details (with verbose output):
 
 ```bash
-sr show my-skill
+sr list --verbose
 ```
 
 ### Skill Repository Structure

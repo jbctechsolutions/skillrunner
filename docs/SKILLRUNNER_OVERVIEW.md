@@ -1,8 +1,8 @@
 # Skillrunner: Complete Project Overview
 
 **Version:** 2.0 MVP
-**Status:** Wave 10 Complete (Caching & Performance)
-**Last Updated:** 2025-12-26
+**Status:** Wave 11 Complete (Memory, MCP, Plan Mode, Hot Reload)
+**Last Updated:** 2026-01-15
 
 ---
 
@@ -67,6 +67,11 @@ Each phase can depend on outputs from previous phases, and the system automatica
 | **SQLite Storage** | Persistent storage for sessions, workspaces, checkpoints | ✅ Complete |
 | **Provider Health Checks** | Real-time provider status monitoring | ✅ Complete |
 | **Streaming Output** | Real-time LLM response streaming with live token counts | ✅ Complete |
+| **Memory System** | Persistent context via MEMORY.md files (global + project) | ✅ Complete |
+| **MCP Support** | Model Context Protocol server integration for tool extensibility | ✅ Complete |
+| **Plan Mode** | Preview execution plan with cost estimates before running | ✅ Complete |
+| **Skill Hot Reload** | Automatic skill reload when YAML files change | ✅ Complete |
+| **10 Built-in Skills** | Expanded skill library for common development tasks | ✅ Complete |
 
 ### Routing Profiles
 
@@ -76,13 +81,20 @@ Each phase can depend on outputs from previous phases, and the system automatica
 | `balanced` | Quality-to-cost ratio (default) | General use, production workloads |
 | `premium` | Best available models | Critical tasks, final outputs |
 
-### Built-in Skills
+### Built-in Skills (10 Total)
 
 | Skill | Description | Phases |
 |-------|-------------|--------|
 | `code-review` | Comprehensive code review | 3 phases (patterns → security → report) |
 | `test-gen` | Generate unit tests | Coverage analysis + test generation |
 | `doc-gen` | Generate documentation | Extract structure + generate docs |
+| `changelog` | Generate changelog entries | Git analysis + formatting |
+| `commit-msg` | Generate commit messages | Diff analysis + conventional commit |
+| `pr-description` | Generate PR descriptions | Change analysis + summary |
+| `lint-fix` | Fix linting errors | Identify → fix → verify |
+| `test-fix` | Debug failing tests | Analyze → diagnose → fix |
+| `refactor` | Apply refactoring patterns | Analyze → transform → validate |
+| `issue-breakdown` | Break down issues | Complexity analysis + subtasks |
 
 ---
 
@@ -275,6 +287,32 @@ Skillrunner uses **Hexagonal Architecture** (Ports & Adapters) for clean separat
 - SQLite migrations for persistent cache storage
 - Comprehensive test coverage for all cache adapters
 
+### Wave 11: Memory, MCP, Plan Mode & Hot Reload
+**Status:** ✅ Complete
+
+- **Memory System** - Persistent context via MEMORY.md files
+  - Global memory at `~/.skillrunner/MEMORY.md`
+  - Project memory at `.skillrunner/MEMORY.md`
+  - Automatic injection into prompts
+  - `sr memory edit` and `sr memory view` commands
+  - `--no-memory` flag to disable
+- **MCP Server Support** - Model Context Protocol integration
+  - Read config from `.claude/mcp.json`
+  - Dynamic tool discovery and registration
+  - JSON-RPC tool execution
+- **Plan Mode** - Execution preview
+  - `sr plan` command for DAG visualization
+  - Cost estimation before execution
+  - `--approve` flag for automatic approval
+- **Skill Hot Reload** - Live skill updates
+  - fsnotify-based file watching
+  - Automatic reload on YAML changes
+  - No restart required
+- **7 New Default Skills** - Expanded skill library
+  - changelog, commit-msg, pr-description
+  - lint-fix, test-fix, refactor
+  - issue-breakdown
+
 ---
 
 ## Current Status
@@ -323,6 +361,14 @@ sr cache stats              # View cache statistics
 sr cache clear              # Clear all cached responses
 sr cache list               # List cached entries
 sr cache config             # View cache configuration
+
+# Memory management (Wave 11)
+sr memory view              # View current memory content
+sr memory edit              # Edit memory files
+
+# Plan mode (Wave 11)
+sr plan code-review "Review this code"  # Preview execution plan
+sr plan code-review "Review" --approve  # Auto-approve and run
 ```
 
 ### Test Coverage
@@ -337,18 +383,21 @@ All tests pass with the following coverage:
 
 ## Future Roadmap
 
-### Wave 11: Observability (Planned)
-- Structured logging
-- Metrics collection
-- OpenTelemetry tracing
-- Cost tracking dashboard
+### Wave 12: Reliability & Security (v1.1 - Feb 2026)
+- AES-256-GCM encryption for API keys
+- Circuit breakers for provider failover
+- Health checks with remediation
+- Hooks system for workflow customization
+- Slash commands support
+- Test coverage to 80%+
 
-### Wave 12: Advanced Features (Future)
+### Wave 13: Advanced Features (v1.2+ - Future)
+- Crash recovery with checkpoint persistence
+- Execution history (`sr history`)
+- Per-phase cost/time display
 - Skill marketplace
-- Plugin system for custom providers
-- Web UI
-- Distributed execution
-- Stateful/resumable workflows
+- Web dashboard
+- REST API
 
 ---
 
