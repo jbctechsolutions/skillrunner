@@ -528,7 +528,7 @@ func TestExecutor_Execute_MaxParallelLimit(t *testing.T) {
 }
 
 func TestPhaseExecutor_BuildPrompt(t *testing.T) {
-	pe := newPhaseExecutor(newMockProvider())
+	pe := newPhaseExecutor(newMockProvider(), "")
 
 	tests := []struct {
 		name     string
@@ -586,7 +586,7 @@ func TestPhaseExecutor_BuildPrompt(t *testing.T) {
 }
 
 func TestPhaseExecutor_SelectModel(t *testing.T) {
-	pe := newPhaseExecutor(newMockProvider())
+	pe := newPhaseExecutor(newMockProvider(), "")
 
 	tests := []struct {
 		profile  string

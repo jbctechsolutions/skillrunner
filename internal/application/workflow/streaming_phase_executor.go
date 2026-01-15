@@ -16,13 +16,15 @@ type PhaseStreamCallback func(chunk string, inputTokens, outputTokens int) error
 
 // streamingPhaseExecutor handles the execution of a single phase with streaming support.
 type streamingPhaseExecutor struct {
-	provider ports.ProviderPort
+	provider      ports.ProviderPort
+	memoryContent string
 }
 
 // newStreamingPhaseExecutor creates a new streaming phase executor.
-func newStreamingPhaseExecutor(provider ports.ProviderPort) *streamingPhaseExecutor {
+func newStreamingPhaseExecutor(provider ports.ProviderPort, memoryContent string) *streamingPhaseExecutor {
 	return &streamingPhaseExecutor{
-		provider: provider,
+		provider:      provider,
+		memoryContent: memoryContent,
 	}
 }
 
@@ -136,7 +138,15 @@ func (e *streamingPhaseExecutor) buildPrompt(templateStr string, data map[string
 
 // buildMessages constructs the message array for the LLM request.
 func (e *streamingPhaseExecutor) buildMessages(prompt string, dependencyOutputs map[string]string) []ports.Message {
-	messages := make([]ports.Message, 0, 2)
+	messages := make([]ports.Message, 0, 3)
+
+	// Add memory context first (if available) - highest priority
+	if e.memoryContent != "" {
+		messages = append(messages, ports.Message{
+			Role:    "system",
+			Content: "Project Memory:\n\n" + e.memoryContent,
+		})
+	}
 
 	if len(dependencyOutputs) > 0 {
 		var contextParts []string

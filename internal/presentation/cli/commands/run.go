@@ -4,6 +4,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -14,13 +15,15 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
+	infraMemory "github.com/jbctechsolutions/skillrunner/internal/infrastructure/memory"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
 
 // runFlags holds the flags for the run command.
 type runFlags struct {
-	Profile string
-	Stream  bool
+	Profile  string
+	Stream   bool
+	NoMemory bool
 }
 
 var runOpts runFlags
@@ -57,6 +60,7 @@ Routing Profiles:
 	cmd.Flags().StringVarP(&runOpts.Profile, "profile", "p", skill.ProfileBalanced,
 		fmt.Sprintf("routing profile: %s, %s, %s", skill.ProfileCheap, skill.ProfileBalanced, skill.ProfilePremium))
 	cmd.Flags().BoolVarP(&runOpts.Stream, "stream", "s", false, "enable streaming output")
+	cmd.Flags().BoolVar(&runOpts.NoMemory, "no-memory", false, "disable memory injection (MEMORY.md/CLAUDE.md)")
 
 	return cmd
 }
@@ -108,21 +112,44 @@ func runSkill(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
+	// Load memory content (unless disabled)
+	var memoryContent string
+	appCtx := GetAppContext()
+	memoryEnabled := appCtx != nil && appCtx.Config != nil && appCtx.Config.Memory.Enabled
+	if memoryEnabled && !runOpts.NoMemory {
+		cwd, err := os.Getwd()
+		if err == nil {
+			maxTokens := 2000
+			if appCtx.Config != nil {
+				maxTokens = appCtx.Config.Memory.MaxTokens
+			}
+			loader := infraMemory.NewLoader(maxTokens)
+			mem, err := loader.Load(cwd)
+			if err == nil && !mem.IsEmpty() {
+				memoryContent = mem.Combined()
+			}
+		}
+	}
+
 	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
 		executorConfig := workflow.DefaultExecutorConfig()
+		executorConfig.MemoryContent = memoryContent
 		executor := workflow.NewExecutor(provider, executorConfig)
 		return runSkillJSON(ctx, executor, sk, request, provider)
 	}
 
 	// Streaming output mode
 	if runOpts.Stream {
-		streamingExecutor := container.NewStreamingExecutor(provider)
+		streamingConfig := workflow.DefaultExecutorConfig()
+		streamingConfig.MemoryContent = memoryContent
+		streamingExecutor := workflow.NewStreamingExecutor(provider, streamingConfig)
 		return runSkillStreaming(ctx, streamingExecutor, sk, request, provider, formatter)
 	}
 
 	// Standard text output with progress display
 	executorConfig := workflow.DefaultExecutorConfig()
+	executorConfig.MemoryContent = memoryContent
 	executor := workflow.NewExecutor(provider, executorConfig)
 	return runSkillText(ctx, executor, sk, request, provider, formatter)
 }

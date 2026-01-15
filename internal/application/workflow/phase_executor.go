@@ -13,13 +13,15 @@ import (
 
 // phaseExecutor handles the execution of a single phase.
 type phaseExecutor struct {
-	provider ports.ProviderPort
+	provider      ports.ProviderPort
+	memoryContent string
 }
 
-// newPhaseExecutor creates a new phase executor with the given provider.
-func newPhaseExecutor(provider ports.ProviderPort) *phaseExecutor {
+// newPhaseExecutor creates a new phase executor with the given provider and memory content.
+func newPhaseExecutor(provider ports.ProviderPort, memoryContent string) *phaseExecutor {
 	return &phaseExecutor{
-		provider: provider,
+		provider:      provider,
+		memoryContent: memoryContent,
 	}
 }
 
@@ -108,7 +110,15 @@ func (e *phaseExecutor) buildPrompt(templateStr string, data map[string]string) 
 
 // buildMessages constructs the message array for the LLM request.
 func (e *phaseExecutor) buildMessages(prompt string, dependencyOutputs map[string]string) []ports.Message {
-	messages := make([]ports.Message, 0, 2)
+	messages := make([]ports.Message, 0, 3)
+
+	// Add memory context first (if available) - highest priority
+	if e.memoryContent != "" {
+		messages = append(messages, ports.Message{
+			Role:    "system",
+			Content: "Project Memory:\n\n" + e.memoryContent,
+		})
+	}
 
 	// Add context from dependencies if available
 	if len(dependencyOutputs) > 0 {

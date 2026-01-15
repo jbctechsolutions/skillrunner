@@ -58,15 +58,17 @@ type ExecutionResult struct {
 
 // ExecutorConfig contains configuration options for the executor.
 type ExecutorConfig struct {
-	MaxParallel int           // Maximum number of phases to execute in parallel
-	Timeout     time.Duration // Overall timeout for skill execution
+	MaxParallel   int           // Maximum number of phases to execute in parallel
+	Timeout       time.Duration // Overall timeout for skill execution
+	MemoryContent string        // Memory content to inject into prompts (from MEMORY.md/CLAUDE.md)
 }
 
 // DefaultExecutorConfig returns the default executor configuration.
 func DefaultExecutorConfig() ExecutorConfig {
 	return ExecutorConfig{
-		MaxParallel: 4,
-		Timeout:     5 * time.Minute,
+		MaxParallel:   4,
+		Timeout:       5 * time.Minute,
+		MemoryContent: "",
 	}
 }
 
@@ -94,7 +96,7 @@ func NewExecutor(provider ports.ProviderPort, config ExecutorConfig) Executor {
 	return &executor{
 		provider:      provider,
 		config:        config,
-		phaseExecutor: newPhaseExecutor(provider),
+		phaseExecutor: newPhaseExecutor(provider, config.MemoryContent),
 	}
 }
 
