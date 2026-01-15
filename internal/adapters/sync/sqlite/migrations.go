@@ -37,6 +37,9 @@ func applyMigrations(db *sql.DB) error {
 		{11, "create_execution_records_table", createExecutionRecordsTable},
 		{12, "create_phase_execution_records_table", createPhaseExecutionRecordsTable},
 		{13, "create_metrics_indices", createMetricsIndices},
+		// Crash Recovery: Workflow checkpoints
+		{14, "create_workflow_checkpoints_table", createWorkflowCheckpointsTable},
+		{15, "create_workflow_checkpoint_indices", createWorkflowCheckpointIndices},
 	}
 
 	for _, m := range migrations {
@@ -307,4 +310,36 @@ CREATE INDEX IF NOT EXISTS idx_phase_records_provider ON phase_execution_records
 CREATE INDEX IF NOT EXISTS idx_phase_records_model ON phase_execution_records(model);
 CREATE INDEX IF NOT EXISTS idx_phase_records_started ON phase_execution_records(started_at);
 CREATE INDEX IF NOT EXISTS idx_phase_records_cache_hit ON phase_execution_records(cache_hit);
+`
+
+// Crash Recovery: Workflow checkpoints table for storing execution state
+const createWorkflowCheckpointsTable = `
+CREATE TABLE workflow_checkpoints (
+	id TEXT PRIMARY KEY,
+	execution_id TEXT NOT NULL,
+	skill_id TEXT NOT NULL,
+	skill_name TEXT NOT NULL,
+	input TEXT NOT NULL,
+	input_hash TEXT NOT NULL,
+	completed_batch INTEGER DEFAULT -1,
+	total_batches INTEGER NOT NULL,
+	phase_results TEXT,
+	phase_outputs TEXT,
+	status TEXT NOT NULL DEFAULT 'in_progress',
+	input_tokens INTEGER DEFAULT 0,
+	output_tokens INTEGER DEFAULT 0,
+	machine_id TEXT,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`
+
+// Crash Recovery: Workflow checkpoint indices for performance
+const createWorkflowCheckpointIndices = `
+CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_skill_input ON workflow_checkpoints(skill_id, input_hash);
+CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_execution ON workflow_checkpoints(execution_id);
+CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_status ON workflow_checkpoints(status);
+CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_machine ON workflow_checkpoints(machine_id);
+CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_updated ON workflow_checkpoints(updated_at);
+CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_created ON workflow_checkpoints(created_at);
 `

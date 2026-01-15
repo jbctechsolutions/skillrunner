@@ -21,9 +21,11 @@ import (
 
 // runFlags holds the flags for the run command.
 type runFlags struct {
-	Profile  string
-	Stream   bool
-	NoMemory bool
+	Profile      string
+	Stream       bool
+	NoMemory     bool
+	Resume       bool
+	NoCheckpoint bool
 }
 
 var runOpts runFlags
@@ -48,10 +50,21 @@ Examples:
   # Run with streaming output
   sr run summarize "Summarize this document" --stream
 
+  # Resume from last checkpoint
+  sr run long-analysis "Complex analysis" --resume
+
+  # Run without checkpoint persistence
+  sr run quick-task "Simple task" --no-checkpoint
+
 Routing Profiles:
   cheap     - Prioritize cost, use local/cheaper models
   balanced  - Balance between cost and quality (default)
-  premium   - Prioritize quality, use best available models`,
+  premium   - Prioritize quality, use best available models
+
+Crash Recovery:
+  By default, execution state is checkpointed after each phase batch.
+  Use --resume to continue from the last checkpoint if available.
+  Use --no-checkpoint to disable checkpointing (for testing or short tasks).`,
 		Args: cobra.ExactArgs(2),
 		RunE: runSkill,
 	}
@@ -61,6 +74,8 @@ Routing Profiles:
 		fmt.Sprintf("routing profile: %s, %s, %s", skill.ProfileCheap, skill.ProfileBalanced, skill.ProfilePremium))
 	cmd.Flags().BoolVarP(&runOpts.Stream, "stream", "s", false, "enable streaming output")
 	cmd.Flags().BoolVar(&runOpts.NoMemory, "no-memory", false, "disable memory injection (MEMORY.md/CLAUDE.md)")
+	cmd.Flags().BoolVar(&runOpts.Resume, "resume", false, "resume from last checkpoint if available")
+	cmd.Flags().BoolVar(&runOpts.NoCheckpoint, "no-checkpoint", false, "disable checkpoint persistence")
 
 	return cmd
 }
@@ -128,15 +143,31 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Build checkpoint config
+	cpConfig := workflow.CheckpointConfig{
+		Enabled:   !runOpts.NoCheckpoint,
+		Port:      container.WorkflowCheckpointRepository(),
+		Resume:    runOpts.Resume,
+		MachineID: container.MachineID(),
+	}
+
+	// Check for existing checkpoint if not resuming
+	if cpConfig.Enabled && !runOpts.Resume && cpConfig.Port != nil {
+		existingCP, _ := workflow.GetExistingCheckpoint(ctx, cpConfig.Port, sk.ID(), request)
+		if existingCP != nil {
+			formatter.Warning("An incomplete execution exists for this skill/input. Use --resume to continue from checkpoint.")
+		}
+	}
+
 	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
 		executorConfig := workflow.DefaultExecutorConfig()
 		executorConfig.MemoryContent = memoryContent
-		executor := workflow.NewExecutor(provider, executorConfig)
+		executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
 		return runSkillJSON(ctx, executor, sk, request, provider)
 	}
 
-	// Streaming output mode
+	// Streaming output mode (checkpointing not supported for streaming yet)
 	if runOpts.Stream {
 		streamingConfig := workflow.DefaultExecutorConfig()
 		streamingConfig.MemoryContent = memoryContent
@@ -147,7 +178,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	// Standard text output with progress display
 	executorConfig := workflow.DefaultExecutorConfig()
 	executorConfig.MemoryContent = memoryContent
-	executor := workflow.NewExecutor(provider, executorConfig)
+	executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
 	return runSkillText(ctx, executor, sk, request, provider, formatter)
 }
 
