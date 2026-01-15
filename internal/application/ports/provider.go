@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -19,6 +20,14 @@ type Message struct {
 	Content string
 }
 
+// Tool represents a tool that can be called by the LLM.
+type Tool struct {
+	Name         string          `json:"name"`
+	Description  string          `json:"description,omitempty"`
+	InputSchema  json.RawMessage `json:"input_schema"`
+	DeferLoading bool            `json:"defer_loading,omitempty"` // For Tool Search Tool support
+}
+
 // CompletionRequest is the input for LLM completion
 type CompletionRequest struct {
 	ModelID      string
@@ -26,6 +35,7 @@ type CompletionRequest struct {
 	MaxTokens    int
 	Temperature  float32
 	SystemPrompt string
+	Tools        []Tool // Optional tools for function calling
 }
 
 // CompletionResponse is the output from LLM completion

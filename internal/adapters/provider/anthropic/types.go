@@ -1,7 +1,10 @@
 // Package anthropic provides an adapter for the Anthropic Claude API.
 package anthropic
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // MessageRole represents the role of a message participant.
 type MessageRole string
@@ -20,8 +23,13 @@ const (
 
 // ContentBlock represents a content block in a message.
 type ContentBlock struct {
-	Type string `json:"type"`
-	Text string `json:"text,omitempty"`
+	Type      string          `json:"type"`
+	Text      string          `json:"text,omitempty"`
+	ID        string          `json:"id,omitempty"`         // For tool_use blocks
+	Name      string          `json:"name,omitempty"`       // For tool_use blocks
+	Input     json.RawMessage `json:"input,omitempty"`      // For tool_use blocks
+	ToolUseID string          `json:"tool_use_id,omitempty"` // For tool_result blocks
+	Content   string          `json:"content,omitempty"`     // For tool_result blocks
 }
 
 // MessageContent can be either a string or an array of content blocks.
@@ -32,6 +40,14 @@ type MessageContent []ContentBlock
 type Message struct {
 	Role    MessageRole    `json:"role"`
 	Content MessageContent `json:"content"`
+}
+
+// Tool represents a tool that the model can use.
+type Tool struct {
+	Name         string          `json:"name"`
+	Description  string          `json:"description,omitempty"`
+	InputSchema  json.RawMessage `json:"input_schema"`
+	DeferLoading bool            `json:"defer_loading,omitempty"` // For Tool Search Tool beta
 }
 
 // MessagesRequest is the request body for the Anthropic Messages API.
@@ -45,6 +61,7 @@ type MessagesRequest struct {
 	TopK          *int      `json:"top_k,omitempty"`
 	StopSequences []string  `json:"stop_sequences,omitempty"`
 	Stream        bool      `json:"stream,omitempty"`
+	Tools         []Tool    `json:"tools,omitempty"` // Optional tools for function calling
 }
 
 // Usage contains token usage information from the response.
@@ -60,6 +77,14 @@ const (
 	StopReasonEndTurn      StopReason = "end_turn"
 	StopReasonMaxTokens    StopReason = "max_tokens"
 	StopReasonStopSequence StopReason = "stop_sequence"
+	StopReasonToolUse      StopReason = "tool_use"
+)
+
+// Beta feature header constants.
+const (
+	// BetaToolSearch is the beta header for Tool Search Tool feature.
+	// This enables deferred tool loading for reduced token consumption.
+	BetaToolSearch = "advanced-tool-use-2025-11-20"
 )
 
 // MessagesResponse is the response body from the Anthropic Messages API.
