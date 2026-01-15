@@ -29,16 +29,16 @@ func (r *DAGRenderer) RenderPlan(plan *workflow.ExecutionPlan) {
 
 // renderHeader renders the skill and input information.
 func (r *DAGRenderer) renderHeader(plan *workflow.ExecutionPlan) {
-	r.formatter.Header("Execution Plan")
-	r.formatter.Item("Skill", fmt.Sprintf("%s v%s", plan.SkillName, plan.SkillVersion))
+	_ = r.formatter.Header("Execution Plan")
+	_ = r.formatter.Item("Skill", fmt.Sprintf("%s v%s", plan.SkillName, plan.SkillVersion))
 
 	// Truncate input if too long
 	input := plan.Input
 	if len(input) > 80 {
 		input = input[:77] + "..."
 	}
-	r.formatter.Item("Input", fmt.Sprintf("%q", input))
-	r.formatter.Println("")
+	_ = r.formatter.Item("Input", fmt.Sprintf("%q", input))
+	_ = r.formatter.Println("")
 }
 
 // renderPhaseTable renders the phase details as a box-drawing table.
@@ -47,8 +47,8 @@ func (r *DAGRenderer) renderPhaseTable(plan *workflow.ExecutionPlan) {
 		return
 	}
 
-	r.formatter.SubHeader("Phase Details")
-	r.formatter.Println("")
+	_ = r.formatter.SubHeader("Phase Details")
+	_ = r.formatter.Println("")
 
 	// Draw the phases in boxes
 	for i, phase := range plan.Phases {
@@ -97,9 +97,9 @@ func (r *DAGRenderer) renderPhaseBox(phase workflow.PhasePlan, isFirst, isLast b
 
 	// Render top border
 	if isFirst {
-		r.formatter.Println("┌%s┐", strings.Repeat("─", boxWidth-2))
+		_ = r.formatter.Println("┌%s┐", strings.Repeat("─", boxWidth-2))
 	} else {
-		r.formatter.Println("├%s┤", strings.Repeat("─", boxWidth-2))
+		_ = r.formatter.Println("├%s┤", strings.Repeat("─", boxWidth-2))
 	}
 
 	// Render phase content
@@ -110,7 +110,7 @@ func (r *DAGRenderer) renderPhaseBox(phase workflow.PhasePlan, isFirst, isLast b
 
 	// Render bottom border or separator
 	if isLast {
-		r.formatter.Println("└%s┘", strings.Repeat("─", boxWidth-2))
+		_ = r.formatter.Println("└%s┘", strings.Repeat("─", boxWidth-2))
 	}
 }
 
@@ -127,34 +127,34 @@ func (r *DAGRenderer) renderBoxLine(left, right string, boxWidth int) {
 			left = left[:leftWidth-3] + "..."
 		}
 		padding := strings.Repeat(" ", leftWidth-len(left))
-		r.formatter.Println("│ %s%s%s │", left, padding, rightPadded)
+		_ = r.formatter.Println("│ %s%s%s │", left, padding, rightPadded)
 	} else {
 		// Just left content
 		if len(left) > availableWidth {
 			left = left[:availableWidth-3] + "..."
 		}
 		padding := strings.Repeat(" ", availableWidth-len(left))
-		r.formatter.Println("│ %s%s │", left, padding)
+		_ = r.formatter.Println("│ %s%s │", left, padding)
 	}
 }
 
 // renderTotals renders the total cost and token estimates.
 func (r *DAGRenderer) renderTotals(plan *workflow.ExecutionPlan) {
-	r.formatter.Println("")
-	r.formatter.SubHeader("Totals")
+	_ = r.formatter.Println("")
+	_ = r.formatter.SubHeader("Totals")
 
-	r.formatter.Item("Estimated Input Tokens", fmt.Sprintf("%d", plan.TotalEstimatedInputTokens))
-	r.formatter.Item("Estimated Output Tokens", fmt.Sprintf("~%d", plan.TotalEstimatedOutputTokens))
-	r.formatter.Item("Total Estimated Tokens", fmt.Sprintf("~%d", plan.TotalEstimatedTokens()))
+	_ = r.formatter.Item("Estimated Input Tokens", fmt.Sprintf("%d", plan.TotalEstimatedInputTokens))
+	_ = r.formatter.Item("Estimated Output Tokens", fmt.Sprintf("~%d", plan.TotalEstimatedOutputTokens))
+	_ = r.formatter.Item("Total Estimated Tokens", fmt.Sprintf("~%d", plan.TotalEstimatedTokens()))
 
 	if plan.TotalEstimatedCost > 0 {
-		r.formatter.Item("Estimated Total Cost", fmt.Sprintf("$%.4f", plan.TotalEstimatedCost))
+		_ = r.formatter.Item("Estimated Total Cost", fmt.Sprintf("$%.4f", plan.TotalEstimatedCost))
 	} else {
-		r.formatter.Item("Estimated Total Cost", "$0.00 (all local models)")
+		_ = r.formatter.Item("Estimated Total Cost", "$0.00 (all local models)")
 	}
 
-	r.formatter.Item("Execution Batches", fmt.Sprintf("%d", plan.BatchCount()))
-	r.formatter.Println("")
+	_ = r.formatter.Item("Execution Batches", fmt.Sprintf("%d", plan.BatchCount()))
+	_ = r.formatter.Println("")
 }
 
 // RenderApprovalPrompt renders the approval prompt.
@@ -164,7 +164,7 @@ func (r *DAGRenderer) RenderApprovalPrompt() {
 
 // RenderPlanSaved renders a message indicating the plan was saved.
 func (r *DAGRenderer) RenderPlanSaved(path string) {
-	r.formatter.Success("Plan saved to: %s", path)
+	_ = r.formatter.Success("Plan saved to: %s", path)
 }
 
 // RenderPlanJSON outputs the plan as JSON.

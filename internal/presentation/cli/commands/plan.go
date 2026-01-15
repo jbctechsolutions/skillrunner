@@ -147,7 +147,7 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	// Save to file if requested
 	if planOpts.Output != "" {
 		if err := savePlanToFile(plan, planOpts.Output); err != nil {
-			formatter.Error("Failed to save plan: %v", err)
+			_ = formatter.Error("Failed to save plan: %v", err)
 		} else {
 			dagRenderer.RenderPlanSaved(planOpts.Output)
 		}
@@ -167,7 +167,7 @@ func runPlan(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if !approved {
-			formatter.Warning("Execution cancelled")
+			_ = formatter.Warning("Execution cancelled")
 			return nil
 		}
 	}
@@ -211,7 +211,7 @@ func savePlanToFile(plan *domainWorkflow.ExecutionPlan, path string) error {
 		return fmt.Errorf("failed to marshal plan: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
