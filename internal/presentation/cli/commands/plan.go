@@ -257,6 +257,9 @@ func executePlanSkill(ctx context.Context, sk *skill.Skill, request string, memo
 	executorConfig.MemoryContent = memoryContent
 	executor := workflow.NewExecutor(selectedProvider, executorConfig)
 
+	// Get cost calculator for pricing
+	costCalc := container.CostCalculator()
+
 	// Execute using the standard text output (similar to run.go)
-	return runSkillText(ctx, executor, sk, request, selectedProvider, formatter)
+	return runSkillText(ctx, executor, sk, request, selectedProvider, formatter, costCalc)
 }

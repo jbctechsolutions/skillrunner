@@ -346,8 +346,9 @@ func (c *Container) initObservability() error {
 		c.metricsRepo = storage.NewMetricsRepository(c.db)
 	}
 
-	// Initialize cost calculator
+	// Initialize cost calculator with default model pricing
 	c.costCalculator = provider.NewCostCalculator()
+	provider.PopulateCostCalculator(c.costCalculator)
 
 	// Initialize observability service
 	c.observabilityService = observability.NewService(observability.ServiceConfig{
