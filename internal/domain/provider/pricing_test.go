@@ -67,6 +67,7 @@ func TestPopulateCostCalculator(t *testing.T) {
 	}
 
 	// Check Claude Opus 4.5 (latest flagship model)
+	// Pricing: $5/MTok input, $25/MTok output = 0.005, 0.025 per 1K tokens
 	rate := calc.GetModelCost("claude-opus-4-5-20251101")
 	if rate == nil {
 		t.Fatal("expected claude-opus-4-5-20251101 to be registered")
@@ -74,20 +75,21 @@ func TestPopulateCostCalculator(t *testing.T) {
 	if rate.Provider != ProviderAnthropic {
 		t.Errorf("expected provider %s, got %s", ProviderAnthropic, rate.Provider)
 	}
-	if rate.InputRate != 5.0 {
-		t.Errorf("expected input rate 5.0, got %f", rate.InputRate)
+	if !floatEquals(rate.InputRate, 0.005) {
+		t.Errorf("expected input rate 0.005, got %f", rate.InputRate)
 	}
-	if rate.OutputRate != 25.0 {
-		t.Errorf("expected output rate 25.0, got %f", rate.OutputRate)
+	if !floatEquals(rate.OutputRate, 0.025) {
+		t.Errorf("expected output rate 0.025, got %f", rate.OutputRate)
 	}
 
 	// Check Claude 3.5 Sonnet (still widely used)
+	// Pricing: $3/MTok input, $15/MTok output = 0.003, 0.015 per 1K tokens
 	rate = calc.GetModelCost("claude-3-5-sonnet-20241022")
 	if rate == nil {
 		t.Fatal("expected claude-3-5-sonnet-20241022 to be registered")
 	}
-	if rate.InputRate != 3.0 {
-		t.Errorf("expected input rate 3.0, got %f", rate.InputRate)
+	if !floatEquals(rate.InputRate, 0.003) {
+		t.Errorf("expected input rate 0.003, got %f", rate.InputRate)
 	}
 }
 
@@ -101,40 +103,42 @@ func TestPopulateCostCalculator_CostCalculation(t *testing.T) {
 	PopulateCostCalculator(calc)
 
 	// Test cost calculation for Claude Opus 4.5
+	// Pricing: $5/MTok input, $25/MTok output = 0.005, 0.025 per 1K tokens
 	// 1000 input tokens + 500 output tokens
-	// Input: 1000 * $5.0/1K = $5.00
-	// Output: 500 * $25.0/1K = $12.50
-	// Total: $17.50
+	// Input: (1000/1000) * 0.005 = $0.005
+	// Output: (500/1000) * 0.025 = $0.0125
+	// Total: $0.0175
 	breakdown, err := calc.Calculate("claude-opus-4-5-20251101", 1000, 500)
 	if err != nil {
 		t.Fatalf("Calculate failed: %v", err)
 	}
 
-	expectedInput := 5.0
-	expectedOutput := 12.5
-	expectedTotal := 17.5
+	expectedInput := 0.005
+	expectedOutput := 0.0125
+	expectedTotal := 0.0175
 
-	if breakdown.InputCost != expectedInput {
+	if !floatEquals(breakdown.InputCost, expectedInput) {
 		t.Errorf("expected input cost %f, got %f", expectedInput, breakdown.InputCost)
 	}
-	if breakdown.OutputCost != expectedOutput {
+	if !floatEquals(breakdown.OutputCost, expectedOutput) {
 		t.Errorf("expected output cost %f, got %f", expectedOutput, breakdown.OutputCost)
 	}
-	if breakdown.TotalCost != expectedTotal {
+	if !floatEquals(breakdown.TotalCost, expectedTotal) {
 		t.Errorf("expected total cost %f, got %f", expectedTotal, breakdown.TotalCost)
 	}
 
 	// Test GPT-4o mini (budget option)
+	// Pricing: $0.15/MTok input, $0.60/MTok output = 0.00015, 0.0006 per 1K tokens
 	// 1000 input tokens + 500 output tokens
-	// Input: 1000 * $0.15/1K = $0.15
-	// Output: 500 * $0.60/1K = $0.30
-	// Total: $0.45
+	// Input: (1000/1000) * 0.00015 = $0.00015
+	// Output: (500/1000) * 0.0006 = $0.0003
+	// Total: $0.00045
 	breakdown, err = calc.Calculate("gpt-4o-mini", 1000, 500)
 	if err != nil {
 		t.Fatalf("Calculate for GPT-4o mini failed: %v", err)
 	}
-	if !floatEquals(breakdown.TotalCost, 0.45) {
-		t.Errorf("expected total cost 0.45, got %f", breakdown.TotalCost)
+	if !floatEquals(breakdown.TotalCost, 0.00045) {
+		t.Errorf("expected total cost 0.00045, got %f", breakdown.TotalCost)
 	}
 
 	// Test local model (should be free)

@@ -14,6 +14,7 @@ import (
 
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 	infraMemory "github.com/jbctechsolutions/skillrunner/internal/infrastructure/memory"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
@@ -170,12 +171,15 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Get cost calculator for pricing
+	costCalc := container.CostCalculator()
+
 	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
 		executorConfig := workflow.DefaultExecutorConfig()
 		executorConfig.MemoryContent = memoryContent
 		executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
-		return runSkillJSON(ctx, executor, sk, request, provider)
+		return runSkillJSON(ctx, executor, sk, request, provider, costCalc)
 	}
 
 	// Streaming output mode
@@ -192,7 +196,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	executorConfig := workflow.DefaultExecutorConfig()
 	executorConfig.MemoryContent = memoryContent
 	executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
-	return runSkillText(ctx, executor, sk, request, provider, formatter)
+	return runSkillText(ctx, executor, sk, request, provider, formatter, costCalc)
 }
 
 // selectProvider chooses a provider based on the routing profile.
@@ -230,7 +234,7 @@ func selectProvider(providers []ports.ProviderPort, profile string) ports.Provid
 }
 
 // runSkillJSON executes the skill and outputs results as JSON.
-func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, provider ports.ProviderPort) error {
+func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, costCalc *provider.CostCalculator) error {
 	formatter := GetFormatter()
 
 	result, err := executor.Execute(ctx, sk, request)
@@ -245,7 +249,7 @@ func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 	}
 
 	// Calculate costs for each phase using model pricing
-	calculateCostsForResult(result)
+	calculateCostsForResult(result, costCalc)
 
 	// Build phase results for JSON output
 	phaseResults := make([]map[string]any, 0, len(result.PhaseResults))
@@ -266,7 +270,7 @@ func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 		"skill":        sk.Name(),
 		"status":       string(result.Status),
 		"profile":      runOpts.Profile,
-		"provider":     provider.Info().Name,
+		"provider":     prov.Info().Name,
 		"duration_ms":  result.Duration.Milliseconds(),
 		"total_tokens": result.TotalTokens,
 		"total_cost":   result.TotalCost,
@@ -329,13 +333,13 @@ func runSkillStreaming(ctx context.Context, executor workflow.StreamingExecutor,
 }
 
 // runSkillText executes the skill with text output and progress display.
-func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, provider ports.ProviderPort, formatter *output.Formatter) error {
+func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) error {
 	// Display execution header
 	formatter.Header("Skill Execution")
 	formatter.Item("Skill", sk.Name())
 	formatter.Item("Version", sk.Version())
 	formatter.Item("Profile", runOpts.Profile)
-	formatter.Item("Provider", provider.Info().Name)
+	formatter.Item("Provider", prov.Info().Name)
 	if runOpts.Stream {
 		formatter.Item("Mode", "streaming")
 	}
@@ -378,7 +382,7 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 	}
 
 	// Calculate costs for each phase using model pricing
-	calculateCostsForResult(result)
+	calculateCostsForResult(result, costCalc)
 
 	// Display results
 	formatter.Println("")
@@ -435,10 +439,10 @@ func displayPhaseResults(formatter *output.Formatter, result *workflow.Execution
 	tableData := output.TableData{
 		Columns: []output.TableColumn{
 			{Header: "Phase", Width: 15, Align: output.AlignLeft},
-			{Header: "Model", Width: 18, Align: output.AlignLeft},
+			{Header: "Model", Width: 25, Align: output.AlignLeft}, // 25 chars to fit model names like "claude-opus-4-5-20251101"
 			{Header: "Time", Width: 8, Align: output.AlignRight},
 			{Header: "Tokens", Width: 8, Align: output.AlignRight},
-			{Header: "Cost", Width: 8, Align: output.AlignRight},
+			{Header: "Cost", Width: 10, Align: output.AlignRight}, // 10 chars for costs like "$0.0175"
 			{Header: "Status", Width: 6, Align: output.AlignCenter},
 		},
 		Rows: make([][]string, 0, len(sortedPhases)+3), // +3 for separator, total, vs premium
@@ -463,7 +467,7 @@ func displayPhaseResults(formatter *output.Formatter, result *workflow.Execution
 	}
 
 	// Add separator row
-	tableData.Rows = append(tableData.Rows, []string{"─────────", "─────────", "────────", "────────", "────────", "──────"})
+	tableData.Rows = append(tableData.Rows, []string{"───────────────", "─────────────────────────", "────────", "────────", "──────────", "──────"})
 
 	// Add TOTAL row
 	tableData.Rows = append(tableData.Rows, []string{
@@ -476,11 +480,10 @@ func displayPhaseResults(formatter *output.Formatter, result *workflow.Execution
 	})
 
 	// Calculate premium equivalent cost (using Claude Sonnet 3.5 pricing as reference)
-	// Input: $3/1M tokens, Output: $15/1M tokens
-	premiumInputCostPerToken := 0.000003  // $3/1M = $0.000003/token
-	premiumOutputCostPerToken := 0.000015 // $15/1M = $0.000015/token
-	premiumCost := float64(totalInputTokens)*premiumInputCostPerToken +
-		float64(totalOutputTokens)*premiumOutputCostPerToken
+	// Get pricing from DefaultModelPricing for consistency
+	premiumRate := getPremiumModelPricing()
+	premiumCost := (float64(totalInputTokens) / 1000.0 * premiumRate.InputRate) +
+		(float64(totalOutputTokens) / 1000.0 * premiumRate.OutputRate)
 
 	// Calculate savings percentage
 	savingsPercent := 0.0
@@ -569,6 +572,28 @@ func formatStatusIcon(status workflow.PhaseStatus) string {
 	}
 }
 
+// getPremiumModelPricing returns the pricing for the premium reference model (Claude Sonnet 3.5).
+// This is used for the "vs premium" comparison in the output.
+func getPremiumModelPricing() provider.ModelCostRate {
+	// Default fallback (Claude Sonnet 3.5 pricing: $3/MTok input, $15/MTok output)
+	defaultRate := provider.ModelCostRate{
+		ModelID:    "claude-3-5-sonnet-20241022",
+		Provider:   provider.ProviderAnthropic,
+		InputRate:  0.003,  // $3/MTok = 0.003 per 1K
+		OutputRate: 0.015,  // $15/MTok = 0.015 per 1K
+		IsLocal:    false,
+	}
+
+	// Try to get from DefaultModelPricing for consistency
+	for _, rate := range provider.DefaultModelPricing() {
+		if rate.ModelID == "claude-3-5-sonnet-20241022" {
+			return rate
+		}
+	}
+
+	return defaultRate
+}
+
 // validateProfile checks if the profile is valid.
 func validateProfile(profile string) error {
 	profile = strings.ToLower(strings.TrimSpace(profile))
@@ -582,15 +607,10 @@ func validateProfile(profile string) error {
 }
 
 // calculateCostsForResult populates cost data for each phase in the execution result.
-// It uses the CostCalculator from the container to look up model pricing.
-func calculateCostsForResult(result *workflow.ExecutionResult) {
-	container := GetContainer()
-	if container == nil {
-		return
-	}
-
-	costCalc := container.CostCalculator()
-	if costCalc == nil {
+// It uses the provided CostCalculator to look up model pricing.
+// If costCalc is nil, costs will remain at zero.
+func calculateCostsForResult(result *workflow.ExecutionResult, costCalc *provider.CostCalculator) {
+	if costCalc == nil || result == nil {
 		return
 	}
 
