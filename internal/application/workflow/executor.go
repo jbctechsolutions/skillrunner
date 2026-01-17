@@ -36,7 +36,8 @@ type PhaseResult struct {
 	InputTokens  int
 	OutputTokens int
 	ModelUsed    string
-	CacheHit     bool // Wave 10: Whether the result was served from cache
+	CacheHit     bool    // Wave 10: Whether the result was served from cache
+	Cost         float64 // Cost in USD for this phase execution
 }
 
 // ExecutionResult contains the aggregated results of executing a skill.
@@ -50,6 +51,7 @@ type ExecutionResult struct {
 	EndTime      time.Time
 	Duration     time.Duration
 	TotalTokens  int
+	TotalCost    float64 // Total cost in USD across all phases
 	Error        error
 	// Wave 10: Cache statistics
 	CacheHits   int // Number of phases served from cache
@@ -191,9 +193,10 @@ func (e *executor) Execute(ctx context.Context, s *skill.Skill, input string) (*
 	// Find the final output (from the last executed phase)
 	result.FinalOutput = e.determineFinalOutput(dag, phases, phaseOutputs)
 
-	// Aggregate token counts
+	// Aggregate token counts and costs
 	for _, phaseResult := range result.PhaseResults {
 		result.TotalTokens += phaseResult.InputTokens + phaseResult.OutputTokens
+		result.TotalCost += phaseResult.Cost
 	}
 
 	result.Status = PhaseStatusCompleted

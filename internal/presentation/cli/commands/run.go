@@ -244,6 +244,9 @@ func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 		return formatter.JSON(errorResult)
 	}
 
+	// Calculate costs for each phase using model pricing
+	calculateCostsForResult(result)
+
 	// Build phase results for JSON output
 	phaseResults := make([]map[string]any, 0, len(result.PhaseResults))
 	for _, pr := range result.PhaseResults {
@@ -255,6 +258,7 @@ func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 			"input_tokens":  pr.InputTokens,
 			"output_tokens": pr.OutputTokens,
 			"model":         pr.ModelUsed,
+			"cost":          pr.Cost,
 		})
 	}
 
@@ -265,6 +269,7 @@ func runSkillJSON(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 		"provider":     provider.Info().Name,
 		"duration_ms":  result.Duration.Milliseconds(),
 		"total_tokens": result.TotalTokens,
+		"total_cost":   result.TotalCost,
 		"phases":       phaseResults,
 		"final_output": result.FinalOutput,
 		"streaming":    runOpts.Stream,
@@ -372,6 +377,9 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 		return err
 	}
 
+	// Calculate costs for each phase using model pricing
+	calculateCostsForResult(result)
+
 	// Display results
 	formatter.Println("")
 	formatter.Header("Execution Results")
@@ -386,6 +394,7 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 	formatter.Item("Status", formatStatus(result.Status))
 	formatter.Item("Total Duration", formatDuration(executionTime))
 	formatter.Item("Total Tokens", fmt.Sprintf("%d", result.TotalTokens))
+	formatter.Item("Total Cost", formatCost(result.TotalCost))
 	formatter.Println("")
 
 	// Final output
@@ -411,7 +420,7 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 	return nil
 }
 
-// displayPhaseResults displays the results of each phase in a table.
+// displayPhaseResults displays the results of each phase in a table with cost breakdown.
 func displayPhaseResults(formatter *output.Formatter, result *workflow.ExecutionResult) {
 	// Sort phase results by completion order
 	sortedPhases := make([]*workflow.PhaseResult, 0, len(result.PhaseResults))
@@ -422,28 +431,79 @@ func displayPhaseResults(formatter *output.Formatter, result *workflow.Execution
 		return sortedPhases[i].StartTime.Before(sortedPhases[j].StartTime)
 	})
 
-	// Create table data
+	// Create table data with Cost column
 	tableData := output.TableData{
 		Columns: []output.TableColumn{
-			{Header: "Phase", Width: 20, Align: output.AlignLeft},
-			{Header: "Status", Width: 10, Align: output.AlignLeft},
-			{Header: "Duration", Width: 12, Align: output.AlignRight},
-			{Header: "Tokens", Width: 10, Align: output.AlignRight},
-			{Header: "Model", Width: 20, Align: output.AlignLeft},
+			{Header: "Phase", Width: 15, Align: output.AlignLeft},
+			{Header: "Model", Width: 18, Align: output.AlignLeft},
+			{Header: "Time", Width: 8, Align: output.AlignRight},
+			{Header: "Tokens", Width: 8, Align: output.AlignRight},
+			{Header: "Cost", Width: 8, Align: output.AlignRight},
+			{Header: "Status", Width: 6, Align: output.AlignCenter},
 		},
-		Rows: make([][]string, 0, len(sortedPhases)),
+		Rows: make([][]string, 0, len(sortedPhases)+3), // +3 for separator, total, vs premium
 	}
+
+	// Track totals for input/output tokens separately (for premium calculation)
+	var totalInputTokens, totalOutputTokens int
 
 	for _, pr := range sortedPhases {
 		totalTokens := pr.InputTokens + pr.OutputTokens
+		totalInputTokens += pr.InputTokens
+		totalOutputTokens += pr.OutputTokens
+
 		tableData.Rows = append(tableData.Rows, []string{
 			pr.PhaseName,
-			formatStatus(pr.Status),
+			pr.ModelUsed,
 			formatDuration(pr.Duration),
 			fmt.Sprintf("%d", totalTokens),
-			pr.ModelUsed,
+			formatCost(pr.Cost),
+			formatStatusIcon(pr.Status),
 		})
 	}
+
+	// Add separator row
+	tableData.Rows = append(tableData.Rows, []string{"─────────", "─────────", "────────", "────────", "────────", "──────"})
+
+	// Add TOTAL row
+	tableData.Rows = append(tableData.Rows, []string{
+		"TOTAL",
+		"",
+		formatDuration(result.Duration),
+		fmt.Sprintf("%d", result.TotalTokens),
+		formatCost(result.TotalCost),
+		"",
+	})
+
+	// Calculate premium equivalent cost (using Claude Sonnet 3.5 pricing as reference)
+	// Input: $3/1M tokens, Output: $15/1M tokens
+	premiumInputCostPerToken := 0.000003  // $3/1M = $0.000003/token
+	premiumOutputCostPerToken := 0.000015 // $15/1M = $0.000015/token
+	premiumCost := float64(totalInputTokens)*premiumInputCostPerToken +
+		float64(totalOutputTokens)*premiumOutputCostPerToken
+
+	// Calculate savings percentage
+	savingsPercent := 0.0
+	if premiumCost > 0 {
+		savingsPercent = ((premiumCost - result.TotalCost) / premiumCost) * 100
+	}
+
+	// Add vs premium comparison row
+	savingsDisplay := ""
+	if savingsPercent > 0 {
+		savingsDisplay = fmt.Sprintf("-%.0f%%", savingsPercent)
+	} else if savingsPercent < 0 {
+		savingsDisplay = fmt.Sprintf("+%.0f%%", -savingsPercent)
+	}
+
+	tableData.Rows = append(tableData.Rows, []string{
+		"vs premium",
+		"",
+		"",
+		"",
+		formatCost(premiumCost),
+		savingsDisplay,
+	})
 
 	_ = formatter.Table(tableData)
 }
@@ -480,6 +540,35 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%.1fm", d.Minutes())
 }
 
+// formatCost formats a cost in USD with appropriate precision.
+func formatCost(cost float64) string {
+	if cost == 0 {
+		return "$0.00"
+	}
+	if cost < 0.01 {
+		return fmt.Sprintf("$%.4f", cost)
+	}
+	return fmt.Sprintf("$%.2f", cost)
+}
+
+// formatStatusIcon returns a status icon for display.
+func formatStatusIcon(status workflow.PhaseStatus) string {
+	switch status {
+	case workflow.PhaseStatusCompleted:
+		return "✓"
+	case workflow.PhaseStatusFailed:
+		return "✗"
+	case workflow.PhaseStatusSkipped:
+		return "○"
+	case workflow.PhaseStatusRunning:
+		return "◐"
+	case workflow.PhaseStatusPending:
+		return "·"
+	default:
+		return "?"
+	}
+}
+
 // validateProfile checks if the profile is valid.
 func validateProfile(profile string) error {
 	profile = strings.ToLower(strings.TrimSpace(profile))
@@ -490,6 +579,30 @@ func validateProfile(profile string) error {
 	}
 
 	return fmt.Errorf("invalid profile %q: must be one of %s", profile, strings.Join(validProfiles, ", "))
+}
+
+// calculateCostsForResult populates cost data for each phase in the execution result.
+// It uses the CostCalculator from the container to look up model pricing.
+func calculateCostsForResult(result *workflow.ExecutionResult) {
+	container := GetContainer()
+	if container == nil {
+		return
+	}
+
+	costCalc := container.CostCalculator()
+	if costCalc == nil {
+		return
+	}
+
+	// Calculate cost for each phase
+	var totalCost float64
+	for _, pr := range result.PhaseResults {
+		breakdown := costCalc.CalculateOrZero(pr.ModelUsed, pr.InputTokens, pr.OutputTokens)
+		pr.Cost = breakdown.TotalCost
+		totalCost += breakdown.TotalCost
+	}
+
+	result.TotalCost = totalCost
 }
 
 // init registers the run command with the root command.
