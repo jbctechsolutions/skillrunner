@@ -579,8 +579,8 @@ func getPremiumModelPricing() provider.ModelCostRate {
 	defaultRate := provider.ModelCostRate{
 		ModelID:    "claude-3-5-sonnet-20241022",
 		Provider:   provider.ProviderAnthropic,
-		InputRate:  0.003,  // $3/MTok = 0.003 per 1K
-		OutputRate: 0.015,  // $15/MTok = 0.015 per 1K
+		InputRate:  0.003, // $3/MTok = 0.003 per 1K
+		OutputRate: 0.015, // $15/MTok = 0.015 per 1K
 		IsLocal:    false,
 	}
 
