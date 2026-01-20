@@ -9,6 +9,183 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - TBD (Q2 2026)
+
+### Theme: "Make It Smart"
+
+Intelligence, safety, and resilience features for production workflows.
+
+### Added
+
+#### Outcome Tracking & Learning
+- SQLite-backed outcome history per skill+routing profile
+- Success/failure tracking with optional quality scores
+- Automatic routing profile suggestions based on historical performance
+- `sr outcomes show <skill>` command to view learning data
+
+#### Confidence Monitoring & Auto-Escalation
+- Parse confidence markers from LLM responses
+- Configurable confidence thresholds per routing profile
+- Automatic retry with next-tier model when confidence is low
+- Metrics tracking escalation frequency and cost impact
+
+#### Git Worktree Isolation
+- `--isolate` flag for code modification skills
+- Automatic worktree creation in `~/.skillrunner/worktrees/`
+- Post-execution diff preview with merge/discard options
+- Automatic cleanup of stale worktrees after 7 days
+
+#### Session Continuity
+- Resume interrupted workflows from last successful phase
+- `sr resume` command to pick up where you left off
+- `sr resume --list` to show resumable sessions
+- 24-hour TTL for resumable sessions (configurable)
+
+#### Post-Completion Review Phases
+- Skills can declare `post_completion_review: true` phases
+- Automatic quality review before presenting results to user
+- Can reject and retry if review finds issues
+- `--skip-review` flag for speed when needed
+
+#### Universal Agent Format Export
+- Export workflow results for other AI coding tools (Aider, Claude Code, Cursor)
+- `--export-format` flag for run/ask commands
+- Exports include files, messages, suggestions, context
+- Import capability for workflow continuation
+
+### Estimated Value
+- Higher quality outputs through outcome learning
+- 80%+ of low-quality responses caught via confidence monitoring
+- Zero code disasters through worktree isolation
+- 90%+ interrupted workflows resume successfully
+
+---
+
+## [1.3.0] - TBD (Q1 2026)
+
+### Theme: "Make It Cheap"
+
+Cost optimization through intelligent routing and caching.
+
+### Added
+
+#### Adaptive Complexity Analysis
+- Analyze task complexity before model selection (Zeroshot-inspired)
+- Complexity scoring: 0.0 (trivial) to 1.0 (expert-level)
+- Maps complexity to routing profiles (0-0.4=cheap, 0.4-0.7=balanced, 0.7+=premium)
+- Technical keyword detection ("distributed", "async", "security")
+- Historical success rate tracking per skill+complexity
+- `--profile` flag override for manual control
+
+#### Enhanced Response Caching
+- Semantic similarity caching using embedding-based matching
+- Cosine distance threshold (0.90 similarity = cache hit)
+- Fallback to exact match if embedding service unavailable
+- Config: `cache.semantic_similarity_enabled`
+- Metrics: semantic hits vs. exact hits tracking
+
+#### Budget Alerts
+- Proactive alerts at 50%, 80%, 90%, 100% of budget
+- Per-workflow cost estimates before execution
+- Cost optimization suggestions
+- `sr budget status` command for current spending
+- Daily/weekly budget reports
+
+#### Context Compression
+- Multiple compression strategies (whitespace, deduplication, summarization)
+- Aggressive mode (>70% compression) for cheap profile
+- Conservative mode (<30% compression) for premium profile
+- Config: `context.compression_enabled`
+- Preserves semantic meaning while reducing tokens
+
+#### Ollama Model Optimization
+- Task-specific model recommendations per skill
+- Config: `routing.skill_model_hints`
+- Automatic fallback if recommended model unavailable
+- `sr models recommend` command
+- Documentation of model capabilities
+
+#### Cost Analytics
+- `sr cost report --last-7-days` for spending summaries
+- `sr cost breakdown --by-skill` for skill-level analysis
+- `sr cost savings --potential` for optimization opportunities
+- Export formats: JSON, CSV, markdown
+- ASCII chart visualizations
+
+### Estimated Value
+- **$200-400/month cost savings**
+- 60-70% of tasks routed to cheap models via adaptive complexity
+- 20-30% cache hit rate improvement via semantic caching
+- 30-50% token reduction via context compression
+
+---
+
+## [1.2.0] - TBD (Q1 2026)
+
+### Theme: "Foundation"
+
+Enable MCP tool execution with cost controls for automated workflows.
+
+### Added
+
+#### MCP Provider Integration
+- Pass MCP tools to Anthropic provider for function calling
+- Tool definition fetching from MCP registry
+- Convert tools to provider format using existing converter
+- Handle `tool_use` blocks in LLM responses
+- Execute tools via `MCPToolRegistryPort`
+- Feed tool results back to provider for continuation
+- Works with existing Linear, Filesystem, Git, Notion MCP servers
+
+#### Skills Declare Tool Requirements
+- `tools` field in skill YAML to declare MCP tool dependencies
+- `allow_tools` field in phase configuration
+- Tool name validation (must match `mcp__server__tool` format)
+- Backward compatible (fields optional)
+
+#### Tool Permission System
+- Interactive permission prompts for tool execution
+- Four modes: approve all, deny all, individual approval, show details
+- Auto-approve via `-y` flag for automation
+- Shows tool descriptions from MCP servers
+- Denying tools aborts workflow with clear error
+
+#### MCP CLI Commands
+- `sr mcp list-servers` - Show configured MCP servers
+- `sr mcp start <name>` - Start an MCP server
+- `sr mcp stop <name>` - Stop an MCP server
+- `sr mcp status <name>` - Show server status
+- `sr mcp logs <name>` - Show server logs
+- `sr mcp list-tools` - List all available tools
+- `sr mcp describe-tool <name>` - Show tool JSON schema
+- `sr mcp call <name> --args='{...}'` - Test tool execution
+
+#### Budget Limits
+- Global budget limits (daily, monthly)
+- Per-workflow budget limits
+- `--budget` flag for run/ask commands
+- Abort workflow if limit exceeded
+- Warning at 80% of limit
+- Budget tracking persisted in SQLite
+- Config: `budget.daily_limit`, `budget.per_workflow_limit`
+
+#### Bundled MCP Servers
+- Default configurations for filesystem and git MCP servers
+- Created automatically by `sr init` in `~/.skillrunner/mcp_servers.json`
+- Environment variable expansion (`${HOME}`, `${PWD}`)
+- Validation on load
+- Instructions if npx missing
+
+### Enablement
+After v1.2, you can:
+- Pull Linear issues using MCP tools in automated workflows
+- Generate plans that write to filesystem
+- Sync data between Notion/Linear/GitHub via skills
+- Run automated workflows with tool permissions
+- Prevent cost overruns with budget limits
+
+---
+
 ## [1.1.0] - 2026-01-20
 
 ### Added
