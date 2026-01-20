@@ -56,7 +56,7 @@ phases:
       {{.input}}
 
       ## Code Analysis
-      {{.phases.analyze.output}}
+      {{.phases.analyze}}
 
       ## Test Generation Requirements
       1. Create unit tests for each identified function/method
@@ -89,10 +89,10 @@ phases:
       {{.input}}
 
       ## Code Analysis
-      {{.phases.analyze.output}}
+      {{.phases.analyze}}
 
       ## Generated Tests
-      {{.phases.generate.output}}
+      {{.phases.generate}}
 
       ## Validation Checklist
       1. Coverage Analysis:

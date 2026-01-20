@@ -48,7 +48,7 @@ phases:
       Generate comprehensive documentation based on the code analysis.
 
       ## Code Analysis
-      {{.phases.analyze.output}}
+      {{.phases.analyze}}
 
       ## Original Code Context
       {{.input}}

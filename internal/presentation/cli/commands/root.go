@@ -129,7 +129,7 @@ func initializeApp() error {
 	}
 
 	// Initialize the application container with all dependencies
-	container, err := application.NewContainer(cfg)
+	container, err := application.NewContainer(cfg, globalFlags.Verbose)
 	if err != nil {
 		return fmt.Errorf("failed to initialize application: %w", err)
 	}

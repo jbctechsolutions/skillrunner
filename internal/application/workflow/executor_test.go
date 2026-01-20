@@ -550,6 +550,42 @@ func TestPhaseExecutor_BuildPrompt(t *testing.T) {
 			expected: "First and Second",
 		},
 		{
+			name:     "nested phases access",
+			template: "Extract: {{.phases.extract}}, Summarize: {{.phases.summarize}}",
+			data:     map[string]string{"extract": "extracted data", "summarize": "summary data", "_input": "should not be in phases"},
+			expected: "Extract: extracted data, Summarize: summary data",
+		},
+		{
+			name:     "mixed flat and nested access",
+			template: "Flat: {{.extract}}, Nested: {{.phases.extract}}",
+			data:     map[string]string{"extract": "data"},
+			expected: "Flat: data, Nested: data",
+		},
+		{
+			name:     "special keys excluded from phases",
+			template: "Input: {{._input}}, Phases.input: {{.phases._input}}",
+			data:     map[string]string{"_input": "user input", "extract": "data"},
+			expected: "Input: user input, Phases.input: <no value>",
+		},
+		{
+			name:     "only special keys - no phases map",
+			template: "Input: {{._input}}, Metadata: {{._metadata}}",
+			data:     map[string]string{"_input": "test", "_metadata": "meta"},
+			expected: "Input: test, Metadata: meta",
+		},
+		{
+			name:     "accessing nonexistent phase",
+			template: "{{.phases.nonexistent}}",
+			data:     map[string]string{"extract": "data"},
+			expected: "<no value>",
+		},
+		{
+			name:     "empty data",
+			template: "Phases: {{.phases}}",
+			data:     map[string]string{},
+			expected: "Phases: <no value>",
+		},
+		{
 			name:     "missing variable",
 			template: "Hello {{.missing}}",
 			data:     map[string]string{},
@@ -592,11 +628,11 @@ func TestPhaseExecutor_SelectModel(t *testing.T) {
 		profile  string
 		expected string
 	}{
-		{skill.RoutingProfileCheap, "cheap-model"},
-		{skill.RoutingProfileBalanced, "balanced-model"},
-		{skill.RoutingProfilePremium, "premium-model"},
-		{"unknown", "balanced-model"},
-		{"", "balanced-model"},
+		{skill.RoutingProfileCheap, "llama3.2:3b"},
+		{skill.RoutingProfileBalanced, "llama3:8b"},
+		{skill.RoutingProfilePremium, "qwen2.5:14b"},
+		{"unknown", "llama3:8b"},
+		{"", "llama3:8b"},
 	}
 
 	for _, tt := range tests {

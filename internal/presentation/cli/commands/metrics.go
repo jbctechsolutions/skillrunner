@@ -118,7 +118,7 @@ func getRealMetrics(duration time.Duration) (UsageMetrics, error) {
 	ctx := context.Background()
 
 	// Create container to access metrics repository
-	container, err := application.NewContainer(nil)
+	container, err := application.NewContainer(nil, false)
 	if err != nil {
 		return UsageMetrics{}, fmt.Errorf("failed to initialize container: %w", err)
 	}
