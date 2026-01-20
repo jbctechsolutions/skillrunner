@@ -13,15 +13,17 @@ import (
 	appProvider "github.com/jbctechsolutions/skillrunner/internal/application/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
+	fileContext "github.com/jbctechsolutions/skillrunner/internal/infrastructure/context"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
 
 // askFlags holds the flags for the ask command.
 type askFlags struct {
-	Model   string
-	Profile string
-	Phase   string
-	Stream  bool
+	Model       string
+	Profile     string
+	Phase       string
+	Stream      bool
+	AutoApprove bool // Skip file permission prompts
 }
 
 var askOpts askFlags
@@ -63,6 +65,7 @@ Examples:
 	cmd.Flags().StringVar(&askOpts.Phase, "phase", "",
 		"specific phase to execute (defaults to first phase)")
 	cmd.Flags().BoolVarP(&askOpts.Stream, "stream", "s", false, "enable streaming output")
+	cmd.Flags().BoolVarP(&askOpts.AutoApprove, "yes", "y", false, "auto-approve file access (skip permission prompts)")
 
 	return cmd
 }
@@ -71,6 +74,35 @@ Examples:
 func runAsk(cmd *cobra.Command, args []string) error {
 	skillName := args[0]
 	question := args[1]
+
+	// Detect and inject file context
+	detector := fileContext.NewFileDetector()
+	fileRefs := detector.DetectFiles(question)
+
+	if len(fileRefs) > 0 {
+		// Prompt for permission
+		prompter := fileContext.NewPermissionPrompt(askOpts.AutoApprove)
+		approvedFiles, err := prompter.PromptForFiles(fileRefs)
+		if err != nil {
+			return fmt.Errorf("file access denied: %w", err)
+		}
+
+		// Inject file content into question
+		enrichedQuestion, err := detector.InjectFileContext(question, approvedFiles)
+		if err != nil {
+			return fmt.Errorf("failed to inject file context: %w", err)
+		}
+		question = enrichedQuestion
+
+		// Print feedback to user (only if auto-approved, otherwise already shown)
+		if askOpts.AutoApprove {
+			fmt.Printf("📄 Detected %d file(s), injecting context...\n", len(approvedFiles))
+			for _, ref := range approvedFiles {
+				fmt.Printf("  • %s\n", ref.Path)
+			}
+			fmt.Println()
+		}
+	}
 
 	// Validate profile
 	if err := validateAskProfile(askOpts.Profile); err != nil {

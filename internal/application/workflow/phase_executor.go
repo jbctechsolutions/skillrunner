@@ -77,11 +77,23 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 
 // buildPrompt renders the phase's prompt template with the dependency outputs.
 // The template can access values using {{.key}} syntax or {{index . "key-name"}} for keys with special chars.
+// Phase outputs are also available via {{.phases.phaseid}} for better organization.
 func (e *phaseExecutor) buildPrompt(templateStr string, data map[string]string) (string, error) {
-	// Convert to a generic map for template rendering
-	templateData := make(map[string]any, len(data))
+	// Convert to a generic map for template rendering with nested structure
+	templateData := make(map[string]any, len(data)+1)
+	phases := make(map[string]string)
+
 	for k, v := range data {
 		templateData[k] = v
+		// Add non-special keys to the phases map for nested access
+		if !strings.HasPrefix(k, "_") {
+			phases[k] = v
+		}
+	}
+
+	// Add phases map for nested template access: {{.phases.phaseid}}
+	if len(phases) > 0 {
+		templateData["phases"] = phases
 	}
 
 	// Create template with custom function to access map values by key
@@ -155,16 +167,16 @@ func (e *phaseExecutor) buildMessages(prompt string, dependencyOutputs map[strin
 }
 
 // selectModel returns a model ID based on the routing profile.
-// This is a simplified implementation - in production this would use the router service.
+// Maps routing profiles to actual Ollama model names.
 func (e *phaseExecutor) selectModel(routingProfile string) string {
 	switch routingProfile {
 	case skill.RoutingProfileCheap:
-		return "cheap-model"
+		return "llama3.2:3b"
 	case skill.RoutingProfilePremium:
-		return "premium-model"
+		return "qwen2.5:14b"
 	case skill.RoutingProfileBalanced:
 		fallthrough
 	default:
-		return "balanced-model"
+		return "llama3:8b"
 	}
 }

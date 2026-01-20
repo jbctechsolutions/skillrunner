@@ -33,7 +33,8 @@ import (
 // and ensures proper initialization order.
 type Container struct {
 	// Configuration
-	config *config.Config
+	config  *config.Config
+	verbose bool // Override log level to info when true
 
 	// Database connection
 	dbConn *sqlite.Connection
@@ -82,13 +83,14 @@ type Container struct {
 
 // NewContainer creates a new dependency injection container with all services
 // initialized based on the provided configuration.
-func NewContainer(cfg *config.Config) (*Container, error) {
+func NewContainer(cfg *config.Config, verbose bool) (*Container, error) {
 	if cfg == nil {
 		cfg = config.NewDefaultConfig()
 	}
 
 	c := &Container{
-		config: cfg,
+		config:  cfg,
+		verbose: verbose,
 	}
 
 	// Generate or retrieve machine ID
@@ -311,13 +313,33 @@ func (c *Container) initObservability() error {
 	ctx := context.Background()
 
 	// Initialize logger
-	logLevel := logging.LevelInfo
-	if c.config.Observability.Metrics.AggregationLevel == "debug" {
-		logLevel = logging.LevelDebug
+	logLevel := logging.LevelInfo // default
+
+	// Check verbose flag first - overrides config
+	if c.verbose {
+		logLevel = logging.LevelInfo
+	} else {
+		// Use config level if not verbose
+		switch c.config.Logging.Level {
+		case "debug":
+			logLevel = logging.LevelDebug
+		case "info":
+			logLevel = logging.LevelInfo
+		case "warn":
+			logLevel = logging.LevelWarn
+		case "error":
+			logLevel = logging.LevelError
+		}
 	}
+
+	logFormat := logging.FormatText
+	if c.config.Logging.Format == "json" {
+		logFormat = logging.FormatJSON
+	}
+
 	logCfg := logging.Config{
 		Level:  logLevel,
-		Format: logging.FormatText,
+		Format: logFormat,
 	}
 	c.logger = logging.New(logCfg)
 

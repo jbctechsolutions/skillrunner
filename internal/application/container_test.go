@@ -30,7 +30,7 @@ func TestNewContainer(t *testing.T) {
 
 	cfg := config.NewDefaultConfig()
 
-	container, err := NewContainer(cfg)
+	container, err := NewContainer(cfg, false)
 	if err != nil {
 		t.Fatalf("NewContainer failed: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestNewContainer_WithNilConfig(t *testing.T) {
 	}
 
 	// NewContainer should create a default config when nil is passed
-	container, err := NewContainer(nil)
+	container, err := NewContainer(nil, false)
 	if err != nil {
 		t.Fatalf("NewContainer with nil config failed: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestContainer_Close(t *testing.T) {
 
 	cfg := config.NewDefaultConfig()
 
-	container, err := NewContainer(cfg)
+	container, err := NewContainer(cfg, false)
 	if err != nil {
 		t.Fatalf("NewContainer failed: %v", err)
 	}
@@ -174,7 +174,7 @@ func TestSessionStorageAdapter(t *testing.T) {
 
 	cfg := config.NewDefaultConfig()
 
-	container, err := NewContainer(cfg)
+	container, err := NewContainer(cfg, false)
 	if err != nil {
 		t.Fatalf("NewContainer failed: %v", err)
 	}
