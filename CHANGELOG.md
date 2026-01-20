@@ -7,7 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] - 2026-01-20
+
 ### Added
+
+#### File Context Detection & Permissions
+- Automatic file detection from natural language input
+- Regex-based pattern matching for file paths and bare filenames
+- Recursive file search up to 5 levels deep with smart ignore patterns
+- Interactive permission system for file access approval
+  - Four modes: approve all, deny all, individual approval, preview
+  - Sensitive file detection (.env, credentials, keys)
+  - `-y` flag for non-interactive auto-approval
+- File size limits (1MB default) and binary detection
+- Comprehensive deduplication by absolute path
+- Documentation at `docs/file-permissions.md`
+
+#### Crash Recovery ([#7](https://github.com/jbctechsolutions/skillrunner/pull/7))
+- Checkpoint persistence for workflow state
+- Automatic recovery from crashes and interruptions
+- Resume workflows from last successful phase
+- Persistent checkpoint storage in SQLite
+
+#### Per-Phase Cost Tracking ([#8](https://github.com/jbctechsolutions/skillrunner/pull/8))
+- Granular cost tracking at phase level
+- Real-time cost display during execution
+- Per-provider cost breakdown
+- Token usage tracking per phase
+- Cost estimation before workflow execution
+
+#### Enhanced Documentation ([#6](https://github.com/jbctechsolutions/skillrunner/pull/6))
+- Comprehensive CLI reference documentation
+- Configuration guide with all available options
+- Skills authoring guide with examples
+- Architecture documentation for contributors
 
 #### Memory System ([#1](https://github.com/jbctechsolutions/skillrunner/pull/1))
 - Persistent context across sessions via MEMORY.md files
@@ -45,6 +80,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cost estimation before execution
 - `--approve` flag for automatic approval
 - Token count and model selection preview
+
+### Fixed
+
+- **Multi-phase execution**: Replaced hardcoded placeholder model names with actual Ollama models (llama3.2:3b, llama3:8b, qwen2.5:14b)
+- **Template rendering**: Fixed nested phase output access - templates now correctly support `{{.phases.phaseid}}` syntax
+- **Logging configuration**: Fixed log level parsing to respect `logging.level` config value instead of checking wrong field
+- **Skill templates**: Removed invalid `.output` suffix from doc-gen and test-gen skill phase references
+
+### Changed
+
+- Default log level changed from `info` to `warn` for cleaner output
+- File permissions integrated into `sr ask` and `sr run` commands
+- Enhanced error messages for template rendering failures
 
 ---
 

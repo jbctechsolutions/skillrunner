@@ -12,6 +12,7 @@ Skillrunner executes complex AI workflows defined as **skills** - YAML-based con
 - **Multi-Phase Workflows** - Define complex AI tasks as directed acyclic graphs (DAGs) of dependent phases
 - **Intelligent Routing** - Automatically selects the best provider/model based on routing profiles
 - **Multiple Providers** - Supports Ollama, Anthropic Claude, OpenAI, and Groq
+- **Smart File Context** - Automatically detects file references in natural language with permission system
 - **Cost-Aware** - Built-in cost tracking and optimization through routing profiles
 - **Extensible Skills** - Create and share reusable workflow definitions
 
@@ -59,6 +60,38 @@ sr run code-review --profile premium "Review this security-critical code"
 | `code-review` | 3-phase comprehensive code review (patterns → security → report) |
 | `test-gen` | Generate unit tests with coverage analysis |
 | `doc-gen` | Generate documentation from code |
+| `changelog` | Generate changelog entries from git history |
+| `commit-msg` | Generate conventional commit messages |
+| `pr-description` | Generate pull request descriptions |
+| `lint-fix` | Identify and fix linting errors |
+| `test-fix` | Debug and fix failing tests |
+| `refactor` | Apply refactoring patterns |
+| `issue-breakdown` | Break down issues into subtasks |
+
+## File Context & Permissions
+
+Skillrunner automatically detects when you mention files in your requests and provides smart context injection:
+
+```bash
+# Mention files naturally - they're detected automatically
+sr ask doc-gen "Explain what permission.go does"
+
+# Skillrunner detects the file and prompts for approval
+📄 File Context Request
+The skill wants to access 1 file(s):
+  1. internal/infrastructure/context/permission.go (6.3 KB)
+
+Allow access to these files? [Y/n/individual/show]
+```
+
+**Features:**
+- Detects file paths and bare filenames from natural language
+- Interactive permission prompts with preview capability
+- Sensitive file detection (.env, credentials, keys)
+- Auto-approve with `-y` flag for automation
+- 1MB file size limit with binary detection
+
+See [docs/file-permissions.md](docs/file-permissions.md) for complete documentation.
 
 ## Configuration
 
