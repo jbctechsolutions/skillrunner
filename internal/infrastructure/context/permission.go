@@ -11,7 +11,7 @@ import (
 
 // PermissionPrompt prompts the user to approve file access.
 type PermissionPrompt struct {
-	workingDir string
+	workingDir  string
 	autoApprove bool
 }
 
@@ -19,7 +19,7 @@ type PermissionPrompt struct {
 func NewPermissionPrompt(autoApprove bool) *PermissionPrompt {
 	wd, _ := os.Getwd()
 	return &PermissionPrompt{
-		workingDir: wd,
+		workingDir:  wd,
 		autoApprove: autoApprove,
 	}
 }
