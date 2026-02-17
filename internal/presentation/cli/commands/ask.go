@@ -12,7 +12,6 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	appProvider "github.com/jbctechsolutions/skillrunner/internal/application/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
-	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
 	fileContext "github.com/jbctechsolutions/skillrunner/internal/infrastructure/context"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
@@ -139,9 +138,9 @@ func runAsk(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Create provider router for model selection
+	// Create provider router for model selection using user's config
 	providerRegistry := container.ProviderRegistry()
-	routingCfg := config.NewRoutingConfiguration()
+	routingCfg := container.RoutingConfiguration()
 	router, err := appProvider.NewRouter(routingCfg, providerRegistry)
 	if err != nil {
 		return fmt.Errorf("could not create router: %w", err)

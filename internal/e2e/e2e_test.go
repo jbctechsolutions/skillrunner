@@ -290,8 +290,9 @@ func TestE2E_IntegrationFlow(t *testing.T) {
 
 	// Step 3: Attempt to run a skill - expect failure due to missing skill
 	// This validates the error handling path works correctly
+	// Use --force to ensure clean execution regardless of any leftover checkpoints
 	cmd = commands.NewRootCmd()
-	_, err = executeCommand(cmd, "run", "code-review", "Review this code for issues")
+	_, err = executeCommand(cmd, "run", "code-review", "Review this code for issues", "--force")
 	if err == nil {
 		t.Log("run command succeeded (skill might be available in test environment)")
 	} else if !strings.Contains(err.Error(), "skill not found") && !strings.Contains(err.Error(), "not found") {

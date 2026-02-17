@@ -228,8 +228,11 @@ func (r *Router) GetFallbackModel(ctx context.Context, profile string) (*ModelSe
 			continue
 		}
 
-		// Check if any model is available
+		// Check if any chat-capable model is available (skip embedding models)
 		for _, modelID := range models {
+			if isEmbeddingModel(modelID) {
+				continue
+			}
 			available, err := provider.IsAvailable(ctx, modelID)
 			if err == nil && available {
 				return &ModelSelection{
@@ -314,6 +317,19 @@ func (r *Router) GetDefaultProvider() string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.config.DefaultProvider
+}
+
+// isEmbeddingModel returns true if the model ID indicates an embedding model
+// that cannot be used for chat/generation.
+func isEmbeddingModel(modelID string) bool {
+	lower := toLower(modelID)
+	embeddingIndicators := []string{"embed", "embedding", "bge-", "e5-", "gte-"}
+	for _, indicator := range embeddingIndicators {
+		if containsIgnoreCase(lower, indicator) {
+			return true
+		}
+	}
+	return false
 }
 
 // isValidProfile checks if the profile is a valid routing profile.

@@ -143,7 +143,11 @@ func (i *Initializer) initOllama(cfg config.OllamaConfig) error {
 		url = config.DefaultOllamaURL
 	}
 
-	provider := ollama.NewProviderWithURL(url)
+	clientOpts := []ollama.ClientOption{ollama.WithBaseURL(url)}
+	if cfg.Timeout > 0 {
+		clientOpts = append(clientOpts, ollama.WithTimeout(cfg.Timeout))
+	}
+	provider := ollama.NewProvider(ollama.WithClient(ollama.NewClient(clientOpts...)))
 	if err := i.registry.Register(provider); err != nil {
 		return err
 	}
