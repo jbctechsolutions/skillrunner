@@ -44,7 +44,7 @@ type CloudConfig struct {
 
 // RoutingConfig holds configuration for model routing.
 type RoutingConfig struct {
-	DefaultProfile string                        `yaml:"default_profile"`
+	DefaultProfile string                           `yaml:"default_profile"`
 	Profiles       map[string]*ProfileConfiguration `yaml:"profiles,omitempty"`
 }
 
