@@ -143,6 +143,29 @@ func defaultProfiles() map[string]*ProfileConfiguration {
 	}
 }
 
+// NewRoutingConfigurationFromConfig creates a RoutingConfiguration from a user's Config.
+// It merges user-defined profiles over the defaults, ensuring user settings take precedence.
+func NewRoutingConfigurationFromConfig(cfg *Config) *RoutingConfiguration {
+	rc := NewRoutingConfiguration()
+
+	if cfg == nil {
+		return rc
+	}
+
+	// Merge user-defined profiles over defaults
+	if cfg.Routing.Profiles != nil {
+		for name, profile := range cfg.Routing.Profiles {
+			if existing, ok := rc.Profiles[name]; ok {
+				existing.Merge(profile)
+			} else {
+				rc.Profiles[name] = profile
+			}
+		}
+	}
+
+	return rc
+}
+
 // Validate checks if the RoutingConfiguration is valid.
 func (r *RoutingConfiguration) Validate() error {
 	if r == nil {

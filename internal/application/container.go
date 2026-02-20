@@ -516,6 +516,12 @@ func (c *Container) ProviderRegistry() *adapterProvider.Registry {
 	return c.providerRegistry
 }
 
+// RoutingConfiguration returns a RoutingConfiguration built from the user's config.
+// User-defined profiles are merged over defaults, ensuring user settings take precedence.
+func (c *Container) RoutingConfiguration() *config.RoutingConfiguration {
+	return config.NewRoutingConfigurationFromConfig(c.config)
+}
+
 // ProviderInitializer returns the provider initializer for health checks and status.
 func (c *Container) ProviderInitializer() *appProvider.Initializer {
 	return c.providerInitializer

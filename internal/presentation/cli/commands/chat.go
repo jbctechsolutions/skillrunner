@@ -15,7 +15,6 @@ import (
 	domainChat "github.com/jbctechsolutions/skillrunner/internal/domain/chat"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/session"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
-	"github.com/jbctechsolutions/skillrunner/internal/infrastructure/config"
 )
 
 // chatFlags holds the flags for the chat command.
@@ -289,8 +288,8 @@ func initChatService() (*chat.Service, error) {
 		return nil, fmt.Errorf("no providers configured - please configure providers in ~/.skillrunner/config.yaml")
 	}
 
-	// Create routing configuration from app config
-	routingCfg := config.NewRoutingConfiguration()
+	// Create routing configuration from user's app config
+	routingCfg := container.RoutingConfiguration()
 
 	// Create router with the populated registry
 	router, err := appProvider.NewRouter(routingCfg, registry)
