@@ -16,6 +16,7 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/budget"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/complexity"
+	domainExport "github.com/jbctechsolutions/skillrunner/internal/domain/export"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/isolation"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
@@ -38,6 +39,7 @@ type runFlags struct {
 	Budget          float64 // per-workflow spend cap in USD (0 = use global config)
 	SkipEscalation  bool    // disable auto-escalation on low-confidence responses
 	SkipReview      bool    // disable post-completion review phases
+	ExportFormat    string  // export result in this format (json, claude-code, aider, cursor)
 	Isolate         bool    // run in a git worktree, show diff and prompt merge/discard
 	profileExplicit bool    // set to true when --profile was provided by the user
 }
@@ -107,6 +109,7 @@ mode for long-running tasks that may need crash recovery.`,
 	cmd.Flags().Float64Var(&runOpts.Budget, "budget", 0, "per-workflow spend cap in USD (overrides global config)")
 	cmd.Flags().BoolVar(&runOpts.SkipEscalation, "skip-escalation", false, "disable auto-escalation on low-confidence responses")
 	cmd.Flags().BoolVar(&runOpts.SkipReview, "skip-review", false, "disable post-completion review on phases that declare it")
+	cmd.Flags().StringVar(&runOpts.ExportFormat, "export-format", "", "export result format: json, claude-code, aider, cursor")
 	cmd.Flags().BoolVar(&runOpts.Isolate, "isolate", false, "run in a git worktree; show diff and prompt merge or discard")
 
 	return cmd
@@ -307,6 +310,13 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		baseConfig.MCPRegistry = mcpReg
 	}
 
+	// Validate export format early
+	if runOpts.ExportFormat != "" {
+		if !domainExport.Format(runOpts.ExportFormat).IsValid() {
+			return fmt.Errorf("invalid --export-format %q: must be one of json, claude-code, aider, cursor", runOpts.ExportFormat)
+		}
+	}
+
 	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
 		executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
@@ -331,11 +341,55 @@ func runSkill(cmd *cobra.Command, args []string) error {
 
 	// Standard text output with progress display
 	executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
-	execErr := runSkillText(ctx, executor, sk, request, provider, formatter, costCalc)
+	result, execErr := runSkillTextWithResult(ctx, executor, sk, request, provider, formatter, costCalc)
 	if isolSess != nil {
 		handleIsolationResult(ctx, formatter, isolMgr, isolSess, execErr)
 	}
+
+	// Export result if requested
+	if execErr == nil && result != nil && runOpts.ExportFormat != "" {
+		if exportErr := exportResult(result, sk.Name(), sk.ID(), request, runOpts.Profile, runOpts.ExportFormat, formatter); exportErr != nil {
+			formatter.Warning("Export failed: %v", exportErr)
+		}
+	}
 	return execErr
+}
+
+// exportResult serialises the execution result in the requested format and prints to stdout.
+func exportResult(result *workflow.ExecutionResult, skillName, skillID, input, profile, format string, formatter *output.Formatter) error {
+	we := &domainExport.WorkflowExport{
+		SkillID:     skillID,
+		SkillName:   skillName,
+		Input:       input,
+		Output:      result.FinalOutput,
+		Profile:     profile,
+		Status:      string(result.Status),
+		TotalCost:   result.TotalCost,
+		TotalTokens: result.TotalTokens,
+		Duration:    fmt.Sprintf("%d", result.Duration.Milliseconds()),
+		ExportedAt:  result.EndTime,
+	}
+	for _, pr := range result.PhaseResults {
+		we.Phases = append(we.Phases, domainExport.PhaseExport{
+			ID:     pr.PhaseID,
+			Name:   pr.PhaseName,
+			Model:  pr.ModelUsed,
+			Output: pr.Output,
+			Tokens: pr.InputTokens + pr.OutputTokens,
+			Cost:   pr.Cost,
+			Status: string(pr.Status),
+		})
+	}
+
+	data, err := we.Marshal(domainExport.Format(format))
+	if err != nil {
+		return err
+	}
+
+	formatter.Println("")
+	formatter.SubHeader(fmt.Sprintf("Export (%s)", format))
+	fmt.Println(string(data))
+	return nil
 }
 
 // handleIsolationResult presents the worktree diff and prompts the user to merge or discard.
@@ -511,7 +565,17 @@ func runSkillStreaming(ctx context.Context, executor workflow.StreamingExecutor,
 }
 
 // runSkillText executes the skill with text output and progress display.
+// runSkillTextWithResult executes the skill with text output and returns both the result and any error.
+func runSkillTextWithResult(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) (*workflow.ExecutionResult, error) {
+	return runSkillTextImpl(ctx, executor, sk, request, prov, formatter, costCalc)
+}
+
 func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) error {
+	_, err := runSkillTextImpl(ctx, executor, sk, request, prov, formatter, costCalc)
+	return err
+}
+
+func runSkillTextImpl(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) (*workflow.ExecutionResult, error) {
 	// Display execution header
 	formatter.Header("Skill Execution")
 	formatter.Item("Skill", sk.Name())
@@ -556,7 +620,7 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 
 	if err != nil {
 		formatter.Error("Execution failed: %v", err)
-		return err
+		return nil, err
 	}
 
 	// Calculate costs for each phase using model pricing
@@ -599,7 +663,7 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 		formatter.Error("Skill execution failed: %v", result.Error)
 	}
 
-	return nil
+	return result, nil
 }
 
 // displayPhaseResults displays the results of each phase in a table with cost breakdown.
