@@ -106,6 +106,7 @@ Key features:
 	rootCmd.AddCommand(NewCostCmd())      // v1.3: Cost analytics
 	rootCmd.AddCommand(NewOutcomesCmd())  // v1.4: Outcome tracking
 	rootCmd.AddCommand(NewWorktreesCmd()) // v1.4: Worktree management
+	rootCmd.AddCommand(NewResumeCmd())    // v1.4: Session continuity
 
 	return rootCmd
 }

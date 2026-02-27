@@ -19,6 +19,7 @@ type Config struct {
 	Memory        MemoryConfig        `yaml:"memory"`
 	Budget        BudgetConfig        `yaml:"budget"`
 	Context       ContextConfig       `yaml:"context"`
+	Session       SessionConfig       `yaml:"session"`
 }
 
 // ProviderConfigs holds configuration for all supported LLM providers.
@@ -120,6 +121,12 @@ type ContextConfig struct {
 type BudgetConfig struct {
 	DailyLimit   float64 `yaml:"daily_limit"`   // Max USD per day (0 = disabled)
 	MonthlyLimit float64 `yaml:"monthly_limit"` // Max USD per month (0 = disabled)
+}
+
+// SessionConfig holds session continuity configuration.
+type SessionConfig struct {
+	// ResumeTTL is the maximum age of a checkpoint that can be resumed (default: 24h).
+	ResumeTTL time.Duration `yaml:"resume_ttl"`
 }
 
 // Default configuration values.
