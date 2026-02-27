@@ -370,7 +370,7 @@ func (e *CheckpointingExecutor) executeBatch(
 	}
 
 	// Create phase executor
-	phaseExecutor := newPhaseExecutor(e.provider, e.config.MemoryContent)
+	phaseExecutor := newPhaseExecutor(e.provider, e.config.MemoryContent, e.config.MCPRegistry)
 
 	// Create a semaphore for limiting parallelism
 	sem := make(chan struct{}, e.config.MaxParallel)

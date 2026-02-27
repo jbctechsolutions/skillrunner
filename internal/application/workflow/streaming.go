@@ -76,7 +76,7 @@ func NewStreamingExecutor(provider ports.ProviderPort, config ExecutorConfig) St
 	return &streamingExecutor{
 		provider:               provider,
 		config:                 config,
-		streamingPhaseExecutor: newStreamingPhaseExecutor(provider, config.MemoryContent),
+		streamingPhaseExecutor: newStreamingPhaseExecutor(provider, config.MemoryContent, config.MCPRegistry),
 	}
 }
 

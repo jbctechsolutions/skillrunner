@@ -14,10 +14,28 @@ type ProviderInfo struct {
 	IsLocal     bool
 }
 
-// Message represents a chat message
+// ToolCall represents a tool invocation returned by the LLM.
+type ToolCall struct {
+	ID        string         // tool_use block id from the provider
+	Name      string         // full tool name (mcp__server__tool format)
+	Arguments map[string]any // parsed input arguments
+}
+
+// ToolResult represents the result of executing a tool.
+type ToolResult struct {
+	ToolCallID string // matches ToolCall.ID
+	Content    string // serialised result
+	IsError    bool   // true if the tool returned an error
+}
+
+// Message represents a chat message.
+// For assistant messages that invoked tools, ToolCalls is populated and Content may be empty.
+// For user messages that carry tool results, ToolResults is populated and Content may be empty.
 type Message struct {
-	Role    string // system, user, assistant
-	Content string
+	Role        string       // system, user, assistant
+	Content     string       // text content
+	ToolCalls   []ToolCall   // populated for assistant tool_use messages
+	ToolResults []ToolResult // populated for user tool_result messages
 }
 
 // Tool represents a tool that can be called by the LLM.
@@ -38,6 +56,13 @@ type CompletionRequest struct {
 	Tools        []Tool // Optional tools for function calling
 }
 
+// FinishReason constants for LLM completion stop reasons.
+const (
+	FinishReasonEndTurn   = "end_turn"
+	FinishReasonToolUse   = "tool_use"
+	FinishReasonMaxTokens = "max_tokens"
+)
+
 // CompletionResponse is the output from LLM completion
 type CompletionResponse struct {
 	Content      string
@@ -46,6 +71,7 @@ type CompletionResponse struct {
 	FinishReason string
 	ModelUsed    string
 	Duration     time.Duration
+	ToolCalls    []ToolCall // populated when FinishReason == FinishReasonToolUse
 }
 
 // StreamCallback for streaming responses

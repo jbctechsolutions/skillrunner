@@ -528,7 +528,7 @@ func TestExecutor_Execute_MaxParallelLimit(t *testing.T) {
 }
 
 func TestPhaseExecutor_BuildPrompt(t *testing.T) {
-	pe := newPhaseExecutor(newMockProvider(), "")
+	pe := newPhaseExecutor(newMockProvider(), "", nil)
 
 	tests := []struct {
 		name     string
@@ -622,7 +622,7 @@ func TestPhaseExecutor_BuildPrompt(t *testing.T) {
 }
 
 func TestPhaseExecutor_SelectModel(t *testing.T) {
-	pe := newPhaseExecutor(newMockProvider(), "")
+	pe := newPhaseExecutor(newMockProvider(), "", nil)
 
 	tests := []struct {
 		profile  string
@@ -769,7 +769,7 @@ func TestPhaseExecutor_BuildMessages_WithMemory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pe := newPhaseExecutor(newMockProvider(), tt.memoryContent)
+			pe := newPhaseExecutor(newMockProvider(), tt.memoryContent, nil)
 			messages := pe.buildMessages(tt.prompt, tt.dependencyOutput)
 
 			// Check if memory message is present

@@ -60,9 +60,11 @@ type ExecutionResult struct {
 
 // ExecutorConfig contains configuration options for the executor.
 type ExecutorConfig struct {
-	MaxParallel   int           // Maximum number of phases to execute in parallel
-	Timeout       time.Duration // Overall timeout for skill execution
-	MemoryContent string        // Memory content to inject into prompts (from MEMORY.md/CLAUDE.md)
+	MaxParallel      int                       // Maximum number of phases to execute in parallel
+	Timeout          time.Duration             // Overall timeout for skill execution
+	MemoryContent    string                    // Memory content to inject into prompts (from MEMORY.md/CLAUDE.md)
+	MCPRegistry      ports.MCPToolRegistryPort // Optional: enables MCP tool calling (nil = disabled)
+	AutoApproveTools bool                      // Skip interactive tool permission prompts
 }
 
 // DefaultExecutorConfig returns the default executor configuration.
@@ -98,7 +100,7 @@ func NewExecutor(provider ports.ProviderPort, config ExecutorConfig) Executor {
 	return &executor{
 		provider:      provider,
 		config:        config,
-		phaseExecutor: newPhaseExecutor(provider, config.MemoryContent),
+		phaseExecutor: newPhaseExecutor(provider, config.MemoryContent, config.MCPRegistry),
 	}
 }
 

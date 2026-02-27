@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -17,10 +18,11 @@ import (
 
 // InitResult holds the result of the init command for JSON output.
 type InitResult struct {
-	ConfigDir   string `json:"config_dir"`
-	ConfigFile  string `json:"config_file"`
-	SkillsDir   string `json:"skills_dir"`
-	Initialized bool   `json:"initialized"`
+	ConfigDir      string `json:"config_dir"`
+	ConfigFile     string `json:"config_file"`
+	SkillsDir      string `json:"skills_dir"`
+	MCPServersFile string `json:"mcp_servers_file"`
+	Initialized    bool   `json:"initialized"`
 }
 
 // NewInitCmd creates the init command.
@@ -139,15 +141,17 @@ func runInit(force bool) error {
 	configDir := filepath.Join(homeDir, ".skillrunner")
 	configFile := filepath.Join(configDir, "config.yaml")
 	skillsDir := filepath.Join(configDir, "skills")
+	mcpServersFile := filepath.Join(configDir, "mcp_servers.json")
 
 	// Check if already initialized
 	if _, err := os.Stat(configFile); err == nil && !force {
 		if format == output.FormatJSON {
 			return formatter.JSON(InitResult{
-				ConfigDir:   configDir,
-				ConfigFile:  configFile,
-				SkillsDir:   skillsDir,
-				Initialized: false,
+				ConfigDir:      configDir,
+				ConfigFile:     configFile,
+				SkillsDir:      skillsDir,
+				MCPServersFile: mcpServersFile,
+				Initialized:    false,
 			})
 		}
 		formatter.Warning("Configuration already exists at %s", configFile)
@@ -161,11 +165,15 @@ func runInit(force bool) error {
 		if err := writeConfig(configDir, skillsDir, configFile, cfg); err != nil {
 			return err
 		}
+		if _, err := config.WriteMCPServersConfig(mcpServersFile); err != nil {
+			return fmt.Errorf("write MCP servers config: %w", err)
+		}
 		return formatter.JSON(InitResult{
-			ConfigDir:   configDir,
-			ConfigFile:  configFile,
-			SkillsDir:   skillsDir,
-			Initialized: true,
+			ConfigDir:      configDir,
+			ConfigFile:     configFile,
+			SkillsDir:      skillsDir,
+			MCPServersFile: mcpServersFile,
+			Initialized:    true,
 		})
 	}
 
@@ -277,15 +285,38 @@ func runInit(force bool) error {
 		return err
 	}
 
+	// Write bundled MCP servers config (non-fatal if it fails)
+	mcpCreated, mcpErr := config.WriteMCPServersConfig(mcpServersFile)
+	if mcpErr != nil {
+		formatter.Warning("Could not write MCP servers config: %v", mcpErr)
+	}
+
 	formatter.Println("")
 	formatter.Success("Configuration initialized successfully!")
 	formatter.Println("")
 	formatter.Item("Config directory", configDir)
 	formatter.Item("Config file", configFile)
 	formatter.Item("Skills directory", skillsDir)
+	if mcpCreated {
+		formatter.Item("MCP servers file", mcpServersFile)
+	}
 	formatter.Println("")
 	formatter.Info("Run 'sr list' to see available skills")
 	formatter.Info("Run 'sr run <skill>' to execute a skill")
+
+	// Warn if npx is not available (MCP servers require it)
+	if mcpCreated {
+		if _, err := exec.LookPath("npx"); err != nil {
+			formatter.Println("")
+			formatter.Warning("npx was not found in PATH")
+			formatter.Info("MCP servers (filesystem, git) require Node.js/npx to run.")
+			formatter.Info("Install Node.js from https://nodejs.org to enable MCP tool support.")
+		} else {
+			formatter.Println("")
+			formatter.Info("MCP servers pre-configured in %s", mcpServersFile)
+			formatter.Info("Run 'sr mcp list-servers' to see available MCP servers")
+		}
+	}
 
 	return nil
 }

@@ -17,6 +17,7 @@ type Config struct {
 	Cache         CacheConfig         `yaml:"cache"`
 	Observability ObservabilityConfig `yaml:"observability"`
 	Memory        MemoryConfig        `yaml:"memory"`
+	Budget        BudgetConfig        `yaml:"budget"`
 }
 
 // ProviderConfigs holds configuration for all supported LLM providers.
@@ -104,6 +105,12 @@ type TracingConfig struct {
 type MemoryConfig struct {
 	Enabled   bool `yaml:"enabled"`    // Whether memory injection is enabled (default: true)
 	MaxTokens int  `yaml:"max_tokens"` // Maximum tokens for memory content (default: 2000)
+}
+
+// BudgetConfig holds configuration for cost budget enforcement.
+type BudgetConfig struct {
+	DailyLimit   float64 `yaml:"daily_limit"`   // Max USD per day (0 = disabled)
+	MonthlyLimit float64 `yaml:"monthly_limit"` // Max USD per month (0 = disabled)
 }
 
 // Default configuration values.

@@ -1,0 +1,16 @@
+{
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "${HOME}"],
+    "env": {
+      "NPM_CONFIG_CACHE": "/tmp/npm-cache"
+    }
+  },
+  "git": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-git"],
+    "env": {
+      "NPM_CONFIG_CACHE": "/tmp/npm-cache"
+    }
+  }
+}

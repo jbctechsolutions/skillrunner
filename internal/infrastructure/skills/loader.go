@@ -22,6 +22,7 @@ type SkillDefinition struct {
 	Phases      []PhaseDefinition `yaml:"phases"`
 	Routing     RoutingDefinition `yaml:"routing"`
 	Metadata    map[string]any    `yaml:"metadata"`
+	Tools       []string          `yaml:"tools"` // MCP tools this skill may use (mcp__server__tool format)
 }
 
 // PhaseDefinition represents the YAML structure of a phase within a skill.
@@ -33,6 +34,7 @@ type PhaseDefinition struct {
 	DependsOn      []string `yaml:"depends_on"`
 	MaxTokens      int      `yaml:"max_tokens"`
 	Temperature    float32  `yaml:"temperature"`
+	AllowTools     bool     `yaml:"allow_tools"` // whether this phase may invoke MCP tools
 }
 
 // RoutingDefinition represents the YAML structure of routing configuration.
@@ -282,6 +284,13 @@ func convertToDomainSkill(def *SkillDefinition) (*skill.Skill, error) {
 		s.SetMetadata(k, v)
 	}
 
+	// Set declared MCP tools (optional)
+	if len(def.Tools) > 0 {
+		if err := s.SetTools(def.Tools); err != nil {
+			return nil, fmt.Errorf("invalid tools declaration: %w", err)
+		}
+	}
+
 	// Validate the complete skill
 	if err := s.Validate(); err != nil {
 		return nil, fmt.Errorf("skill validation failed: %w", err)
@@ -312,6 +321,10 @@ func convertToDomainPhase(def *PhaseDefinition) (*skill.Phase, error) {
 
 	if def.Temperature > 0 {
 		phase.WithTemperature(def.Temperature)
+	}
+
+	if def.AllowTools {
+		phase.WithAllowTools(true)
 	}
 
 	return phase, nil

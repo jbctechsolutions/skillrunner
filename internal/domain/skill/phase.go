@@ -42,6 +42,7 @@ type Phase struct {
 	DependsOn      []string // phase IDs this depends on
 	MaxTokens      int
 	Temperature    float32
+	AllowTools     bool // whether this phase may invoke MCP tools
 }
 
 // NewPhase creates a new Phase with the required fields and default values for optional fields.
@@ -101,6 +102,12 @@ func (p *Phase) WithMaxTokens(max int) *Phase {
 // WithTemperature sets the temperature for LLM inference.
 func (p *Phase) WithTemperature(temp float32) *Phase {
 	p.Temperature = temp
+	return p
+}
+
+// WithAllowTools enables or disables MCP tool invocation for this phase.
+func (p *Phase) WithAllowTools(allow bool) *Phase {
+	p.AllowTools = allow
 	return p
 }
 

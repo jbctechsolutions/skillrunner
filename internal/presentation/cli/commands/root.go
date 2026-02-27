@@ -97,6 +97,9 @@ Key features:
 	// Wave 10: Cache management
 	rootCmd.AddCommand(NewCacheCmd())
 
+	// v1.2: MCP server management
+	rootCmd.AddCommand(NewMCPCmd())
+
 	return rootCmd
 }
 

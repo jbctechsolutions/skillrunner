@@ -56,3 +56,14 @@ temp/
 
 # Claude orchestrator state (session-specific)
 .claude/
+
+# Loki Mode runtime state (config.yaml is tracked, runtime dirs are not)
+.loki/session.json
+.loki/state/
+.loki/queue/
+.loki/memory/
+.loki/signals/
+.loki/PAUSE
+.loki/STOP
+.loki/HUMAN_INPUT.md
+.loki/CONTINUITY.md

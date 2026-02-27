@@ -3,25 +3,32 @@ package workflow
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"text/template"
 	"time"
 
+	mcpAdapter "github.com/jbctechsolutions/skillrunner/internal/adapters/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 )
+
+// maxToolIterations caps the number of tool-calling turns per phase to avoid infinite loops.
+const maxToolIterations = 10
 
 // phaseExecutor handles the execution of a single phase.
 type phaseExecutor struct {
 	provider      ports.ProviderPort
 	memoryContent string
+	mcpRegistry   ports.MCPToolRegistryPort // nil when tool calling is disabled
 }
 
-// newPhaseExecutor creates a new phase executor with the given provider and memory content.
-func newPhaseExecutor(provider ports.ProviderPort, memoryContent string) *phaseExecutor {
+// newPhaseExecutor creates a new phase executor with the given provider, memory content, and optional MCP registry.
+func newPhaseExecutor(provider ports.ProviderPort, memoryContent string, mcpRegistry ports.MCPToolRegistryPort) *phaseExecutor {
 	return &phaseExecutor{
 		provider:      provider,
 		memoryContent: memoryContent,
+		mcpRegistry:   mcpRegistry,
 	}
 }
 
@@ -45,34 +52,116 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 		return result
 	}
 
+	// Fetch MCP tools if this phase allows tool calling
+	var tools []ports.Tool
+	if phase.AllowTools && e.mcpRegistry != nil {
+		mcpTools, err := e.mcpRegistry.GetAllTools(ctx)
+		if err == nil && len(mcpTools) > 0 {
+			tools = mcpAdapter.ToProviderTools(mcpTools, false)
+		}
+	}
+
+	// Build initial messages
+	messages := e.buildMessages(prompt, dependencyOutputs)
+
 	// Build the completion request
 	req := ports.CompletionRequest{
 		ModelID:     e.selectModel(phase.RoutingProfile),
-		Messages:    e.buildMessages(prompt, dependencyOutputs),
+		Messages:    messages,
 		MaxTokens:   phase.MaxTokens,
 		Temperature: phase.Temperature,
+		Tools:       tools,
 	}
 
-	// Call the provider
-	resp, err := e.provider.Complete(ctx, req)
-	if err != nil {
-		result.Status = PhaseStatusFailed
-		result.Error = err
-		result.EndTime = time.Now()
-		result.Duration = result.EndTime.Sub(result.StartTime)
-		return result
+	// Execute with tool calling loop
+	var totalInput, totalOutput int
+	var finalContent string
+	var modelUsed string
+
+	for i := 0; i < maxToolIterations; i++ {
+		resp, err := e.provider.Complete(ctx, req)
+		if err != nil {
+			result.Status = PhaseStatusFailed
+			result.Error = err
+			result.EndTime = time.Now()
+			result.Duration = result.EndTime.Sub(result.StartTime)
+			return result
+		}
+
+		totalInput += resp.InputTokens
+		totalOutput += resp.OutputTokens
+		if modelUsed == "" {
+			modelUsed = resp.ModelUsed
+		}
+
+		// If the model didn't call any tools, we're done
+		if resp.FinishReason != ports.FinishReasonToolUse || len(resp.ToolCalls) == 0 {
+			finalContent = resp.Content
+			break
+		}
+
+		// Append the assistant's tool_use message to conversation
+		req.Messages = append(req.Messages, ports.Message{
+			Role:      "assistant",
+			Content:   resp.Content,
+			ToolCalls: resp.ToolCalls,
+		})
+
+		// Execute each tool and collect results
+		toolResults := make([]ports.ToolResult, 0, len(resp.ToolCalls))
+		for _, tc := range resp.ToolCalls {
+			toolResult := e.executeToolCall(ctx, tc)
+			toolResults = append(toolResults, toolResult)
+		}
+
+		// Append the tool results as a user message
+		req.Messages = append(req.Messages, ports.Message{
+			Role:        "user",
+			ToolResults: toolResults,
+		})
+
+		// If this is the last iteration, capture whatever was in last response
+		if i == maxToolIterations-1 {
+			finalContent = resp.Content
+		}
 	}
 
 	// Populate the result
 	result.Status = PhaseStatusCompleted
-	result.Output = resp.Content
-	result.InputTokens = resp.InputTokens
-	result.OutputTokens = resp.OutputTokens
-	result.ModelUsed = resp.ModelUsed
+	result.Output = finalContent
+	result.InputTokens = totalInput
+	result.OutputTokens = totalOutput
+	result.ModelUsed = modelUsed
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(result.StartTime)
 
 	return result
+}
+
+// executeToolCall executes a single tool call via the MCP registry and returns the result.
+func (e *phaseExecutor) executeToolCall(ctx context.Context, tc ports.ToolCall) ports.ToolResult {
+	if e.mcpRegistry == nil {
+		return ports.ToolResult{
+			ToolCallID: tc.ID,
+			Content:    "error: MCP registry not available",
+			IsError:    true,
+		}
+	}
+
+	callResult, err := e.mcpRegistry.CallToolByFullName(ctx, tc.Name, tc.Arguments)
+	if err != nil {
+		return ports.ToolResult{
+			ToolCallID: tc.ID,
+			Content:    fmt.Sprintf("error: %v", err),
+			IsError:    true,
+		}
+	}
+
+	return ports.ToolResult{
+		ToolCallID: tc.ID,
+		Content:    callResult.TextContent(),
+		IsError:    callResult.IsError,
+	}
 }
 
 // buildPrompt renders the phase's prompt template with the dependency outputs.

@@ -195,6 +195,87 @@ func TestConfigLoader_ServerConfigFields(t *testing.T) {
 	}
 }
 
+func TestConfigLoader_LoadFlatFormat(t *testing.T) {
+	content := `{
+		"filesystem": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user"]
+		},
+		"git": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-git"]
+		}
+	}`
+
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "mcp_servers.json")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	loader := NewConfigLoader()
+	configs, err := loader.loadFlatFormat(path)
+	if err != nil {
+		t.Fatalf("loadFlatFormat: %v", err)
+	}
+
+	if len(configs) != 2 {
+		t.Errorf("got %d configs, want 2", len(configs))
+	}
+	if _, ok := configs["filesystem"]; !ok {
+		t.Error("expected 'filesystem' entry")
+	}
+	if _, ok := configs["git"]; !ok {
+		t.Error("expected 'git' entry")
+	}
+	if configs["filesystem"].Command != "npx" {
+		t.Errorf("filesystem command = %q, want npx", configs["filesystem"].Command)
+	}
+}
+
+func TestConfigLoader_Load_MergesBothFormats(t *testing.T) {
+	homeDir := t.TempDir()
+
+	// Write ~/.claude/mcp.json (Claude format)
+	claudeDir := filepath.Join(homeDir, ".claude")
+	if err := os.MkdirAll(claudeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	claudeContent := `{"mcpServers": {"from-claude": {"command": "cmd-a", "args": []}}}`
+	if err := os.WriteFile(filepath.Join(claudeDir, "mcp.json"), []byte(claudeContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write ~/.skillrunner/mcp_servers.json (flat format — should take precedence on conflicts)
+	srDir := filepath.Join(homeDir, ".skillrunner")
+	if err := os.MkdirAll(srDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	srContent := `{"from-sr": {"command": "cmd-b", "args": []}, "from-claude": {"command": "cmd-override", "args": []}}`
+	if err := os.WriteFile(filepath.Join(srDir, "mcp_servers.json"), []byte(srContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Temporarily override HOME
+	t.Setenv("HOME", homeDir)
+
+	loader := NewConfigLoader()
+	configs, err := loader.Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if _, ok := configs["from-sr"]; !ok {
+		t.Error("expected 'from-sr' from skillrunner config")
+	}
+	// skillrunner entry should override Claude entry for same name
+	if cfg, ok := configs["from-claude"]; !ok {
+		t.Error("expected 'from-claude' entry")
+	} else if cfg.Command != "cmd-override" {
+		t.Errorf("from-claude command = %q, want cmd-override (skillrunner should win)", cfg.Command)
+	}
+}
+
 func TestClaudeConfigJSON(t *testing.T) {
 	// Test that claudeConfig matches the expected JSON structure
 	jsonStr := `{

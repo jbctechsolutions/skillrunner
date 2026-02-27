@@ -14,9 +14,12 @@ import (
 
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/budget"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
+	fileContext "github.com/jbctechsolutions/skillrunner/internal/infrastructure/context"
 	infraMemory "github.com/jbctechsolutions/skillrunner/internal/infrastructure/memory"
+	infraStorage "github.com/jbctechsolutions/skillrunner/internal/infrastructure/storage"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
 
@@ -28,6 +31,8 @@ type runFlags struct {
 	Resume       bool
 	NoCheckpoint bool
 	Force        bool
+	AutoApprove  bool    // skip tool permission prompts (-y / --yes)
+	Budget       float64 // per-workflow spend cap in USD (0 = use global config)
 }
 
 var runOpts runFlags
@@ -86,6 +91,8 @@ mode for long-running tasks that may need crash recovery.`,
 	cmd.Flags().BoolVar(&runOpts.Resume, "resume", false, "resume from last checkpoint if available")
 	cmd.Flags().BoolVar(&runOpts.NoCheckpoint, "no-checkpoint", false, "disable checkpoint persistence")
 	cmd.Flags().BoolVarP(&runOpts.Force, "force", "f", false, "start new execution even if checkpoint exists")
+	cmd.Flags().BoolVarP(&runOpts.AutoApprove, "yes", "y", false, "auto-approve MCP tool execution (skip permission prompts)")
+	cmd.Flags().Float64Var(&runOpts.Budget, "budget", 0, "per-workflow spend cap in USD (overrides global config)")
 
 	return cmd
 }
@@ -153,6 +160,34 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Check tool permissions if the skill declares MCP tools
+	if sk.HasTools() {
+		mcpReg := container.MCPRegistry()
+		var toolInfos []fileContext.ToolInfo
+		if mcpReg != nil {
+			// Collect descriptions from the registry for declared tools
+			mcpTools, _ := mcpReg.GetAllTools(ctx)
+			descByName := make(map[string]string, len(mcpTools))
+			for _, t := range mcpTools {
+				descByName[t.FullName()] = t.Description()
+			}
+			for _, name := range sk.Tools() {
+				toolInfos = append(toolInfos, fileContext.ToolInfo{
+					Name:        name,
+					Description: descByName[name],
+				})
+			}
+		} else {
+			for _, name := range sk.Tools() {
+				toolInfos = append(toolInfos, fileContext.ToolInfo{Name: name})
+			}
+		}
+		prompter := fileContext.NewToolPermissionPrompt(runOpts.AutoApprove)
+		if err := prompter.PromptForTools(toolInfos); err != nil {
+			return fmt.Errorf("tool permission denied: %w", err)
+		}
+	}
+
 	// Build checkpoint config
 	cpConfig := workflow.CheckpointConfig{
 		Enabled:   !runOpts.NoCheckpoint,
@@ -174,11 +209,22 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	// Get cost calculator for pricing
 	costCalc := container.CostCalculator()
 
+	// Budget check: enforce global and per-workflow limits
+	if err := checkBudget(ctx, formatter, runOpts.Budget); err != nil {
+		return err
+	}
+
+	// Build executor config (shared base)
+	baseConfig := workflow.DefaultExecutorConfig()
+	baseConfig.MemoryContent = memoryContent
+	baseConfig.AutoApproveTools = runOpts.AutoApprove
+	if mcpReg := container.MCPRegistry(); mcpReg != nil {
+		baseConfig.MCPRegistry = mcpReg
+	}
+
 	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
-		executorConfig := workflow.DefaultExecutorConfig()
-		executorConfig.MemoryContent = memoryContent
-		executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
+		executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
 		return runSkillJSON(ctx, executor, sk, request, provider, costCalc)
 	}
 
@@ -186,16 +232,12 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	// Note: Checkpointing is not supported in streaming mode. For long-running
 	// tasks that need crash recovery, use standard (non-streaming) mode.
 	if runOpts.Stream {
-		streamingConfig := workflow.DefaultExecutorConfig()
-		streamingConfig.MemoryContent = memoryContent
-		streamingExecutor := workflow.NewStreamingExecutor(provider, streamingConfig)
+		streamingExecutor := workflow.NewStreamingExecutor(provider, baseConfig)
 		return runSkillStreaming(ctx, streamingExecutor, sk, request, provider, formatter)
 	}
 
 	// Standard text output with progress display
-	executorConfig := workflow.DefaultExecutorConfig()
-	executorConfig.MemoryContent = memoryContent
-	executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
+	executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
 	return runSkillText(ctx, executor, sk, request, provider, formatter, costCalc)
 }
 
@@ -623,6 +665,61 @@ func calculateCostsForResult(result *workflow.ExecutionResult, costCalc *provide
 	}
 
 	result.TotalCost = totalCost
+}
+
+// checkBudget enforces configured budget limits before execution.
+// It warns at 80% of any limit and blocks at 100%.
+// workflowCap > 0 is treated as a per-workflow daily cap for this check.
+func checkBudget(ctx context.Context, formatter *output.Formatter, workflowCap float64) error {
+	appContainer := GetContainer()
+	if appContainer == nil {
+		return nil
+	}
+	appCtxVal := GetAppContext()
+	if appCtxVal == nil {
+		return nil
+	}
+
+	budgetCfg := appCtxVal.Config.Budget
+	limits := budget.NewLimits(budgetCfg.DailyLimit, budgetCfg.MonthlyLimit)
+	if workflowCap > 0 {
+		limits.DailyLimit = workflowCap
+	}
+	if !limits.Enabled() {
+		return nil
+	}
+
+	repo, err := infraStorage.NewBudgetRepository(appContainer.DB())
+	if err != nil {
+		formatter.Warning("Budget check unavailable: %v", err)
+		return nil
+	}
+
+	usage, err := repo.GetUsage(ctx)
+	if err != nil {
+		formatter.Warning("Could not retrieve budget usage: %v", err)
+		return nil
+	}
+
+	if limits.DailyLimit > 0 {
+		pct := (usage.DailySpend / limits.DailyLimit) * 100
+		formatter.Item("Daily budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.DailySpend, limits.DailyLimit, pct))
+	}
+	if limits.MonthlyLimit > 0 {
+		pct := (usage.MonthlySpend / limits.MonthlyLimit) * 100
+		formatter.Item("Monthly budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.MonthlySpend, limits.MonthlyLimit, pct))
+	}
+
+	if err := budget.CheckLimit(limits, usage, 0); err != nil {
+		switch err {
+		case budget.ErrBudgetExceeded:
+			formatter.Println("")
+			return fmt.Errorf("budget limit exceeded — use 'sr config set budget.daily_limit' to adjust or --budget=0 to disable")
+		case budget.ErrBudgetWarning:
+			formatter.Warning("Budget warning: spending is at ≥80%% of configured limit")
+		}
+	}
+	return nil
 }
 
 // init registers the run command with the root command.

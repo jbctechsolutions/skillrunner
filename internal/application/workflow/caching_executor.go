@@ -28,7 +28,7 @@ type CachingConfig struct {
 // NewCachingPhaseExecutor creates a new caching phase executor.
 func NewCachingPhaseExecutor(provider ports.ProviderPort, cache ports.ResponseCachePort, cfg CachingConfig, memoryContent string) *CachingPhaseExecutor {
 	return &CachingPhaseExecutor{
-		delegate:   newPhaseExecutor(provider, memoryContent),
+		delegate:   newPhaseExecutor(provider, memoryContent, nil),
 		cache:      cache,
 		enabled:    cfg.Enabled,
 		defaultTTL: cfg.DefaultTTL,
@@ -145,7 +145,7 @@ type CachingStreamingPhaseExecutor struct {
 // NewCachingStreamingPhaseExecutor creates a new caching streaming phase executor.
 func NewCachingStreamingPhaseExecutor(provider ports.ProviderPort, cache ports.ResponseCachePort, cfg CachingConfig, memoryContent string) *CachingStreamingPhaseExecutor {
 	return &CachingStreamingPhaseExecutor{
-		delegate:   newStreamingPhaseExecutor(provider, memoryContent),
+		delegate:   newStreamingPhaseExecutor(provider, memoryContent, nil),
 		cache:      cache,
 		enabled:    cfg.Enabled,
 		defaultTTL: cfg.DefaultTTL,
