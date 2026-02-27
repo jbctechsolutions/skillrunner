@@ -37,6 +37,7 @@ type runFlags struct {
 	AutoApprove     bool    // skip tool permission prompts (-y / --yes)
 	Budget          float64 // per-workflow spend cap in USD (0 = use global config)
 	SkipEscalation  bool    // disable auto-escalation on low-confidence responses
+	SkipReview      bool    // disable post-completion review phases
 	Isolate         bool    // run in a git worktree, show diff and prompt merge/discard
 	profileExplicit bool    // set to true when --profile was provided by the user
 }
@@ -105,6 +106,7 @@ mode for long-running tasks that may need crash recovery.`,
 	cmd.Flags().BoolVarP(&runOpts.AutoApprove, "yes", "y", false, "auto-approve MCP tool execution (skip permission prompts)")
 	cmd.Flags().Float64Var(&runOpts.Budget, "budget", 0, "per-workflow spend cap in USD (overrides global config)")
 	cmd.Flags().BoolVar(&runOpts.SkipEscalation, "skip-escalation", false, "disable auto-escalation on low-confidence responses")
+	cmd.Flags().BoolVar(&runOpts.SkipReview, "skip-review", false, "disable post-completion review on phases that declare it")
 	cmd.Flags().BoolVar(&runOpts.Isolate, "isolate", false, "run in a git worktree; show diff and prompt merge or discard")
 
 	return cmd
@@ -297,6 +299,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		baseConfig.ConfidenceThresholds = appCtx.Config.Routing.ConfidenceThreshold
 	}
 	baseConfig.SkipConfidenceEscalation = runOpts.SkipEscalation
+	baseConfig.SkipPostCompletionReview = runOpts.SkipReview
 	if outcomeRepo := container.OutcomeRepository(); outcomeRepo != nil {
 		baseConfig.OutcomePort = outcomeRepo
 	}

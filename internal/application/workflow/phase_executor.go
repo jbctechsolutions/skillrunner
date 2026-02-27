@@ -27,6 +27,7 @@ type phaseExecutor struct {
 	modelHints               map[string]string         // v1.3: profile→model overrides; nil = use defaults
 	confidenceThresholds     map[string]float64        // v1.4: profile→confidence threshold
 	skipConfidenceEscalation bool                      // v1.4: disable auto-escalation
+	skipPostCompletionReview bool                      // v1.4: disable post-completion review
 }
 
 // newPhaseExecutor creates a new phase executor with the given provider, memory content, and optional MCP registry.
@@ -161,6 +162,13 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 		}
 	}
 
+	// v1.4: Post-completion review — run a quality check and retry on rejection (max 2 retries).
+	if phase.PostCompletionReview && finalContent != "" && !e.skipPostCompletionReview {
+		finalContent, totalInput, totalOutput = e.runPostCompletionReview(
+			ctx, req, finalContent, totalInput, totalOutput,
+		)
+	}
+
 	// Populate the result
 	result.Status = PhaseStatusCompleted
 	result.Output = finalContent
@@ -171,6 +179,55 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 	result.Duration = result.EndTime.Sub(result.StartTime)
 
 	return result
+}
+
+// runPostCompletionReview asks the model to review its own output and retries if it is rejected.
+// It returns the (possibly revised) content and updated token totals.
+func (e *phaseExecutor) runPostCompletionReview(
+	ctx context.Context,
+	req ports.CompletionRequest,
+	content string,
+	totalInput, totalOutput int,
+) (string, int, int) {
+	const maxRetries = 2
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Build a review request: append the generated content and ask for feedback
+		reviewReq := req
+		reviewReq.Messages = append(reviewReq.Messages,
+			ports.Message{Role: "assistant", Content: content},
+			ports.Message{
+				Role: "user",
+				Content: "Review the response above. " +
+					"If it is correct and complete, reply with exactly: APPROVED\n" +
+					"If it has errors or is incomplete, reply with: REJECTED\n" +
+					"followed by a corrected version.",
+			},
+		)
+
+		resp, err := e.provider.Complete(ctx, reviewReq)
+		if err != nil {
+			return content, totalInput, totalOutput // keep current on error
+		}
+		totalInput += resp.InputTokens
+		totalOutput += resp.OutputTokens
+
+		reviewText := strings.TrimSpace(resp.Content)
+		if strings.HasPrefix(reviewText, "APPROVED") {
+			return content, totalInput, totalOutput
+		}
+
+		// Extract corrected content after the REJECTED line
+		if strings.HasPrefix(reviewText, "REJECTED") {
+			corrected := strings.TrimSpace(strings.TrimPrefix(reviewText, "REJECTED"))
+			if corrected != "" {
+				content = corrected
+			}
+			// Loop again to re-review the corrected version
+		}
+	}
+
+	return content, totalInput, totalOutput
 }
 
 // confidenceThresholdFor returns the configured or default confidence threshold for a profile.

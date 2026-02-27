@@ -77,6 +77,7 @@ type ExecutorConfig struct {
 	SkillName                string                    // v1.4: used when recording outcomes
 	ConfidenceThresholds     map[string]float64        // v1.4: profile→threshold (0 = use defaults)
 	SkipConfidenceEscalation bool                      // v1.4: disable auto-escalation
+	SkipPostCompletionReview bool                      // v1.4: disable post-completion review phases
 }
 
 // DefaultExecutorConfig returns the default executor configuration.
@@ -116,6 +117,7 @@ func NewExecutor(provider ports.ProviderPort, config ExecutorConfig) Executor {
 	pe.modelHints = config.ModelHints
 	pe.confidenceThresholds = config.ConfidenceThresholds
 	pe.skipConfidenceEscalation = config.SkipConfidenceEscalation
+	pe.skipPostCompletionReview = config.SkipPostCompletionReview
 
 	return &executor{
 		provider:      provider,
