@@ -9,6 +9,7 @@ import (
 	"time"
 
 	mcpAdapter "github.com/jbctechsolutions/skillrunner/internal/adapters/mcp"
+	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 )
@@ -21,6 +22,8 @@ type phaseExecutor struct {
 	provider      ports.ProviderPort
 	memoryContent string
 	mcpRegistry   ports.MCPToolRegistryPort // nil when tool calling is disabled
+	compressor    *compression.Compressor   // nil means no compression
+	modelHints    map[string]string         // v1.3: profile→model overrides; nil = use defaults
 }
 
 // newPhaseExecutor creates a new phase executor with the given provider, memory content, and optional MCP registry.
@@ -52,6 +55,13 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 		return result
 	}
 
+	// Apply context compression if enabled
+	if e.compressor != nil {
+		cr := e.compressor.Compress(prompt)
+		prompt = cr.Compressed
+		result.CompressionRatio = cr.Ratio
+	}
+
 	// Fetch MCP tools if this phase allows tool calling
 	var tools []ports.Tool
 	if phase.AllowTools && e.mcpRegistry != nil {
@@ -66,7 +76,7 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 
 	// Build the completion request
 	req := ports.CompletionRequest{
-		ModelID:     e.selectModel(phase.RoutingProfile),
+		ModelID:     e.selectModel(ctx, phase.RoutingProfile),
 		Messages:    messages,
 		MaxTokens:   phase.MaxTokens,
 		Temperature: phase.Temperature,
@@ -256,8 +266,26 @@ func (e *phaseExecutor) buildMessages(prompt string, dependencyOutputs map[strin
 }
 
 // selectModel returns a model ID based on the routing profile.
-// Maps routing profiles to actual Ollama model names.
-func (e *phaseExecutor) selectModel(routingProfile string) string {
+// If model hints are configured for this executor, the hinted model is used with
+// automatic fallback to the default if the hint is not available.
+func (e *phaseExecutor) selectModel(ctx context.Context, routingProfile string) string {
+	defaultModel := e.defaultModel(routingProfile)
+
+	// Check skill-level hint for this profile
+	if len(e.modelHints) > 0 {
+		if hinted, ok := e.modelHints[routingProfile]; ok && hinted != "" {
+			// Verify the hinted model is actually available; fall back if not.
+			if ok, err := e.provider.SupportsModel(ctx, hinted); err == nil && ok {
+				return hinted
+			}
+		}
+	}
+
+	return defaultModel
+}
+
+// defaultModel returns the default model for a routing profile.
+func (e *phaseExecutor) defaultModel(routingProfile string) string {
 	switch routingProfile {
 	case skill.RoutingProfileCheap:
 		return "llama3.2:3b"

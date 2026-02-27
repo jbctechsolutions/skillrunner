@@ -637,7 +637,7 @@ func TestPhaseExecutor_SelectModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.profile, func(t *testing.T) {
-			result := pe.selectModel(tt.profile)
+			result := pe.defaultModel(tt.profile)
 			if result != tt.expected {
 				t.Errorf("for profile %q: expected %q, got %q", tt.profile, tt.expected, result)
 			}

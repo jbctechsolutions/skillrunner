@@ -100,6 +100,11 @@ Key features:
 	// v1.2: MCP server management
 	rootCmd.AddCommand(NewMCPCmd())
 
+	// v1.3: Budget alerts and status
+	rootCmd.AddCommand(NewBudgetCmd())
+	rootCmd.AddCommand(NewModelsCmd()) // v1.3: Model recommendations
+	rootCmd.AddCommand(NewCostCmd())   // v1.3: Cost analytics
+
 	return rootCmd
 }
 

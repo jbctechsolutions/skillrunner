@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/errors"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
@@ -25,19 +26,20 @@ const (
 
 // PhaseResult contains the result of executing a single phase.
 type PhaseResult struct {
-	PhaseID      string
-	PhaseName    string
-	Status       PhaseStatus
-	Output       string
-	Error        error
-	StartTime    time.Time
-	EndTime      time.Time
-	Duration     time.Duration
-	InputTokens  int
-	OutputTokens int
-	ModelUsed    string
-	CacheHit     bool    // Wave 10: Whether the result was served from cache
-	Cost         float64 // Cost in USD for this phase execution
+	PhaseID          string
+	PhaseName        string
+	Status           PhaseStatus
+	Output           string
+	Error            error
+	StartTime        time.Time
+	EndTime          time.Time
+	Duration         time.Duration
+	InputTokens      int
+	OutputTokens     int
+	ModelUsed        string
+	CacheHit         bool    // Wave 10: Whether the result was served from cache
+	Cost             float64 // Cost in USD for this phase execution
+	CompressionRatio float64 // v1.3: Fraction of prompt chars removed by compression (0 = none)
 }
 
 // ExecutionResult contains the aggregated results of executing a skill.
@@ -60,11 +62,14 @@ type ExecutionResult struct {
 
 // ExecutorConfig contains configuration options for the executor.
 type ExecutorConfig struct {
-	MaxParallel      int                       // Maximum number of phases to execute in parallel
-	Timeout          time.Duration             // Overall timeout for skill execution
-	MemoryContent    string                    // Memory content to inject into prompts (from MEMORY.md/CLAUDE.md)
-	MCPRegistry      ports.MCPToolRegistryPort // Optional: enables MCP tool calling (nil = disabled)
-	AutoApproveTools bool                      // Skip interactive tool permission prompts
+	MaxParallel        int                       // Maximum number of phases to execute in parallel
+	Timeout            time.Duration             // Overall timeout for skill execution
+	MemoryContent      string                    // Memory content to inject into prompts (from MEMORY.md/CLAUDE.md)
+	MCPRegistry        ports.MCPToolRegistryPort // Optional: enables MCP tool calling (nil = disabled)
+	AutoApproveTools   bool                      // Skip interactive tool permission prompts
+	CompressionEnabled bool                      // v1.3: compress context before provider calls
+	RoutingProfile     string                    // v1.3: used to calibrate compression aggressiveness
+	ModelHints         map[string]string         // v1.3: profile→model overrides for the current skill
 }
 
 // DefaultExecutorConfig returns the default executor configuration.
@@ -97,10 +102,16 @@ func NewExecutor(provider ports.ProviderPort, config ExecutorConfig) Executor {
 		config.Timeout = DefaultExecutorConfig().Timeout
 	}
 
+	pe := newPhaseExecutor(provider, config.MemoryContent, config.MCPRegistry)
+	if config.CompressionEnabled {
+		pe.compressor = compression.NewFromProfile(config.RoutingProfile)
+	}
+	pe.modelHints = config.ModelHints
+
 	return &executor{
 		provider:      provider,
 		config:        config,
-		phaseExecutor: newPhaseExecutor(provider, config.MemoryContent, config.MCPRegistry),
+		phaseExecutor: pe,
 	}
 }
 

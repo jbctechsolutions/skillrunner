@@ -15,6 +15,7 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/budget"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/complexity"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 	fileContext "github.com/jbctechsolutions/skillrunner/internal/infrastructure/context"
@@ -25,14 +26,15 @@ import (
 
 // runFlags holds the flags for the run command.
 type runFlags struct {
-	Profile      string
-	Stream       bool
-	NoMemory     bool
-	Resume       bool
-	NoCheckpoint bool
-	Force        bool
-	AutoApprove  bool    // skip tool permission prompts (-y / --yes)
-	Budget       float64 // per-workflow spend cap in USD (0 = use global config)
+	Profile         string
+	Stream          bool
+	NoMemory        bool
+	Resume          bool
+	NoCheckpoint    bool
+	Force           bool
+	AutoApprove     bool    // skip tool permission prompts (-y / --yes)
+	Budget          float64 // per-workflow spend cap in USD (0 = use global config)
+	profileExplicit bool    // set to true when --profile was provided by the user
 }
 
 var runOpts runFlags
@@ -85,7 +87,12 @@ mode for long-running tasks that may need crash recovery.`,
 
 	// Define flags
 	cmd.Flags().StringVarP(&runOpts.Profile, "profile", "p", skill.ProfileBalanced,
-		fmt.Sprintf("routing profile: %s, %s, %s", skill.ProfileCheap, skill.ProfileBalanced, skill.ProfilePremium))
+		fmt.Sprintf("routing profile: %s, %s, %s (default: auto-detected from complexity)", skill.ProfileCheap, skill.ProfileBalanced, skill.ProfilePremium))
+	// Track whether the user explicitly set --profile so we know not to override it.
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		runOpts.profileExplicit = cmd.Flags().Changed("profile")
+		return nil
+	}
 	cmd.Flags().BoolVarP(&runOpts.Stream, "stream", "s", false, "enable streaming output")
 	cmd.Flags().BoolVar(&runOpts.NoMemory, "no-memory", false, "disable memory injection (MEMORY.md/CLAUDE.md)")
 	cmd.Flags().BoolVar(&runOpts.Resume, "resume", false, "resume from last checkpoint if available")
@@ -136,6 +143,17 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no providers configured. Run 'sr init' to set up providers")
 	}
 
+	// Auto-detect complexity profile unless the user set --profile explicitly.
+	if !runOpts.profileExplicit {
+		analyzer := complexity.NewAnalyzer()
+		score, _ := analyzer.Analyze(request)
+		autoProfile := score.Profile()
+		if autoProfile != runOpts.Profile {
+			runOpts.Profile = autoProfile
+		}
+		formatter.Info("Complexity: %.2f → %s profile", float64(score), runOpts.Profile)
+	}
+
 	// Select provider based on profile
 	provider := selectProvider(providers, runOpts.Profile)
 	if provider == nil {
@@ -143,6 +161,9 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := context.Background()
+
+	// Show pre-execution budget alerts (non-fatal — informational only).
+	showBudgetAlerts(ctx, formatter, request, runOpts.Profile)
 
 	// Load memory content (unless disabled)
 	var memoryContent string
@@ -218,6 +239,20 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	baseConfig := workflow.DefaultExecutorConfig()
 	baseConfig.MemoryContent = memoryContent
 	baseConfig.AutoApproveTools = runOpts.AutoApprove
+	baseConfig.RoutingProfile = runOpts.Profile
+	if appCtx != nil && appCtx.Config != nil {
+		baseConfig.CompressionEnabled = appCtx.Config.Context.CompressionEnabled
+		// Resolve skill-level model hints for this skill
+		if hints := appCtx.Config.Routing.SkillModelHints; len(hints) > 0 {
+			skillID := sk.ID()
+			skillName := sk.Name()
+			if perSkill, ok := hints[skillID]; ok {
+				baseConfig.ModelHints = perSkill
+			} else if perSkill, ok := hints[skillName]; ok {
+				baseConfig.ModelHints = perSkill
+			}
+		}
+	}
 	if mcpReg := container.MCPRegistry(); mcpReg != nil {
 		baseConfig.MCPRegistry = mcpReg
 	}
@@ -720,6 +755,49 @@ func checkBudget(ctx context.Context, formatter *output.Formatter, workflowCap f
 		}
 	}
 	return nil
+}
+
+// showBudgetAlerts prints pre-execution budget alerts and cost estimates.
+// Non-fatal — execution proceeds regardless.
+func showBudgetAlerts(ctx context.Context, formatter *output.Formatter, request, profile string) {
+	appCtxVal := GetAppContext()
+	appContainer := GetContainer()
+	if appCtxVal == nil || appContainer == nil {
+		return
+	}
+
+	budgetCfg := appCtxVal.Config.Budget
+	limits := budget.NewLimits(budgetCfg.DailyLimit, budgetCfg.MonthlyLimit)
+	if !limits.Enabled() {
+		return
+	}
+
+	repo, err := infraStorage.NewBudgetRepository(appContainer.DB())
+	if err != nil {
+		return
+	}
+	usage, err := repo.GetUsage(ctx)
+	if err != nil {
+		return
+	}
+
+	// Show threshold alerts
+	for _, alert := range budget.CheckAlerts(limits, usage) {
+		if alert.IsError() {
+			formatter.Error("Budget Alert: %s", alert.Message())
+		} else {
+			formatter.Warning("Budget Alert: %s", alert.Message())
+		}
+	}
+
+	// Show cost estimate + savings tip for non-cheap profiles
+	est := budget.EstimateCost(len(request), profile)
+	if est.EstimatedUSD > 0 {
+		formatter.Info("Estimated cost: ~$%.4f", est.EstimatedUSD)
+		if profile != "cheap" && est.CheapSavingsPct > 10 {
+			formatter.Info("Tip: --profile cheap saves ~%.0f%% (~$%.4f)", est.CheapSavingsPct, est.CheapSavingsUSD)
+		}
+	}
 }
 
 // init registers the run command with the root command.

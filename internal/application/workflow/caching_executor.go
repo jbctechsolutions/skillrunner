@@ -60,7 +60,7 @@ func (e *CachingPhaseExecutor) Execute(ctx context.Context, phase *skill.Phase, 
 
 	// Build the completion request
 	req := ports.CompletionRequest{
-		ModelID:     e.delegate.selectModel(phase.RoutingProfile),
+		ModelID:     e.delegate.selectModel(ctx, phase.RoutingProfile),
 		Messages:    e.delegate.buildMessages(prompt, dependencyOutputs),
 		MaxTokens:   phase.MaxTokens,
 		Temperature: phase.Temperature,
@@ -182,7 +182,7 @@ func (e *CachingStreamingPhaseExecutor) ExecuteWithStreaming(
 
 	// Build the completion request
 	req := ports.CompletionRequest{
-		ModelID:     e.delegate.selectModel(phase.RoutingProfile),
+		ModelID:     e.delegate.selectModel(ctx, phase.RoutingProfile),
 		Messages:    e.delegate.buildMessages(prompt, dependencyOutputs),
 		MaxTokens:   phase.MaxTokens,
 		Temperature: phase.Temperature,
