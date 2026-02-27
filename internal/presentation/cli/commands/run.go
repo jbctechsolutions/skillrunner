@@ -16,9 +16,11 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/budget"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/complexity"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/isolation"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 	fileContext "github.com/jbctechsolutions/skillrunner/internal/infrastructure/context"
+	infraGit "github.com/jbctechsolutions/skillrunner/internal/infrastructure/git"
 	infraMemory "github.com/jbctechsolutions/skillrunner/internal/infrastructure/memory"
 	infraStorage "github.com/jbctechsolutions/skillrunner/internal/infrastructure/storage"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
@@ -35,6 +37,7 @@ type runFlags struct {
 	AutoApprove     bool    // skip tool permission prompts (-y / --yes)
 	Budget          float64 // per-workflow spend cap in USD (0 = use global config)
 	SkipEscalation  bool    // disable auto-escalation on low-confidence responses
+	Isolate         bool    // run in a git worktree, show diff and prompt merge/discard
 	profileExplicit bool    // set to true when --profile was provided by the user
 }
 
@@ -102,6 +105,7 @@ mode for long-running tasks that may need crash recovery.`,
 	cmd.Flags().BoolVarP(&runOpts.AutoApprove, "yes", "y", false, "auto-approve MCP tool execution (skip permission prompts)")
 	cmd.Flags().Float64Var(&runOpts.Budget, "budget", 0, "per-workflow spend cap in USD (overrides global config)")
 	cmd.Flags().BoolVar(&runOpts.SkipEscalation, "skip-escalation", false, "disable auto-escalation on low-confidence responses")
+	cmd.Flags().BoolVar(&runOpts.Isolate, "isolate", false, "run in a git worktree; show diff and prompt merge or discard")
 
 	return cmd
 }
@@ -181,6 +185,40 @@ func runSkill(cmd *cobra.Command, args []string) error {
 				memoryContent = mem.Combined()
 			}
 		}
+	}
+
+	// Worktree isolation: create a temporary git worktree for the execution.
+	var isolMgr *infraGit.IsolationManager
+	var isolSess *isolation.Session
+	if runOpts.Isolate {
+		cwd, cwdErr := os.Getwd()
+		if cwdErr != nil {
+			return fmt.Errorf("--isolate requires a working directory: %w", cwdErr)
+		}
+		im, imErr := infraGit.NewIsolationManager("")
+		if imErr != nil {
+			return fmt.Errorf("--isolate requires git to be installed: %w", imErr)
+		}
+		wm, wmErr := infraGit.NewWorktreeManager()
+		if wmErr != nil {
+			return fmt.Errorf("--isolate requires git: %w", wmErr)
+		}
+		repoRoot, rootErr := wm.GetRepositoryRoot(ctx, cwd)
+		if rootErr != nil {
+			return fmt.Errorf("--isolate requires a git repository: %w", rootErr)
+		}
+		sess, sessErr := im.Setup(ctx, repoRoot, sk.Name())
+		if sessErr != nil {
+			return fmt.Errorf("failed to create isolation worktree: %w", sessErr)
+		}
+		isolMgr = im
+		isolSess = sess
+		formatter.Info("Isolation worktree: %s", sess.WorktreePath)
+		// Inject worktree path as context so LLM tools operate on the isolated copy.
+		if memoryContent != "" {
+			memoryContent += "\n\n"
+		}
+		memoryContent += fmt.Sprintf("Working directory for file operations: %s", sess.WorktreePath)
 	}
 
 	// Check tool permissions if the skill declares MCP tools
@@ -269,7 +307,11 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
 		executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
-		return runSkillJSON(ctx, executor, sk, request, provider, costCalc)
+		execErr := runSkillJSON(ctx, executor, sk, request, provider, costCalc)
+		if isolSess != nil {
+			handleIsolationResult(ctx, formatter, isolMgr, isolSess, execErr)
+		}
+		return execErr
 	}
 
 	// Streaming output mode
@@ -277,12 +319,59 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	// tasks that need crash recovery, use standard (non-streaming) mode.
 	if runOpts.Stream {
 		streamingExecutor := workflow.NewStreamingExecutor(provider, baseConfig)
-		return runSkillStreaming(ctx, streamingExecutor, sk, request, provider, formatter)
+		execErr := runSkillStreaming(ctx, streamingExecutor, sk, request, provider, formatter)
+		if isolSess != nil {
+			handleIsolationResult(ctx, formatter, isolMgr, isolSess, execErr)
+		}
+		return execErr
 	}
 
 	// Standard text output with progress display
 	executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
-	return runSkillText(ctx, executor, sk, request, provider, formatter, costCalc)
+	execErr := runSkillText(ctx, executor, sk, request, provider, formatter, costCalc)
+	if isolSess != nil {
+		handleIsolationResult(ctx, formatter, isolMgr, isolSess, execErr)
+	}
+	return execErr
+}
+
+// handleIsolationResult presents the worktree diff and prompts the user to merge or discard.
+func handleIsolationResult(ctx context.Context, formatter *output.Formatter, im *infraGit.IsolationManager, sess *isolation.Session, execErr error) {
+	if execErr != nil {
+		formatter.Warning("Execution failed — discarding worktree (%s)", sess.WorktreePath)
+		_ = im.Discard(ctx, sess)
+		return
+	}
+
+	diff, err := im.Diff(ctx, sess)
+	if err != nil || strings.TrimSpace(diff) == "" {
+		formatter.Info("No file changes detected in isolation worktree.")
+		_ = im.Discard(ctx, sess)
+		return
+	}
+
+	formatter.Println("")
+	formatter.SubHeader("Isolation Diff")
+	formatter.Println(diff)
+
+	// Prompt user to apply or discard
+	fmt.Print("Apply changes to working tree? [y/N] ")
+	var answer string
+	if _, scanErr := fmt.Scanln(&answer); scanErr != nil {
+		answer = "n"
+	}
+
+	if strings.ToLower(strings.TrimSpace(answer)) == "y" {
+		if applyErr := im.Apply(ctx, sess); applyErr != nil {
+			formatter.Error("Failed to apply changes: %v", applyErr)
+		} else {
+			formatter.Success("Changes applied to working tree.")
+		}
+		_ = im.Discard(ctx, sess)
+	} else {
+		formatter.Info("Changes discarded. Worktree removed.")
+		_ = im.Discard(ctx, sess)
+	}
 }
 
 // selectProvider chooses a provider based on the routing profile.
