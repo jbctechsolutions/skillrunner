@@ -34,6 +34,7 @@ type runFlags struct {
 	Force           bool
 	AutoApprove     bool    // skip tool permission prompts (-y / --yes)
 	Budget          float64 // per-workflow spend cap in USD (0 = use global config)
+	SkipEscalation  bool    // disable auto-escalation on low-confidence responses
 	profileExplicit bool    // set to true when --profile was provided by the user
 }
 
@@ -100,6 +101,7 @@ mode for long-running tasks that may need crash recovery.`,
 	cmd.Flags().BoolVarP(&runOpts.Force, "force", "f", false, "start new execution even if checkpoint exists")
 	cmd.Flags().BoolVarP(&runOpts.AutoApprove, "yes", "y", false, "auto-approve MCP tool execution (skip permission prompts)")
 	cmd.Flags().Float64Var(&runOpts.Budget, "budget", 0, "per-workflow spend cap in USD (overrides global config)")
+	cmd.Flags().BoolVar(&runOpts.SkipEscalation, "skip-escalation", false, "disable auto-escalation on low-confidence responses")
 
 	return cmd
 }
@@ -240,6 +242,8 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	baseConfig.MemoryContent = memoryContent
 	baseConfig.AutoApproveTools = runOpts.AutoApprove
 	baseConfig.RoutingProfile = runOpts.Profile
+	baseConfig.SkillID = sk.ID()
+	baseConfig.SkillName = sk.Name()
 	if appCtx != nil && appCtx.Config != nil {
 		baseConfig.CompressionEnabled = appCtx.Config.Context.CompressionEnabled
 		// Resolve skill-level model hints for this skill
@@ -252,6 +256,11 @@ func runSkill(cmd *cobra.Command, args []string) error {
 				baseConfig.ModelHints = perSkill
 			}
 		}
+		baseConfig.ConfidenceThresholds = appCtx.Config.Routing.ConfidenceThreshold
+	}
+	baseConfig.SkipConfidenceEscalation = runOpts.SkipEscalation
+	if outcomeRepo := container.OutcomeRepository(); outcomeRepo != nil {
+		baseConfig.OutcomePort = outcomeRepo
 	}
 	if mcpReg := container.MCPRegistry(); mcpReg != nil {
 		baseConfig.MCPRegistry = mcpReg

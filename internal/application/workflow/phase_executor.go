@@ -11,6 +11,7 @@ import (
 	mcpAdapter "github.com/jbctechsolutions/skillrunner/internal/adapters/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/confidence"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 )
 
@@ -19,11 +20,13 @@ const maxToolIterations = 10
 
 // phaseExecutor handles the execution of a single phase.
 type phaseExecutor struct {
-	provider      ports.ProviderPort
-	memoryContent string
-	mcpRegistry   ports.MCPToolRegistryPort // nil when tool calling is disabled
-	compressor    *compression.Compressor   // nil means no compression
-	modelHints    map[string]string         // v1.3: profile→model overrides; nil = use defaults
+	provider                 ports.ProviderPort
+	memoryContent            string
+	mcpRegistry              ports.MCPToolRegistryPort // nil when tool calling is disabled
+	compressor               *compression.Compressor   // nil means no compression
+	modelHints               map[string]string         // v1.3: profile→model overrides; nil = use defaults
+	confidenceThresholds     map[string]float64        // v1.4: profile→confidence threshold
+	skipConfidenceEscalation bool                      // v1.4: disable auto-escalation
 }
 
 // newPhaseExecutor creates a new phase executor with the given provider, memory content, and optional MCP registry.
@@ -136,6 +139,28 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 		}
 	}
 
+	// v1.4: Confidence check — escalate to next-tier model if below threshold
+	if !e.skipConfidenceEscalation && finalContent != "" {
+		threshold := e.confidenceThresholdFor(phase.RoutingProfile)
+		score := confidence.Detect(finalContent)
+		if confidence.NeedsEscalation(score, phase.RoutingProfile, threshold) {
+			escalatedProfile := confidence.EscalateProfile(phase.RoutingProfile)
+			if escalatedProfile != phase.RoutingProfile {
+				// Build escalated request with the higher-tier model
+				escalatedReq := req
+				escalatedReq.ModelID = e.defaultModel(escalatedProfile)
+				if resp, err := e.provider.Complete(ctx, escalatedReq); err == nil {
+					finalContent = resp.Content
+					totalInput += resp.InputTokens
+					totalOutput += resp.OutputTokens
+					if resp.ModelUsed != "" {
+						modelUsed = resp.ModelUsed
+					}
+				}
+			}
+		}
+	}
+
 	// Populate the result
 	result.Status = PhaseStatusCompleted
 	result.Output = finalContent
@@ -146,6 +171,16 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 	result.Duration = result.EndTime.Sub(result.StartTime)
 
 	return result
+}
+
+// confidenceThresholdFor returns the configured or default confidence threshold for a profile.
+func (e *phaseExecutor) confidenceThresholdFor(profile string) float64 {
+	if e.confidenceThresholds != nil {
+		if t, ok := e.confidenceThresholds[profile]; ok && t > 0 {
+			return t
+		}
+	}
+	return confidence.ThresholdForProfile(profile)
 }
 
 // executeToolCall executes a single tool call via the MCP registry and returns the result.

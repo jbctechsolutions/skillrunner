@@ -46,9 +46,10 @@ type CloudConfig struct {
 
 // RoutingConfig holds configuration for model routing.
 type RoutingConfig struct {
-	DefaultProfile  string                           `yaml:"default_profile"`
-	Profiles        map[string]*ProfileConfiguration `yaml:"profiles,omitempty"`
-	SkillModelHints map[string]map[string]string     `yaml:"skill_model_hints,omitempty"` // v1.3: per-skill model overrides
+	DefaultProfile      string                           `yaml:"default_profile"`
+	Profiles            map[string]*ProfileConfiguration `yaml:"profiles,omitempty"`
+	SkillModelHints     map[string]map[string]string     `yaml:"skill_model_hints,omitempty"`    // v1.3: per-skill model overrides
+	ConfidenceThreshold map[string]float64               `yaml:"confidence_threshold,omitempty"` // v1.4: per-profile escalation threshold
 }
 
 // LoggingConfig holds configuration for application logging.

@@ -6,9 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/errors"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/outcome"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/workflow"
 )
@@ -62,14 +64,19 @@ type ExecutionResult struct {
 
 // ExecutorConfig contains configuration options for the executor.
 type ExecutorConfig struct {
-	MaxParallel        int                       // Maximum number of phases to execute in parallel
-	Timeout            time.Duration             // Overall timeout for skill execution
-	MemoryContent      string                    // Memory content to inject into prompts (from MEMORY.md/CLAUDE.md)
-	MCPRegistry        ports.MCPToolRegistryPort // Optional: enables MCP tool calling (nil = disabled)
-	AutoApproveTools   bool                      // Skip interactive tool permission prompts
-	CompressionEnabled bool                      // v1.3: compress context before provider calls
-	RoutingProfile     string                    // v1.3: used to calibrate compression aggressiveness
-	ModelHints         map[string]string         // v1.3: profile→model overrides for the current skill
+	MaxParallel              int                       // Maximum number of phases to execute in parallel
+	Timeout                  time.Duration             // Overall timeout for skill execution
+	MemoryContent            string                    // Memory content to inject into prompts (from MEMORY.md/CLAUDE.md)
+	MCPRegistry              ports.MCPToolRegistryPort // Optional: enables MCP tool calling (nil = disabled)
+	AutoApproveTools         bool                      // Skip interactive tool permission prompts
+	CompressionEnabled       bool                      // v1.3: compress context before provider calls
+	RoutingProfile           string                    // v1.3: used to calibrate compression aggressiveness
+	ModelHints               map[string]string         // v1.3: profile→model overrides for the current skill
+	OutcomePort              ports.OutcomeStoragePort  // v1.4: outcome recording (nil = disabled)
+	SkillID                  string                    // v1.4: used when recording outcomes
+	SkillName                string                    // v1.4: used when recording outcomes
+	ConfidenceThresholds     map[string]float64        // v1.4: profile→threshold (0 = use defaults)
+	SkipConfidenceEscalation bool                      // v1.4: disable auto-escalation
 }
 
 // DefaultExecutorConfig returns the default executor configuration.
@@ -107,6 +114,8 @@ func NewExecutor(provider ports.ProviderPort, config ExecutorConfig) Executor {
 		pe.compressor = compression.NewFromProfile(config.RoutingProfile)
 	}
 	pe.modelHints = config.ModelHints
+	pe.confidenceThresholds = config.ConfidenceThresholds
+	pe.skipConfidenceEscalation = config.SkipConfidenceEscalation
 
 	return &executor{
 		provider:      provider,
@@ -284,6 +293,11 @@ func (e *executor) executeBatch(
 				firstErr = phaseResult.Error
 			}
 			mu.Unlock()
+
+			// Record outcome asynchronously (non-blocking, best-effort)
+			if e.config.OutcomePort != nil {
+				go e.recordOutcome(context.Background(), p, phaseResult)
+			}
 		}(phase)
 	}
 
@@ -361,4 +375,22 @@ func (e *executor) determineFinalOutput(dag *workflow.DAG, phases []skill.Phase,
 	}
 
 	return finalOutput
+}
+
+// recordOutcome persists a phase outcome to the outcome store (best-effort).
+func (e *executor) recordOutcome(ctx context.Context, p *skill.Phase, pr *PhaseResult) {
+	o := &outcome.Outcome{
+		ID:         uuid.New().String(),
+		SkillID:    e.config.SkillID,
+		SkillName:  e.config.SkillName,
+		PhaseID:    p.ID,
+		PhaseName:  p.Name,
+		Profile:    p.RoutingProfile,
+		Model:      pr.ModelUsed,
+		Success:    pr.Status == PhaseStatusCompleted,
+		DurationMS: pr.Duration.Milliseconds(),
+		RecordedAt: time.Now(),
+	}
+	// Suppress errors — outcome recording is non-critical
+	_ = e.config.OutcomePort.Record(ctx, o)
 }

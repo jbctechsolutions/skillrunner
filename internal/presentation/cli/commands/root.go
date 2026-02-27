@@ -102,8 +102,9 @@ Key features:
 
 	// v1.3: Budget alerts and status
 	rootCmd.AddCommand(NewBudgetCmd())
-	rootCmd.AddCommand(NewModelsCmd()) // v1.3: Model recommendations
-	rootCmd.AddCommand(NewCostCmd())   // v1.3: Cost analytics
+	rootCmd.AddCommand(NewModelsCmd())   // v1.3: Model recommendations
+	rootCmd.AddCommand(NewCostCmd())     // v1.3: Cost analytics
+	rootCmd.AddCommand(NewOutcomesCmd()) // v1.4: Outcome tracking
 
 	return rootCmd
 }

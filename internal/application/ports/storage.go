@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/jbctechsolutions/skillrunner/internal/domain/metrics"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/outcome"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 )
 
@@ -46,6 +47,21 @@ type MetricsStoragePort interface {
 
 	// GetCostSummary retrieves aggregated cost data based on the provided filter.
 	GetCostSummary(ctx context.Context, filter metrics.MetricsFilter) (*metrics.CostSummary, error)
+}
+
+// OutcomeStoragePort defines the interface for persisting and querying execution outcomes.
+type OutcomeStoragePort interface {
+	// Record persists a single phase outcome.
+	Record(ctx context.Context, o *outcome.Outcome) error
+
+	// GetBySkill retrieves recent outcomes for a skill (most recent first).
+	GetBySkill(ctx context.Context, skillID string, limit int) ([]outcome.Outcome, error)
+
+	// GetStats returns aggregated per-phase per-profile statistics for a skill.
+	GetStats(ctx context.Context, skillID string) ([]outcome.ProfileStats, error)
+
+	// Reset deletes all outcome history for a skill.
+	Reset(ctx context.Context, skillID string) error
 }
 
 // SkillLoaderPort defines the interface for loading and discovering skills.
