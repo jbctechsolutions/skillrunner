@@ -45,7 +45,7 @@ func NewCacheStatsCmd() *cobra.Command {
 
 			cache := container.ResponseCache()
 			if cache == nil {
-				formatter.Warning("Cache is not enabled")
+				_ = formatter.Warning("Cache is not enabled")
 				return nil
 			}
 
@@ -55,38 +55,38 @@ func NewCacheStatsCmd() *cobra.Command {
 			}
 
 			// Display stats
-			formatter.Header("Cache Statistics")
-			formatter.Info("")
+			_ = formatter.Header("Cache Statistics")
+			_ = formatter.Info("")
 
-			formatter.Info("Entries:")
-			formatter.Info("  Total:     %d", stats.TotalEntries)
-			formatter.Info("  Size:      %s", formatCacheBytes(stats.TotalSize))
-			formatter.Info("")
+			_ = formatter.Info("Entries:")
+			_ = formatter.Info("  Total:     %d", stats.TotalEntries)
+			_ = formatter.Info("  Size:      %s", formatCacheBytes(stats.TotalSize))
+			_ = formatter.Info("")
 
-			formatter.Info("Performance:")
-			formatter.Info("  Hits:      %d", stats.HitCount)
-			formatter.Info("  Misses:    %d", stats.MissCount)
-			formatter.Info("  Hit Rate:  %.1f%%", stats.HitRate)
-			formatter.Info("")
+			_ = formatter.Info("Performance:")
+			_ = formatter.Info("  Hits:      %d", stats.HitCount)
+			_ = formatter.Info("  Misses:    %d", stats.MissCount)
+			_ = formatter.Info("  Hit Rate:  %.1f%%", stats.HitRate)
+			_ = formatter.Info("")
 
-			formatter.Info("Maintenance:")
-			formatter.Info("  Evictions: %d", stats.EvictionCount)
-			formatter.Info("  Expired:   %d", stats.ExpiredCount)
-			formatter.Info("")
+			_ = formatter.Info("Maintenance:")
+			_ = formatter.Info("  Evictions: %d", stats.EvictionCount)
+			_ = formatter.Info("  Expired:   %d", stats.ExpiredCount)
+			_ = formatter.Info("")
 
 			if !stats.OldestEntry.IsZero() {
-				formatter.Info("Timeline:")
-				formatter.Info("  Oldest:    %s ago", formatCacheDuration(time.Since(stats.OldestEntry)))
-				formatter.Info("  Newest:    %s ago", formatCacheDuration(time.Since(stats.NewestEntry)))
-				formatter.Info("  Avg TTL:   %s", formatCacheDuration(stats.AvgTTL))
-				formatter.Info("")
+				_ = formatter.Info("Timeline:")
+				_ = formatter.Info("  Oldest:    %s ago", formatCacheDuration(time.Since(stats.OldestEntry)))
+				_ = formatter.Info("  Newest:    %s ago", formatCacheDuration(time.Since(stats.NewestEntry)))
+				_ = formatter.Info("  Avg TTL:   %s", formatCacheDuration(stats.AvgTTL))
+				_ = formatter.Info("")
 			}
 
 			if stats.TokensSaved > 0 || stats.CostSaved > 0 {
-				formatter.Info("Savings:")
-				formatter.Info("  Tokens:    %d", stats.TokensSaved)
+				_ = formatter.Info("Savings:")
+				_ = formatter.Info("  Tokens:    %d", stats.TokensSaved)
 				if stats.CostSaved > 0 {
-					formatter.Info("  Est. Cost: $%.4f", stats.CostSaved)
+					_ = formatter.Info("  Est. Cost: $%.4f", stats.CostSaved)
 				}
 			}
 
@@ -116,7 +116,7 @@ func NewCacheClearCmd() *cobra.Command {
 
 			cache := container.ResponseCache()
 			if cache == nil {
-				formatter.Warning("Cache is not enabled")
+				_ = formatter.Warning("Cache is not enabled")
 				return nil
 			}
 
@@ -126,13 +126,13 @@ func NewCacheClearCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to cleanup cache: %w", err)
 				}
-				formatter.Success("Removed %d expired cache entries", removed)
+				_ = formatter.Success("Removed %d expired cache entries", removed)
 				return nil
 			}
 
 			if !confirm {
-				formatter.Warning("This will clear ALL cached entries.")
-				formatter.Info("Use --confirm to proceed, or --expired to only clear expired entries.")
+				_ = formatter.Warning("This will clear ALL cached entries.")
+				_ = formatter.Info("Use --confirm to proceed, or --expired to only clear expired entries.")
 				return nil
 			}
 
@@ -140,7 +140,7 @@ func NewCacheClearCmd() *cobra.Command {
 				return fmt.Errorf("failed to clear cache: %w", err)
 			}
 
-			formatter.Success("Cache cleared successfully")
+			_ = formatter.Success("Cache cleared successfully")
 			return nil
 		},
 	}
@@ -170,7 +170,7 @@ func NewCacheListCmd() *cobra.Command {
 
 			cache := container.ResponseCache()
 			if cache == nil {
-				formatter.Warning("Cache is not enabled")
+				_ = formatter.Warning("Cache is not enabled")
 				return nil
 			}
 
@@ -180,17 +180,17 @@ func NewCacheListCmd() *cobra.Command {
 			}
 
 			if len(keys) == 0 {
-				formatter.Info("No cached entries found")
+				_ = formatter.Info("No cached entries found")
 				return nil
 			}
 
-			formatter.Header("Cached Entries")
-			formatter.Info("")
+			_ = formatter.Header("Cached Entries")
+			_ = formatter.Info("")
 
 			displayed := 0
 			for _, key := range keys {
 				if limit > 0 && displayed >= limit {
-					formatter.Info("... and %d more entries", len(keys)-displayed)
+					_ = formatter.Info("... and %d more entries", len(keys)-displayed)
 					break
 				}
 
@@ -201,17 +201,17 @@ func NewCacheListCmd() *cobra.Command {
 
 				// Format the entry
 				ttlRemaining := time.Until(entry.ExpiresAt)
-				formatter.Info("Key: %s", truncateCacheKey(key, 40))
-				formatter.Info("  Model:   %s", entry.ModelID)
-				formatter.Info("  Size:    %s", formatCacheBytes(entry.Size))
-				formatter.Info("  Hits:    %d", entry.HitCount)
-				formatter.Info("  TTL:     %s remaining", formatCacheDuration(ttlRemaining))
-				formatter.Info("")
+				_ = formatter.Info("Key: %s", truncateCacheKey(key, 40))
+				_ = formatter.Info("  Model:   %s", entry.ModelID)
+				_ = formatter.Info("  Size:    %s", formatCacheBytes(entry.Size))
+				_ = formatter.Info("  Hits:    %d", entry.HitCount)
+				_ = formatter.Info("  TTL:     %s remaining", formatCacheDuration(ttlRemaining))
+				_ = formatter.Info("")
 
 				displayed++
 			}
 
-			formatter.Info("Total: %d entries", len(keys))
+			_ = formatter.Info("Total: %d entries", len(keys))
 			return nil
 		},
 	}
@@ -237,13 +237,13 @@ func NewCacheConfigCmd() *cobra.Command {
 			formatter := GetFormatter()
 			cfg := ctx.Config.Cache
 
-			formatter.Header("Cache Configuration")
-			formatter.Info("")
-			formatter.Info("Enabled:        %v", cfg.Enabled)
-			formatter.Info("Default TTL:    %s", formatCacheDuration(cfg.DefaultTTL))
-			formatter.Info("Max Memory:     %s", formatCacheBytes(cfg.MaxMemorySize))
-			formatter.Info("Max Disk:       %s", formatCacheBytes(cfg.MaxDiskSize))
-			formatter.Info("Cleanup Period: %s", formatCacheDuration(cfg.CleanupPeriod))
+			_ = formatter.Header("Cache Configuration")
+			_ = formatter.Info("")
+			_ = formatter.Info("Enabled:        %v", cfg.Enabled)
+			_ = formatter.Info("Default TTL:    %s", formatCacheDuration(cfg.DefaultTTL))
+			_ = formatter.Info("Max Memory:     %s", formatCacheBytes(cfg.MaxMemorySize))
+			_ = formatter.Info("Max Disk:       %s", formatCacheBytes(cfg.MaxDiskSize))
+			_ = formatter.Info("Cleanup Period: %s", formatCacheDuration(cfg.CleanupPeriod))
 
 			return nil
 		},

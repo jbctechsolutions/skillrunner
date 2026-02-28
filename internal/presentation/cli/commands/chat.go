@@ -103,14 +103,14 @@ func runChat(cmd *cobra.Command, args []string) error {
 	}
 
 	// Print welcome message
-	formatter.Header(fmt.Sprintf("Chat Session: %s", sessionName))
-	formatter.Item("Profile", chatOpts.Profile)
+	_ = formatter.Header(fmt.Sprintf("Chat Session: %s", sessionName))
+	_ = formatter.Item("Profile", chatOpts.Profile)
 	if chatOpts.Model != "" {
-		formatter.Item("Model", chatOpts.Model)
+		_ = formatter.Item("Model", chatOpts.Model)
 	}
-	formatter.Println("")
-	formatter.Info("Type your message and press Enter. Type /help for commands.")
-	formatter.Println("")
+	_ = formatter.Println("")
+	_ = formatter.Info("Type your message and press Enter. Type /help for commands.")
+	_ = formatter.Println("")
 
 	// Create readline instance
 	rl, err := readline.New("> ")
@@ -141,7 +141,7 @@ func runChat(cmd *cobra.Command, args []string) error {
 		if strings.HasPrefix(line, "/") {
 			shouldExit, err := handleChatCommand(line, conversation, &currentProfile, &currentModel, formatter, sessionName)
 			if err != nil {
-				formatter.Error("Command error: %s", err.Error())
+				_ = formatter.Error("Command error: %s", err.Error())
 				continue
 			}
 			if shouldExit {
@@ -163,17 +163,17 @@ func runChat(cmd *cobra.Command, args []string) error {
 		// Get response using conversation context
 		response, err := chatService.AskWithConversation(ctx, askReq, conversation)
 		if err != nil {
-			formatter.Error("Error: %s", err.Error())
+			_ = formatter.Error("Error: %s", err.Error())
 			continue
 		}
 
 		// Print response
-		formatter.Success("\nAssistant (%s):", response.ModelUsed)
-		formatter.Println(response.Answer)
-		formatter.Println("")
+		_ = formatter.Success("\nAssistant (%s):", response.ModelUsed)
+		_ = formatter.Println(response.Answer)
+		_ = formatter.Println("")
 	}
 
-	formatter.Info("Chat session ended. Goodbye!")
+	_ = formatter.Info("Chat session ended. Goodbye!")
 	return nil
 }
 

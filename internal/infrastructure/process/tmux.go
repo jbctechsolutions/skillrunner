@@ -44,7 +44,7 @@ func (tm *TmuxManager) CreateSession(ctx context.Context, sessionName, workDir s
 		args = append(args, "-c", workDir)
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, args...)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, args...) // #nosec G204 -- tmux binary with controlled arguments
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create tmux session: %w", err)
 	}
@@ -58,7 +58,7 @@ func (tm *TmuxManager) AttachSession(ctx context.Context, sessionName string) er
 		return fmt.Errorf("session name cannot be empty")
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "attach-session", "-t", sessionName)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "attach-session", "-t", sessionName) // #nosec G204 -- tmux binary with controlled arguments
 	cmd.Stdin = nil // Will be handled by terminal
 	cmd.Stdout = nil
 	cmd.Stderr = nil
@@ -77,7 +77,7 @@ func (tm *TmuxManager) DetachSession(ctx context.Context, sessionName string) er
 		return fmt.Errorf("session name cannot be empty")
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "detach-client", "-s", sessionName)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "detach-client", "-s", sessionName) // #nosec G204 -- tmux binary with controlled arguments
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to detach from tmux session: %w", err)
 	}
@@ -91,7 +91,7 @@ func (tm *TmuxManager) KillSession(ctx context.Context, sessionName string) erro
 		return fmt.Errorf("session name cannot be empty")
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "kill-session", "-t", sessionName)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "kill-session", "-t", sessionName) // #nosec G204 -- tmux binary with controlled arguments
 	if err := cmd.Run(); err != nil {
 		// Check if session doesn't exist
 		if strings.Contains(err.Error(), "no server running") ||
@@ -110,7 +110,7 @@ func (tm *TmuxManager) SendKeys(ctx context.Context, sessionName, keys string) e
 		return fmt.Errorf("session name cannot be empty")
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "send-keys", "-t", sessionName, keys, "Enter")
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "send-keys", "-t", sessionName, keys, "Enter") // #nosec G204 -- tmux binary with controlled arguments
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to send keys to tmux session: %w", err)
 	}
@@ -130,7 +130,7 @@ func (tm *TmuxManager) CapturePane(ctx context.Context, sessionName string, line
 	}
 
 	var out bytes.Buffer
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, args...)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, args...) // #nosec G204 -- tmux binary with controlled arguments
 	cmd.Stdout = &out
 
 	if err := cmd.Run(); err != nil {
@@ -152,7 +152,7 @@ func (tm *TmuxManager) SessionExists(ctx context.Context, sessionName string) (b
 		return false, fmt.Errorf("session name cannot be empty")
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "has-session", "-t", sessionName)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "has-session", "-t", sessionName) // #nosec G204 -- tmux binary with controlled arguments
 	err := cmd.Run()
 	if err != nil {
 		// Check if it's just "session not found" vs actual error
@@ -170,7 +170,7 @@ func (tm *TmuxManager) SessionExists(ctx context.Context, sessionName string) (b
 // ListSessions returns all tmux session names.
 func (tm *TmuxManager) ListSessions(ctx context.Context) ([]string, error) {
 	var out bytes.Buffer
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "list-sessions", "-F", "#{session_name}")
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "list-sessions", "-F", "#{session_name}") // #nosec G204 -- tmux binary with controlled arguments
 	cmd.Stdout = &out
 
 	err := cmd.Run()
@@ -197,7 +197,7 @@ func (tm *TmuxManager) GetSessionPID(ctx context.Context, sessionName string) (i
 	}
 
 	var out bytes.Buffer
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "list-panes", "-t", sessionName, "-F", "#{pane_pid}")
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "list-panes", "-t", sessionName, "-F", "#{pane_pid}") // #nosec G204 -- tmux binary with controlled arguments
 	cmd.Stdout = &out
 
 	if err := cmd.Run(); err != nil {
@@ -232,7 +232,7 @@ func (tm *TmuxManager) ResizePane(ctx context.Context, sessionName string, width
 		args = append(args, "-y", fmt.Sprintf("%d", height))
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, args...)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, args...) // #nosec G204 -- tmux binary with controlled arguments
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to resize tmux pane: %w", err)
 	}
@@ -246,7 +246,7 @@ func (tm *TmuxManager) SetEnvironment(ctx context.Context, sessionName, key, val
 		return fmt.Errorf("session name cannot be empty")
 	}
 
-	cmd := exec.CommandContext(ctx, tm.tmuxPath, "set-environment", "-t", sessionName, key, value)
+	cmd := exec.CommandContext(ctx, tm.tmuxPath, "set-environment", "-t", sessionName, key, value) // #nosec G204 -- tmux binary with controlled arguments
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to set tmux environment: %w", err)
 	}

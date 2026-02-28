@@ -112,12 +112,12 @@ Items can be tagged for organization and have token estimates calculated automat
 				return fmt.Errorf("failed to save context item: %w", err)
 			}
 
-			formatter.Success("Added %s context item: %s", itemType, name)
-			formatter.Info("ID: %s", id)
+			_ = formatter.Success("Added %s context item: %s", itemType, name)
+			_ = formatter.Info("ID: %s", id)
 			if len(tags) > 0 {
-				formatter.Info("Tags: %v", tags)
+				_ = formatter.Info("Tags: %v", tags)
 			}
-			formatter.Info("Estimated tokens: %d", tokenEstimate)
+			_ = formatter.Info("Estimated tokens: %d", tokenEstimate)
 
 			return nil
 		},
@@ -162,8 +162,8 @@ Items can be tagged for organization and have token estimates calculated automat
 			}
 
 			if len(items) == 0 {
-				formatter.Header("Context Items")
-				formatter.Info("No items found")
+				_ = formatter.Header("Context Items")
+				_ = formatter.Info("No items found")
 				return nil
 			}
 
@@ -221,7 +221,7 @@ Items can be tagged for organization and have token estimates calculated automat
 				return fmt.Errorf("failed to remove context item: %w", err)
 			}
 
-			formatter.Success("Removed context item: %s", name)
+			_ = formatter.Success("Removed context item: %s", name)
 
 			return nil
 		},
@@ -251,15 +251,15 @@ Items can be tagged for organization and have token estimates calculated automat
 			}
 
 			// Display item details
-			formatter.Header("Context Item: " + name)
-			formatter.Info("Type: %s", item.Type())
-			formatter.Info("Token Estimate: %d", item.TokenEstimate())
+			_ = formatter.Header("Context Item: " + name)
+			_ = formatter.Info("Type: %s", item.Type())
+			_ = formatter.Info("Token Estimate: %d", item.TokenEstimate())
 			if len(item.Tags()) > 0 {
-				formatter.Info("Tags: %v", item.Tags())
+				_ = formatter.Info("Tags: %v", item.Tags())
 			}
-			formatter.Println("")
-			formatter.Info("Content:")
-			formatter.Println(item.Content())
+			_ = formatter.Println("")
+			_ = formatter.Info("Content:")
+			_ = formatter.Println(item.Content())
 
 			return nil
 		},

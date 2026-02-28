@@ -21,7 +21,7 @@ func LoadRoutingConfig(path string) (*RoutingConfiguration, error) {
 	// Clean and resolve the path
 	cleanPath := filepath.Clean(path)
 
-	data, err := os.ReadFile(cleanPath)
+	data, err := os.ReadFile(cleanPath) // #nosec G304 -- config file path cleaned and validated above
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file %q: %w", path, err)
 	}
@@ -71,7 +71,7 @@ func SaveRoutingConfig(path string, cfg *RoutingConfiguration) error {
 
 	// Ensure parent directory exists
 	dir := filepath.Dir(cleanPath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return fmt.Errorf("failed to create config directory %q: %w", dir, err)
 	}
 
@@ -82,7 +82,7 @@ func SaveRoutingConfig(path string, cfg *RoutingConfiguration) error {
 	}
 
 	// Write to file with readable permissions
-	if err := os.WriteFile(cleanPath, data, 0o644); err != nil {
+	if err := os.WriteFile(cleanPath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write config file %q: %w", path, err)
 	}
 

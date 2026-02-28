@@ -53,12 +53,12 @@ func newMCPListServersCmd() *cobra.Command {
 
 			names := reg.ListConfiguredServers()
 			if len(names) == 0 {
-				formatter.Warning("No MCP servers configured.")
-				formatter.Println("Add servers to ~/.skillrunner/mcp_servers.json or .claude/mcp.json")
+				_ = formatter.Warning("No MCP servers configured.")
+				_ = formatter.Println("Add servers to ~/.skillrunner/mcp_servers.json or .claude/mcp.json")
 				return nil
 			}
 
-			formatter.Header("MCP Servers")
+			_ = formatter.Header("MCP Servers")
 			for _, name := range names {
 				// Get runtime info if the server has been started, otherwise show stopped
 				info, err := reg.Manager().GetInfo(name)
@@ -73,7 +73,7 @@ func newMCPListServersCmd() *cobra.Command {
 				if len(cfg.Args) > 0 {
 					cmdStr += " " + strings.Join(cfg.Args, " ")
 				}
-				formatter.Println("  %s %-20s  state: %-10s  tools: %d  cmd: %s",
+				_ = formatter.Println("  %s %-20s  state: %-10s  tools: %d  cmd: %s",
 					serverStateIcon(state), name, state, toolCount, cmdStr)
 			}
 			return nil
@@ -99,11 +99,11 @@ func newMCPStartCmd() *cobra.Command {
 			}
 			formatter := GetFormatter()
 
-			formatter.Println("Starting MCP server %q...", serverName)
+			_ = formatter.Println("Starting MCP server %q...", serverName)
 			if err := reg.EnsureServerRunning(context.Background(), serverName); err != nil {
 				return fmt.Errorf("failed to start server %q: %w", serverName, err)
 			}
-			formatter.Success("Server %q started.", serverName)
+			_ = formatter.Success("Server %q started.", serverName)
 			return nil
 		},
 	}
@@ -130,7 +130,7 @@ func newMCPStopCmd() *cobra.Command {
 			if err := reg.Manager().Stop(context.Background(), serverName); err != nil {
 				return fmt.Errorf("failed to stop server %q: %w", serverName, err)
 			}
-			formatter.Success("Server %q stopped.", serverName)
+			_ = formatter.Success("Server %q stopped.", serverName)
 			return nil
 		},
 	}
@@ -159,18 +159,18 @@ func newMCPStatusCmd() *cobra.Command {
 				return fmt.Errorf("server %q not found: %w", serverName, err)
 			}
 
-			formatter.Header(fmt.Sprintf("MCP Server: %s", info.Name))
-			formatter.Item("State", string(info.State))
-			formatter.Item("Tools", fmt.Sprintf("%d", info.ToolCount))
+			_ = formatter.Header(fmt.Sprintf("MCP Server: %s", info.Name))
+			_ = formatter.Item("State", string(info.State))
+			_ = formatter.Item("Tools", fmt.Sprintf("%d", info.ToolCount))
 			if !info.StartedAt.IsZero() {
-				formatter.Item("Started", info.StartedAt.Format("2006-01-02 15:04:05"))
+				_ = formatter.Item("Started", info.StartedAt.Format("2006-01-02 15:04:05"))
 			}
 			if info.ErrorMessage != "" {
-				formatter.Item("Error", info.ErrorMessage)
+				_ = formatter.Item("Error", info.ErrorMessage)
 			}
 			cfg, ok := reg.GetServerConfig(serverName)
 			if ok {
-				formatter.Item("Command", cfg.Command+" "+strings.Join(cfg.Args, " "))
+				_ = formatter.Item("Command", cfg.Command+" "+strings.Join(cfg.Args, " "))
 			}
 			return nil
 		},
@@ -212,17 +212,17 @@ func newMCPListToolsCmd() *cobra.Command {
 			}
 
 			if len(tools) == 0 {
-				formatter.Warning("No tools available. Start an MCP server first.")
+				_ = formatter.Warning("No tools available. Start an MCP server first.")
 				return nil
 			}
 
-			formatter.Header(fmt.Sprintf("MCP Tools (%d)", len(tools)))
+			_ = formatter.Header(fmt.Sprintf("MCP Tools (%d)", len(tools)))
 			for _, t := range tools {
 				desc := t.Description()
 				if len(desc) > 60 {
 					desc = desc[:57] + "..."
 				}
-				formatter.Println("  %-40s  %s", t.FullName(), desc)
+				_ = formatter.Println("  %-40s  %s", t.FullName(), desc)
 			}
 			return nil
 		},
@@ -264,21 +264,21 @@ func newMCPDescribeToolCmd() *cobra.Command {
 				return fmt.Errorf("tool %q not found: %w", fullName, err)
 			}
 
-			formatter.Header(fmt.Sprintf("Tool: %s", tool.FullName()))
-			formatter.Item("Server", serverName)
-			formatter.Item("Name", toolName)
+			_ = formatter.Header(fmt.Sprintf("Tool: %s", tool.FullName()))
+			_ = formatter.Item("Server", serverName)
+			_ = formatter.Item("Name", toolName)
 			if tool.Description() != "" {
-				formatter.Item("Description", tool.Description())
+				_ = formatter.Item("Description", tool.Description())
 			}
 
 			if schema := tool.InputSchema(); len(schema) > 0 {
 				var pretty map[string]any
 				if err := json.Unmarshal(schema, &pretty); err == nil {
 					prettyJSON, _ := json.MarshalIndent(pretty, "  ", "  ")
-					formatter.Println("\nInput Schema:")
-					formatter.Println("  %s", string(prettyJSON))
+					_ = formatter.Println("\nInput Schema:")
+					_ = formatter.Println("  %s", string(prettyJSON))
 				} else {
-					formatter.Println("\nInput Schema: %s", string(schema))
+					_ = formatter.Println("\nInput Schema: %s", string(schema))
 				}
 			}
 			return nil
@@ -326,13 +326,13 @@ Example:
 			}
 
 			if result.IsError {
-				formatter.Error("Tool returned an error:")
-				formatter.Println(result.TextContent())
+				_ = formatter.Error("Tool returned an error:")
+				_ = formatter.Println(result.TextContent())
 				return fmt.Errorf("tool call returned error")
 			}
 
-			formatter.Success("Tool call succeeded:")
-			formatter.Println(result.TextContent())
+			_ = formatter.Success("Tool call succeeded:")
+			_ = formatter.Println(result.TextContent())
 			return nil
 		},
 	}

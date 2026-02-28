@@ -72,7 +72,7 @@ func (l *Loader) LoadSkill(path string) (*skill.Skill, error) {
 	}
 
 	// Read the file
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- trusted skill file path from application config
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}

@@ -59,11 +59,11 @@ func listResumableSessions() error {
 	}
 
 	if len(checkpoints) == 0 {
-		formatter.Info("No resumable sessions found (within last 24 hours).")
+		_ = formatter.Info("No resumable sessions found (within last 24 hours).")
 		return nil
 	}
 
-	formatter.Header(fmt.Sprintf("Resumable Sessions (%d)", len(checkpoints)))
+	_ = formatter.Header(fmt.Sprintf("Resumable Sessions (%d)", len(checkpoints)))
 
 	tableData := output.TableData{
 		Columns: []output.TableColumn{
@@ -92,9 +92,9 @@ func listResumableSessions() error {
 	}
 
 	_ = formatter.Table(tableData)
-	formatter.Println("")
-	formatter.Info("Run 'sr run <skill> <input> --resume' to continue a specific session.")
-	formatter.Info("Or run 'sr resume' (no flags) to auto-resume the most recent one.")
+	_ = formatter.Println("")
+	_ = formatter.Info("Run 'sr run <skill> <input> --resume' to continue a specific session.")
+	_ = formatter.Info("Or run 'sr resume' (no flags) to auto-resume the most recent one.")
 	return nil
 }
 
@@ -117,13 +117,13 @@ func resumeLatestSession() error {
 	}
 
 	if len(checkpoints) == 0 {
-		formatter.Info("No resumable sessions found (within last 24 hours).")
+		_ = formatter.Info("No resumable sessions found (within last 24 hours).")
 		return nil
 	}
 
 	// Pick the most recently updated
 	cp := checkpoints[0]
-	formatter.Info("Resuming: skill=%s  progress=%s  last activity=%s ago",
+	_ = formatter.Info("Resuming: skill=%s  progress=%s  last activity=%s ago",
 		cp.SkillName(), cp.Progress(), formatAge(time.Since(cp.UpdatedAt())))
 
 	// Delegate to runSkill with Resume=true

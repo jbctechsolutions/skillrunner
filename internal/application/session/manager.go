@@ -78,7 +78,7 @@ func (m *Manager) Start(ctx context.Context, opts session.StartOptions) (*sessio
 	// Save session to storage
 	if err := m.storage.SaveSession(ctx, sess); err != nil {
 		// Try to kill the session if save failed
-		backend.Kill(ctx, sess.ID)
+		_ = backend.Kill(ctx, sess.ID)
 		return nil, fmt.Errorf("failed to save session: %w", err)
 	}
 

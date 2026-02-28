@@ -48,7 +48,7 @@ func (c *Connection) Open() error {
 
 	// Ensure the directory exists
 	dir := filepath.Dir(c.dbPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("could not create database directory: %w", err)
 	}
 
@@ -64,7 +64,7 @@ func (c *Connection) Open() error {
 
 	// Test the connection
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return fmt.Errorf("could not ping database: %w", err)
 	}
 
@@ -73,7 +73,7 @@ func (c *Connection) Open() error {
 
 	// Run migrations
 	if err := c.runMigrations(); err != nil {
-		db.Close()
+		_ = db.Close()
 		c.db = nil
 		return fmt.Errorf("could not run migrations: %w", err)
 	}

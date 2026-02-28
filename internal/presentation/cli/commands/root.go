@@ -129,7 +129,7 @@ func initializeApp() error {
 	cfg, err := loadConfig(globalFlags.ConfigFile)
 	if err != nil {
 		if globalFlags.Verbose {
-			formatter.Warning("Could not load config: %v, using defaults", err)
+			_ = formatter.Warning("Could not load config: %v, using defaults", err)
 		}
 		cfg = config.NewDefaultConfig()
 	}
@@ -245,13 +245,13 @@ func Execute() {
 	case err := <-errChan:
 		if err != nil {
 			formatter := GetFormatter()
-			formatter.Error("%s", err.Error())
+			_ = formatter.Error("%s", err.Error())
 			Shutdown()
 			os.Exit(1)
 		}
 	case sig := <-sigChan:
 		formatter := GetFormatter()
-		formatter.Warning("Received signal %v, shutting down...", sig)
+		_ = formatter.Warning("Received signal %v, shutting down...", sig)
 		Shutdown()
 		os.Exit(130) // Standard exit code for SIGINT
 	}

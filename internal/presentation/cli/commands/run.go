@@ -162,7 +162,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		if autoProfile != runOpts.Profile {
 			runOpts.Profile = autoProfile
 		}
-		formatter.Info("Complexity: %.2f → %s profile", float64(score), runOpts.Profile)
+		_ = formatter.Info("Complexity: %.2f → %s profile", float64(score), runOpts.Profile)
 	}
 
 	// Select provider based on profile
@@ -218,7 +218,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		}
 		isolMgr = im
 		isolSess = sess
-		formatter.Info("Isolation worktree: %s", sess.WorktreePath)
+		_ = formatter.Info("Isolation worktree: %s", sess.WorktreePath)
 		// Inject worktree path as context so LLM tools operate on the isolated copy.
 		if memoryContent != "" {
 			memoryContent += "\n\n"
@@ -266,8 +266,8 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	if cpConfig.Enabled && !runOpts.Resume && !runOpts.Force && cpConfig.Port != nil {
 		existingCP, _ := workflow.GetExistingCheckpoint(ctx, cpConfig.Port, sk.ID(), request)
 		if existingCP != nil {
-			formatter.Warning("An incomplete execution exists for this skill/input (progress: %s).", existingCP.Progress())
-			formatter.Warning("Use --resume to continue, or --force to start fresh.")
+			_ = formatter.Warning("An incomplete execution exists for this skill/input (progress: %s).", existingCP.Progress())
+			_ = formatter.Warning("Use --resume to continue, or --force to start fresh.")
 			return fmt.Errorf("checkpoint exists; use --resume or --force")
 		}
 	}
@@ -350,7 +350,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	// Export result if requested
 	if execErr == nil && result != nil && runOpts.ExportFormat != "" {
 		if exportErr := exportResult(result, sk.Name(), sk.ID(), request, runOpts.Profile, runOpts.ExportFormat, formatter); exportErr != nil {
-			formatter.Warning("Export failed: %v", exportErr)
+			_ = formatter.Warning("Export failed: %v", exportErr)
 		}
 	}
 	return execErr
@@ -387,8 +387,8 @@ func exportResult(result *workflow.ExecutionResult, skillName, skillID, input, p
 		return err
 	}
 
-	formatter.Println("")
-	formatter.SubHeader(fmt.Sprintf("Export (%s)", format))
+	_ = formatter.Println("")
+	_ = formatter.SubHeader(fmt.Sprintf("Export (%s)", format))
 	fmt.Println(string(data))
 	return nil
 }
@@ -585,35 +585,35 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 
 func runSkillTextImpl(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) (*workflow.ExecutionResult, error) {
 	// Display execution header
-	formatter.Header("Skill Execution")
-	formatter.Item("Skill", sk.Name())
-	formatter.Item("Version", sk.Version())
-	formatter.Item("Profile", runOpts.Profile)
-	formatter.Item("Provider", prov.Info().Name)
+	_ = formatter.Header("Skill Execution")
+	_ = formatter.Item("Skill", sk.Name())
+	_ = formatter.Item("Version", sk.Version())
+	_ = formatter.Item("Profile", runOpts.Profile)
+	_ = formatter.Item("Provider", prov.Info().Name)
 	if runOpts.Stream {
-		formatter.Item("Mode", "streaming")
+		_ = formatter.Item("Mode", "streaming")
 	}
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Display the request (truncate if too long)
 	requestDisplay := request
 	if len(requestDisplay) > 100 {
 		requestDisplay = requestDisplay[:97] + "..."
 	}
-	formatter.Item("Request", requestDisplay)
-	formatter.Println("")
+	_ = formatter.Item("Request", requestDisplay)
+	_ = formatter.Println("")
 
 	// Show phase information
 	phases := sk.Phases()
-	formatter.SubHeader(fmt.Sprintf("Phases (%d)", len(phases)))
+	_ = formatter.SubHeader(fmt.Sprintf("Phases (%d)", len(phases)))
 	for i, phase := range phases {
 		deps := ""
 		if len(phase.DependsOn) > 0 {
 			deps = fmt.Sprintf(" (depends: %s)", strings.Join(phase.DependsOn, ", "))
 		}
-		formatter.BulletItem(fmt.Sprintf("%d. %s%s", i+1, phase.Name, deps))
+		_ = formatter.BulletItem(fmt.Sprintf("%d. %s%s", i+1, phase.Name, deps))
 	}
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Start spinner for execution
 	spinner := output.NewSpinner("Executing workflow...")
@@ -627,7 +627,7 @@ func runSkillTextImpl(ctx context.Context, executor workflow.Executor, sk *skill
 	spinner.Stop()
 
 	if err != nil {
-		formatter.Error("Execution failed: %v", err)
+		_ = formatter.Error("Execution failed: %v", err)
 		return nil, err
 	}
 
@@ -635,40 +635,40 @@ func runSkillTextImpl(ctx context.Context, executor workflow.Executor, sk *skill
 	calculateCostsForResult(result, costCalc)
 
 	// Display results
-	formatter.Println("")
-	formatter.Header("Execution Results")
+	_ = formatter.Println("")
+	_ = formatter.Header("Execution Results")
 
 	// Phase results
-	formatter.SubHeader("Phase Results")
+	_ = formatter.SubHeader("Phase Results")
 	displayPhaseResults(formatter, result)
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Summary statistics
-	formatter.SubHeader("Summary")
-	formatter.Item("Status", formatStatus(result.Status))
-	formatter.Item("Total Duration", formatDuration(executionTime))
-	formatter.Item("Total Tokens", fmt.Sprintf("%d", result.TotalTokens))
-	formatter.Item("Total Cost", formatCost(result.TotalCost))
-	formatter.Println("")
+	_ = formatter.SubHeader("Summary")
+	_ = formatter.Item("Status", formatStatus(result.Status))
+	_ = formatter.Item("Total Duration", formatDuration(executionTime))
+	_ = formatter.Item("Total Tokens", fmt.Sprintf("%d", result.TotalTokens))
+	_ = formatter.Item("Total Cost", formatCost(result.TotalCost))
+	_ = formatter.Println("")
 
 	// Final output
 	if result.FinalOutput != "" {
-		formatter.SubHeader("Output")
-		formatter.Println("")
+		_ = formatter.SubHeader("Output")
+		_ = formatter.Println("")
 		// Print output with proper formatting
 		outputLines := strings.Split(result.FinalOutput, "\n")
 		for _, line := range outputLines {
-			formatter.Println("%s", line)
+			_ = formatter.Println("%s", line)
 		}
 	}
 
 	// Success message
 	if result.Status == workflow.PhaseStatusCompleted {
-		formatter.Println("")
-		formatter.Success("Skill execution completed successfully")
+		_ = formatter.Println("")
+		_ = formatter.Success("Skill execution completed successfully")
 	} else if result.Error != nil {
-		formatter.Println("")
-		formatter.Error("Skill execution failed: %v", result.Error)
+		_ = formatter.Println("")
+		_ = formatter.Error("Skill execution failed: %v", result.Error)
 	}
 
 	return result, nil
@@ -899,32 +899,32 @@ func checkBudget(ctx context.Context, formatter *output.Formatter, workflowCap f
 
 	repo, err := infraStorage.NewBudgetRepository(appContainer.DB())
 	if err != nil {
-		formatter.Warning("Budget check unavailable: %v", err)
+		_ = formatter.Warning("Budget check unavailable: %v", err)
 		return nil
 	}
 
 	usage, err := repo.GetUsage(ctx)
 	if err != nil {
-		formatter.Warning("Could not retrieve budget usage: %v", err)
+		_ = formatter.Warning("Could not retrieve budget usage: %v", err)
 		return nil
 	}
 
 	if limits.DailyLimit > 0 {
 		pct := (usage.DailySpend / limits.DailyLimit) * 100
-		formatter.Item("Daily budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.DailySpend, limits.DailyLimit, pct))
+		_ = formatter.Item("Daily budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.DailySpend, limits.DailyLimit, pct))
 	}
 	if limits.MonthlyLimit > 0 {
 		pct := (usage.MonthlySpend / limits.MonthlyLimit) * 100
-		formatter.Item("Monthly budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.MonthlySpend, limits.MonthlyLimit, pct))
+		_ = formatter.Item("Monthly budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.MonthlySpend, limits.MonthlyLimit, pct))
 	}
 
 	if err := budget.CheckLimit(limits, usage, 0); err != nil {
 		switch err {
 		case budget.ErrBudgetExceeded:
-			formatter.Println("")
+			_ = formatter.Println("")
 			return fmt.Errorf("budget limit exceeded — use 'sr config set budget.daily_limit' to adjust or --budget=0 to disable")
 		case budget.ErrBudgetWarning:
-			formatter.Warning("Budget warning: spending is at ≥80%% of configured limit")
+			_ = formatter.Warning("Budget warning: spending is at ≥80%% of configured limit")
 		}
 	}
 	return nil
@@ -957,18 +957,18 @@ func showBudgetAlerts(ctx context.Context, formatter *output.Formatter, request,
 	// Show threshold alerts
 	for _, alert := range budget.CheckAlerts(limits, usage) {
 		if alert.IsError() {
-			formatter.Error("Budget Alert: %s", alert.Message())
+			_ = formatter.Error("Budget Alert: %s", alert.Message())
 		} else {
-			formatter.Warning("Budget Alert: %s", alert.Message())
+			_ = formatter.Warning("Budget Alert: %s", alert.Message())
 		}
 	}
 
 	// Show cost estimate + savings tip for non-cheap profiles
 	est := budget.EstimateCost(len(request), profile)
 	if est.EstimatedUSD > 0 {
-		formatter.Info("Estimated cost: ~$%.4f", est.EstimatedUSD)
+		_ = formatter.Info("Estimated cost: ~$%.4f", est.EstimatedUSD)
 		if profile != "cheap" && est.CheapSavingsPct > 10 {
-			formatter.Info("Tip: --profile cheap saves ~%.0f%% (~$%.4f)", est.CheapSavingsPct, est.CheapSavingsUSD)
+			_ = formatter.Info("Tip: --profile cheap saves ~%.0f%% (~$%.4f)", est.CheapSavingsPct, est.CheapSavingsUSD)
 		}
 	}
 }

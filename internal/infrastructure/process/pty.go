@@ -54,7 +54,7 @@ func (pm *PTYManager) CreateSession(ctx context.Context, sessionID, command, wor
 	}
 
 	// Create command
-	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd := exec.CommandContext(ctx, "sh", "-c", command) // #nosec G204 -- command from trusted backend configuration
 	if workDir != "" {
 		cmd.Dir = workDir
 	}
@@ -83,7 +83,7 @@ func (pm *PTYManager) CreateSession(ctx context.Context, sessionID, command, wor
 
 // monitorSession monitors a session and cleans up when it exits.
 func (pm *PTYManager) monitorSession(session *PTYSession) {
-	session.Cmd.Wait()
+	_ = session.Cmd.Wait()
 
 	session.mu.Lock()
 	session.running = false
@@ -91,7 +91,7 @@ func (pm *PTYManager) monitorSession(session *PTYSession) {
 
 	// Close PTY
 	if session.PTY != nil {
-		session.PTY.Close()
+		_ = session.PTY.Close()
 	}
 }
 
@@ -139,7 +139,7 @@ func (pm *PTYManager) KillSession(sessionID string, force bool) error {
 
 	// Close PTY
 	if session.PTY != nil {
-		session.PTY.Close()
+		_ = session.PTY.Close()
 	}
 
 	delete(pm.sessions, sessionID)
@@ -251,7 +251,7 @@ func (pm *PTYManager) Close() error {
 	for id := range pm.sessions {
 		// Kill each session (unlock mutex during operation)
 		pm.mu.Unlock()
-		pm.KillSession(id, true)
+		_ = pm.KillSession(id, true)
 		pm.mu.Lock()
 	}
 

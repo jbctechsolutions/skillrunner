@@ -20,7 +20,7 @@ func TempDir(t *testing.T) string {
 func WriteFile(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
-	err := os.WriteFile(path, []byte(content), 0644)
+	err := os.WriteFile(path, []byte(content), 0600)
 	if err != nil {
 		t.Fatalf("failed to write file %s: %v", path, err)
 	}

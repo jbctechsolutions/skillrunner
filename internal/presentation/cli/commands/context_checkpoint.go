@@ -114,14 +114,14 @@ Use checkpoints to pause work and resume later with full context.`,
 				return fmt.Errorf("failed to save checkpoint: %w", err)
 			}
 
-			formatter.Success("Checkpoint created: %s", summary)
-			formatter.Info("ID: %s", id)
-			formatter.Info("Workspace: %s", workspace.Name())
+			_ = formatter.Success("Checkpoint created: %s", summary)
+			_ = formatter.Info("ID: %s", id)
+			_ = formatter.Info("Workspace: %s", workspace.Name())
 			if details != "" {
-				formatter.Info("Details: %s", details)
+				_ = formatter.Info("Details: %s", details)
 			}
 			if len(files) > 0 {
-				formatter.Info("Files: %v", files)
+				_ = formatter.Info("Files: %v", files)
 			}
 
 			return nil
@@ -180,8 +180,8 @@ Use checkpoints to pause work and resume later with full context.`,
 			}
 
 			if len(checkpoints) == 0 {
-				formatter.Header("Checkpoints")
-				formatter.Info("No checkpoints found")
+				_ = formatter.Header("Checkpoints")
+				_ = formatter.Info("No checkpoints found")
 				return nil
 			}
 
@@ -252,32 +252,32 @@ Use checkpoints to pause work and resume later with full context.`,
 			latest := checkpoints[0]
 
 			// Display checkpoint information for resuming
-			formatter.Header("Resuming from Checkpoint")
-			formatter.Info("ID: %s", latest.ID())
-			formatter.Info("Summary: %s", latest.Summary())
+			_ = formatter.Header("Resuming from Checkpoint")
+			_ = formatter.Info("ID: %s", latest.ID())
+			_ = formatter.Info("Summary: %s", latest.Summary())
 			if latest.Details() != "" {
-				formatter.Info("Details: %s", latest.Details())
+				_ = formatter.Info("Details: %s", latest.Details())
 			}
-			formatter.Info("Created: %s", latest.CreatedAt().Format(time.RFC3339))
+			_ = formatter.Info("Created: %s", latest.CreatedAt().Format(time.RFC3339))
 
 			if len(latest.FilesModified()) > 0 {
-				formatter.Println("")
-				formatter.Info("Files Modified:")
+				_ = formatter.Println("")
+				_ = formatter.Info("Files Modified:")
 				for _, file := range latest.FilesModified() {
-					formatter.Println("  - " + file)
+					_ = formatter.Println("  - " + file)
 				}
 			}
 
 			if len(latest.Decisions()) > 0 {
-				formatter.Println("")
-				formatter.Info("Decisions Made:")
+				_ = formatter.Println("")
+				_ = formatter.Info("Decisions Made:")
 				for key, value := range latest.Decisions() {
-					formatter.Println(fmt.Sprintf("  - %s: %s", key, value))
+					_ = formatter.Println(fmt.Sprintf("  - %s: %s", key, value))
 				}
 			}
 
-			formatter.Println("")
-			formatter.Success("Checkpoint context loaded. You can now continue your work.")
+			_ = formatter.Println("")
+			_ = formatter.Success("Checkpoint context loaded. You can now continue your work.")
 
 			return nil
 		},
@@ -306,32 +306,32 @@ Use checkpoints to pause work and resume later with full context.`,
 			}
 
 			// Display checkpoint information
-			formatter.Header("Restoring Checkpoint")
-			formatter.Info("ID: %s", checkpoint.ID())
-			formatter.Info("Summary: %s", checkpoint.Summary())
+			_ = formatter.Header("Restoring Checkpoint")
+			_ = formatter.Info("ID: %s", checkpoint.ID())
+			_ = formatter.Info("Summary: %s", checkpoint.Summary())
 			if checkpoint.Details() != "" {
-				formatter.Info("Details: %s", checkpoint.Details())
+				_ = formatter.Info("Details: %s", checkpoint.Details())
 			}
-			formatter.Info("Created: %s", checkpoint.CreatedAt().Format(time.RFC3339))
+			_ = formatter.Info("Created: %s", checkpoint.CreatedAt().Format(time.RFC3339))
 
 			if len(checkpoint.FilesModified()) > 0 {
-				formatter.Println("")
-				formatter.Info("Files Modified:")
+				_ = formatter.Println("")
+				_ = formatter.Info("Files Modified:")
 				for _, file := range checkpoint.FilesModified() {
-					formatter.Println("  - " + file)
+					_ = formatter.Println("  - " + file)
 				}
 			}
 
 			if len(checkpoint.Decisions()) > 0 {
-				formatter.Println("")
-				formatter.Info("Decisions Made:")
+				_ = formatter.Println("")
+				_ = formatter.Info("Decisions Made:")
 				for key, value := range checkpoint.Decisions() {
-					formatter.Println(fmt.Sprintf("  - %s: %s", key, value))
+					_ = formatter.Println(fmt.Sprintf("  - %s: %s", key, value))
 				}
 			}
 
-			formatter.Println("")
-			formatter.Success("Checkpoint context loaded. You can now continue your work.")
+			_ = formatter.Println("")
+			_ = formatter.Success("Checkpoint context loaded. You can now continue your work.")
 
 			return nil
 		},
@@ -358,7 +358,7 @@ Use checkpoints to pause work and resume later with full context.`,
 				return fmt.Errorf("failed to delete checkpoint: %w", err)
 			}
 
-			formatter.Success("Checkpoint deleted: %s", checkpointID)
+			_ = formatter.Success("Checkpoint deleted: %s", checkpointID)
 
 			return nil
 		},

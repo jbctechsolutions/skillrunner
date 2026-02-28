@@ -57,11 +57,11 @@ helping the AI understand what you're currently working on.`,
 			if show {
 				focus := workspace.Focus()
 				if focus == "" {
-					formatter.Info("No focus set for workspace: %s", workspace.Name())
+					_ = formatter.Info("No focus set for workspace: %s", workspace.Name())
 				} else {
-					formatter.Header("Current Focus")
-					formatter.Info("Workspace: %s", workspace.Name())
-					formatter.Info("Focus: %s", focus)
+					_ = formatter.Header("Current Focus")
+					_ = formatter.Info("Workspace: %s", workspace.Name())
+					_ = formatter.Info("Focus: %s", focus)
 				}
 				return nil
 			}
@@ -71,7 +71,7 @@ helping the AI understand what you're currently working on.`,
 				if err := wsRepo.SetFocus(ctx, workspace.ID(), ""); err != nil {
 					return fmt.Errorf("failed to clear focus: %w", err)
 				}
-				formatter.Success("Focus cleared for workspace: %s", workspace.Name())
+				_ = formatter.Success("Focus cleared for workspace: %s", workspace.Name())
 				return nil
 			}
 
@@ -80,12 +80,12 @@ helping the AI understand what you're currently working on.`,
 				// No arg provided, show current focus
 				focus := workspace.Focus()
 				if focus == "" {
-					formatter.Info("No focus set for workspace: %s", workspace.Name())
-					formatter.Info("Use 'sr context focus ISSUE-123' to set a focus")
+					_ = formatter.Info("No focus set for workspace: %s", workspace.Name())
+					_ = formatter.Info("Use 'sr context focus ISSUE-123' to set a focus")
 				} else {
-					formatter.Header("Current Focus")
-					formatter.Info("Workspace: %s", workspace.Name())
-					formatter.Info("Focus: %s", focus)
+					_ = formatter.Header("Current Focus")
+					_ = formatter.Info("Workspace: %s", workspace.Name())
+					_ = formatter.Info("Focus: %s", focus)
 				}
 				return nil
 			}
@@ -96,8 +96,8 @@ helping the AI understand what you're currently working on.`,
 				return fmt.Errorf("failed to set focus: %w", err)
 			}
 
-			formatter.Success("Focus set to: %s", issueID)
-			formatter.Info("Workspace: %s", workspace.Name())
+			_ = formatter.Success("Focus set to: %s", issueID)
+			_ = formatter.Info("Workspace: %s", workspace.Name())
 
 			return nil
 		},

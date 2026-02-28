@@ -69,9 +69,9 @@ func newPrompter(formatter *output.Formatter) *prompter {
 // prompt asks a question and returns the answer (or default if empty).
 func (p *prompter) prompt(question, defaultValue string) (string, error) {
 	if defaultValue != "" {
-		p.formatter.Print("%s [%s]: ", question, defaultValue)
+		_ = p.formatter.Print("%s [%s]: ", question, defaultValue)
 	} else {
-		p.formatter.Print("%s: ", question)
+		_ = p.formatter.Print("%s: ", question)
 	}
 
 	answer, err := p.reader.ReadString('\n')
@@ -88,7 +88,7 @@ func (p *prompter) prompt(question, defaultValue string) (string, error) {
 
 // promptSecret asks for sensitive input (displayed as-is since Go stdlib doesn't support hidden input easily).
 func (p *prompter) promptSecret(question string) (string, error) {
-	p.formatter.Print("%s: ", question)
+	_ = p.formatter.Print("%s: ", question)
 
 	answer, err := p.reader.ReadString('\n')
 	if err != nil {
@@ -105,7 +105,7 @@ func (p *prompter) promptYesNo(question string, defaultYes bool) (bool, error) {
 		defaultStr = "[Y/n]"
 	}
 
-	p.formatter.Print("%s %s: ", question, defaultStr)
+	_ = p.formatter.Print("%s %s: ", question, defaultStr)
 
 	answer, err := p.reader.ReadString('\n')
 	if err != nil {
@@ -154,8 +154,8 @@ func runInit(force bool) error {
 				Initialized:    false,
 			})
 		}
-		formatter.Warning("Configuration already exists at %s", configFile)
-		formatter.Info("Use --force to overwrite existing configuration")
+		_ = formatter.Warning("Configuration already exists at %s", configFile)
+		_ = formatter.Info("Use --force to overwrite existing configuration")
 		return nil
 	}
 
@@ -178,10 +178,10 @@ func runInit(force bool) error {
 	}
 
 	// Interactive setup
-	formatter.Header("Skillrunner Configuration")
-	formatter.Println("")
-	formatter.Info("This wizard will help you set up skillrunner.")
-	formatter.Println("")
+	_ = formatter.Header("Skillrunner Configuration")
+	_ = formatter.Println("")
+	_ = formatter.Info("This wizard will help you set up skillrunner.")
+	_ = formatter.Println("")
 
 	p := newPrompter(formatter)
 
@@ -189,8 +189,8 @@ func runInit(force bool) error {
 	cfg := config.NewDefaultConfig()
 
 	// Ollama configuration
-	formatter.SubHeader("Local Provider (Ollama)")
-	formatter.Println("")
+	_ = formatter.SubHeader("Local Provider (Ollama)")
+	_ = formatter.Println("")
 
 	ollamaURL, err := p.prompt("Ollama URL", config.DefaultOllamaURL)
 	if err != nil {
@@ -204,13 +204,13 @@ func runInit(force bool) error {
 	}
 	cfg.Providers.Ollama.Enabled = enableOllama
 
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Cloud providers
-	formatter.SubHeader("Cloud Providers (Optional)")
-	formatter.Println("")
-	formatter.Println("%s", formatter.Dim("API keys will be stored encrypted in config.yaml"))
-	formatter.Println("")
+	_ = formatter.SubHeader("Cloud Providers (Optional)")
+	_ = formatter.Println("")
+	_ = formatter.Println("%s", formatter.Dim("API keys will be stored encrypted in config.yaml"))
+	_ = formatter.Println("")
 
 	// Initialize encryptor for API keys
 	encryptor, err := crypto.NewEncryptor()
@@ -278,7 +278,7 @@ func runInit(force bool) error {
 		}
 	}
 
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Write configuration
 	if err := writeConfig(configDir, skillsDir, configFile, cfg); err != nil {
@@ -288,33 +288,33 @@ func runInit(force bool) error {
 	// Write bundled MCP servers config (non-fatal if it fails)
 	mcpCreated, mcpErr := config.WriteMCPServersConfig(mcpServersFile)
 	if mcpErr != nil {
-		formatter.Warning("Could not write MCP servers config: %v", mcpErr)
+		_ = formatter.Warning("Could not write MCP servers config: %v", mcpErr)
 	}
 
-	formatter.Println("")
-	formatter.Success("Configuration initialized successfully!")
-	formatter.Println("")
-	formatter.Item("Config directory", configDir)
-	formatter.Item("Config file", configFile)
-	formatter.Item("Skills directory", skillsDir)
+	_ = formatter.Println("")
+	_ = formatter.Success("Configuration initialized successfully!")
+	_ = formatter.Println("")
+	_ = formatter.Item("Config directory", configDir)
+	_ = formatter.Item("Config file", configFile)
+	_ = formatter.Item("Skills directory", skillsDir)
 	if mcpCreated {
-		formatter.Item("MCP servers file", mcpServersFile)
+		_ = formatter.Item("MCP servers file", mcpServersFile)
 	}
-	formatter.Println("")
-	formatter.Info("Run 'sr list' to see available skills")
-	formatter.Info("Run 'sr run <skill>' to execute a skill")
+	_ = formatter.Println("")
+	_ = formatter.Info("Run 'sr list' to see available skills")
+	_ = formatter.Info("Run 'sr run <skill>' to execute a skill")
 
 	// Warn if npx is not available (MCP servers require it)
 	if mcpCreated {
 		if _, err := exec.LookPath("npx"); err != nil {
-			formatter.Println("")
-			formatter.Warning("npx was not found in PATH")
-			formatter.Info("MCP servers (filesystem, git) require Node.js/npx to run.")
-			formatter.Info("Install Node.js from https://nodejs.org to enable MCP tool support.")
+			_ = formatter.Println("")
+			_ = formatter.Warning("npx was not found in PATH")
+			_ = formatter.Info("MCP servers (filesystem, git) require Node.js/npx to run.")
+			_ = formatter.Info("Install Node.js from https://nodejs.org to enable MCP tool support.")
 		} else {
-			formatter.Println("")
-			formatter.Info("MCP servers pre-configured in %s", mcpServersFile)
-			formatter.Info("Run 'sr mcp list-servers' to see available MCP servers")
+			_ = formatter.Println("")
+			_ = formatter.Info("MCP servers pre-configured in %s", mcpServersFile)
+			_ = formatter.Info("Run 'sr mcp list-servers' to see available MCP servers")
 		}
 	}
 

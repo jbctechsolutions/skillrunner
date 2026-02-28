@@ -122,7 +122,7 @@ tell application "iTerm"
 end tell
 `, s.escapeShell(opts.WorkingDir), s.buildCommand(opts))
 
-	cmd := exec.CommandContext(ctx, "osascript", "-e", script)
+	cmd := exec.CommandContext(ctx, "osascript", "-e", script) // #nosec G204 -- AppleScript invocation with controlled script content
 	return cmd.Run()
 }
 
@@ -136,7 +136,7 @@ tell application "Terminal"
 end tell
 `, s.escapeShell(opts.WorkingDir), s.buildCommand(opts))
 
-	cmd := exec.CommandContext(ctx, "osascript", "-e", script)
+	cmd := exec.CommandContext(ctx, "osascript", "-e", script) // #nosec G204 -- AppleScript invocation with controlled script content
 	return cmd.Run()
 }
 
@@ -158,7 +158,7 @@ func (s *Spawner) spawnTmux(ctx context.Context, opts SpawnOptions) error {
 		args = append(args, command)
 	}
 
-	cmd := exec.CommandContext(ctx, "tmux", args...)
+	cmd := exec.CommandContext(ctx, "tmux", args...) // #nosec G204 -- tmux binary with controlled arguments
 	return cmd.Run()
 }
 
@@ -179,9 +179,9 @@ func (s *Spawner) spawnKitty(ctx context.Context, opts SpawnOptions) error {
 		args = append(args, "sh", "-c", command)
 	}
 
-	cmd := exec.CommandContext(ctx, "kitty", args...)
+	cmd := exec.CommandContext(ctx, "kitty", args...) // #nosec G204 -- kitty binary with controlled arguments
 	if opts.Background {
-		cmd.Start()
+		_ = cmd.Start()
 		return nil
 	}
 	return cmd.Run()
@@ -204,9 +204,9 @@ func (s *Spawner) spawnAlacritty(ctx context.Context, opts SpawnOptions) error {
 		args = append(args, "-e", "sh", "-c", command)
 	}
 
-	cmd := exec.CommandContext(ctx, "alacritty", args...)
+	cmd := exec.CommandContext(ctx, "alacritty", args...) // #nosec G204 -- alacritty binary with controlled arguments
 	if opts.Background {
-		cmd.Start()
+		_ = cmd.Start()
 		return nil
 	}
 	return cmd.Run()
@@ -229,9 +229,9 @@ func (s *Spawner) spawnGnomeTerminal(ctx context.Context, opts SpawnOptions) err
 		args = append(args, "--", "sh", "-c", command)
 	}
 
-	cmd := exec.CommandContext(ctx, "gnome-terminal", args...)
+	cmd := exec.CommandContext(ctx, "gnome-terminal", args...) // #nosec G204 -- gnome-terminal binary with controlled arguments
 	if opts.Background {
-		cmd.Start()
+		_ = cmd.Start()
 		return nil
 	}
 	return cmd.Run()

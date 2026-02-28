@@ -42,7 +42,7 @@ func (l *Loader) Load(configPath string) (*Config, error) {
 	}
 
 	// Read file
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) // #nosec G304 -- config file path from application config directory
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
@@ -65,7 +65,7 @@ func (l *Loader) LoadFromFile(configPath string) (*Config, error) {
 	}
 
 	// Read file
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) // #nosec G304 -- config file path from application config directory
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}

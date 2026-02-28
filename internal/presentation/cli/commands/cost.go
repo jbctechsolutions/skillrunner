@@ -212,31 +212,31 @@ func runCostBreakdown(ctx context.Context, filter metrics.MetricsFilter, label s
 		return exportBreakdownMarkdown(formatter, summary, f, label)
 	}
 
-	formatter.Header("Cost Breakdown — " + label)
-	formatter.Println("")
+	_ = formatter.Header("Cost Breakdown — " + label)
+	_ = formatter.Println("")
 
 	if f.byProvider && len(summary.ByProvider) > 0 {
-		formatter.SubHeader("By Provider")
-		formatter.Println("")
+		_ = formatter.SubHeader("By Provider")
+		_ = formatter.Println("")
 		printCostTable(formatter, summary.ByProvider, summary.TotalCost, "Provider")
-		formatter.Println("")
+		_ = formatter.Println("")
 	}
 
 	if f.bySkill && len(summary.BySkill) > 0 {
-		formatter.SubHeader("By Skill")
-		formatter.Println("")
+		_ = formatter.SubHeader("By Skill")
+		_ = formatter.Println("")
 		printCostTable(formatter, summary.BySkill, summary.TotalCost, "Skill")
-		formatter.Println("")
+		_ = formatter.Println("")
 	}
 
 	if f.byPhase && len(summary.ByModel) > 0 {
-		formatter.SubHeader("By Model (Phase)")
-		formatter.Println("")
+		_ = formatter.SubHeader("By Model (Phase)")
+		_ = formatter.Println("")
 		printCostTable(formatter, summary.ByModel, summary.TotalCost, "Model")
-		formatter.Println("")
+		_ = formatter.Println("")
 	}
 
-	formatter.Println("  %s  %s",
+	_ = formatter.Println("  %s  %s",
 		formatter.Dim("Total:"),
 		formatter.Colorize(fmt.Sprintf("$%.4f", summary.TotalCost), output.ColorYellow))
 
@@ -308,15 +308,15 @@ func runCostSavings(ctx context.Context, filter metrics.MetricsFilter, label, ex
 		return exportSavingsMarkdown(savings, summary, label)
 	}
 
-	formatter.Header("Cost Savings Analysis — " + label)
-	formatter.Println("")
-	formatter.Println("  %s  %s",
+	_ = formatter.Header("Cost Savings Analysis — " + label)
+	_ = formatter.Println("")
+	_ = formatter.Println("  %s  %s",
 		formatter.Dim("Current spend:"),
 		formatter.Colorize(fmt.Sprintf("$%.4f", summary.TotalCost), output.ColorYellow))
-	formatter.Println("")
+	_ = formatter.Println("")
 
-	formatter.SubHeader("Opportunities")
-	formatter.Println("")
+	_ = formatter.SubHeader("Opportunities")
+	_ = formatter.Println("")
 
 	totalSavings := 0.0
 	for _, opp := range savings {
@@ -330,20 +330,20 @@ func runCostSavings(ctx context.Context, filter metrics.MetricsFilter, label, ex
 			icon = "○"
 			color = output.ColorDim
 		}
-		formatter.Println("  %s  %s%s",
+		_ = formatter.Println("  %s  %s%s",
 			formatter.Colorize(icon, color),
 			opp.Description,
 			formatter.Dim(pct))
 		if opp.SaveUSD > 0 {
-			formatter.Println("      %s  save ~%s",
+			_ = formatter.Println("      %s  save ~%s",
 				formatter.Dim("→"),
 				formatter.Colorize(fmt.Sprintf("$%.4f", opp.SaveUSD), output.ColorGreen))
 		}
-		formatter.Println("")
+		_ = formatter.Println("")
 		totalSavings += opp.SaveUSD
 	}
 
-	formatter.Println("  %s  %s",
+	_ = formatter.Println("  %s  %s",
 		formatter.Dim("Total potential savings:"),
 		formatter.Colorize(fmt.Sprintf("$%.4f", totalSavings), output.ColorGreen))
 
@@ -351,7 +351,7 @@ func runCostSavings(ctx context.Context, filter metrics.MetricsFilter, label, ex
 	days := filter.EndDate.Sub(filter.StartDate).Hours() / 24
 	if days > 0 && days <= 30 {
 		annualSavings := totalSavings * 365 / days
-		formatter.Println("  %s  ~%s/year",
+		_ = formatter.Println("  %s  ~%s/year",
 			formatter.Dim("Annualized:"),
 			formatter.Colorize(fmt.Sprintf("$%.2f", annualSavings), output.ColorGreen))
 	}
@@ -481,7 +481,7 @@ func printASCIIBar(formatter *output.Formatter, data map[string]float64, maxVal 
 			label = label[:labelWidth-1] + "…"
 		}
 		barStr := strings.Repeat("█", bars) + strings.Repeat("░", barWidth-bars)
-		formatter.Println("  %-*s  %s %s%.4f",
+		_ = formatter.Println("  %-*s  %s %s%.4f",
 			labelWidth, label, barStr, unit, item.V)
 	}
 }
@@ -535,15 +535,15 @@ func printBudgetStatus(formatter *output.Formatter) {
 	if !limits.Enabled() {
 		return
 	}
-	formatter.SubHeader("Budget Status")
-	formatter.Println("")
+	_ = formatter.SubHeader("Budget Status")
+	_ = formatter.Println("")
 	if limits.DailyLimit > 0 {
-		formatter.Println("  %s  $%.2f / day", formatter.Dim("Daily limit:"), limits.DailyLimit)
+		_ = formatter.Println("  %s  $%.2f / day", formatter.Dim("Daily limit:"), limits.DailyLimit)
 	}
 	if limits.MonthlyLimit > 0 {
-		formatter.Println("  %s  $%.2f / month", formatter.Dim("Monthly limit:"), limits.MonthlyLimit)
+		_ = formatter.Println("  %s  $%.2f / month", formatter.Dim("Monthly limit:"), limits.MonthlyLimit)
 	}
-	formatter.Println("")
+	_ = formatter.Println("")
 }
 
 // ─────────────────────────────────────────────────────────────────

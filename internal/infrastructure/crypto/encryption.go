@@ -135,7 +135,7 @@ func getOrCreateSalt() ([]byte, error) {
 	saltFile := filepath.Join(homeDir, ".skillrunner", ".salt")
 
 	// Try to read existing salt
-	salt, err := os.ReadFile(saltFile)
+	salt, err := os.ReadFile(saltFile) // #nosec G304 -- trusted key file path in user config directory
 	if err == nil && len(salt) == 32 {
 		return salt, nil
 	}

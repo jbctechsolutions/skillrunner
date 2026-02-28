@@ -29,7 +29,7 @@ var (
 
 func init() {
 	// Initialize random number generator with current time
-	rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng = rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- random names for human readability, not security
 }
 
 // GenerateSessionName generates a session name in the format "adjective-pioneer"

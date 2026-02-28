@@ -138,13 +138,13 @@ Examples:
 
 			// Display success
 			formatter := GetFormatter()
-			formatter.Success("Workspace created: %s", name)
-			formatter.Info("Path: %s", absPath)
+			_ = formatter.Success("Workspace created: %s", name)
+			_ = formatter.Info("Path: %s", absPath)
 			if branch != "" {
-				formatter.Info("Branch: %s", branch)
+				_ = formatter.Info("Branch: %s", branch)
 			}
 			if description != "" {
-				formatter.Info("Description: %s", description)
+				_ = formatter.Info("Description: %s", description)
 			}
 
 			return nil
@@ -200,7 +200,7 @@ Shows workspace name, type, status, and path.`,
 
 			if len(workspaces) == 0 {
 				formatter := GetFormatter()
-				formatter.Info("No workspaces found")
+				_ = formatter.Info("No workspaces found")
 				return nil
 			}
 
@@ -302,7 +302,7 @@ that you can execute with: eval $(sr workspace switch NAME)`,
 			if updateErr := wsRepo.Update(ctx, ws); updateErr != nil {
 				// Not critical, just log and continue
 				formatter := GetFormatter()
-				formatter.Warning("Could not update workspace status: %v", updateErr)
+				_ = formatter.Warning("Could not update workspace status: %v", updateErr)
 			}
 
 			// Output the cd command for shell evaluation
@@ -377,7 +377,7 @@ Displays workspace name, path, branch (if Git), status, and active sessions.`,
 			// Display workspace info
 			formatter := GetFormatter()
 			fmt.Println()
-			formatter.Info("Workspace: %s", ws.Name())
+			_ = formatter.Info("Workspace: %s", ws.Name())
 			fmt.Println()
 
 			// Show details in a nice format
@@ -416,7 +416,7 @@ Displays workspace name, path, branch (if Git), status, and active sessions.`,
 			})
 			if err == nil && len(sessions) > 0 {
 				fmt.Println()
-				formatter.Info("Active Sessions:")
+				_ = formatter.Info("Active Sessions:")
 				fmt.Println()
 				sessTable := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 				fmt.Fprintln(sessTable, "  ID\tBACKEND\tSTATUS\tDURATION")
@@ -433,7 +433,7 @@ Displays workspace name, path, branch (if Git), status, and active sessions.`,
 				_ = sessTable.Flush()
 			} else {
 				fmt.Println()
-				formatter.Info("No active sessions")
+				_ = formatter.Info("No active sessions")
 			}
 
 			fmt.Println()
@@ -523,7 +523,7 @@ Examples:
 
 			// Spawn terminal in the workspace directory
 			formatter := GetFormatter()
-			formatter.Info("Spawning terminal in: %s", wsPath)
+			_ = formatter.Info("Spawning terminal in: %s", wsPath)
 
 			opts := terminal.SpawnOptions{
 				WorkingDir: wsPath,
@@ -536,9 +536,9 @@ Examples:
 			}
 
 			if bg {
-				formatter.Success("Terminal spawned in background")
+				_ = formatter.Success("Terminal spawned in background")
 			} else {
-				formatter.Success("Terminal spawned successfully")
+				_ = formatter.Success("Terminal spawned successfully")
 			}
 
 			return nil
@@ -619,16 +619,16 @@ Use --remove-files to also delete the workspace directory.`,
 
 				if err := os.RemoveAll(wsPath); err != nil {
 					formatter := GetFormatter()
-					formatter.Warning("Workspace deleted from registry, but failed to remove files: %v", err)
+					_ = formatter.Warning("Workspace deleted from registry, but failed to remove files: %v", err)
 					return nil
 				}
 			}
 
 			// Display success
 			formatter := GetFormatter()
-			formatter.Success("Workspace deleted: %s", name)
+			_ = formatter.Success("Workspace deleted: %s", name)
 			if removeFiles {
-				formatter.Info("Files removed: %s", wsPath)
+				_ = formatter.Info("Files removed: %s", wsPath)
 			}
 
 			return nil

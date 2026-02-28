@@ -44,20 +44,20 @@ func NewWorkspaceFS() *WorkspaceFS {
 func (fs *WorkspaceFS) InitDirectory(repoPath string) error {
 	// Create main .skillrunner directory
 	skillrunnerPath := filepath.Join(repoPath, SkillrunnerDir)
-	if err := os.MkdirAll(skillrunnerPath, 0755); err != nil {
+	if err := os.MkdirAll(skillrunnerPath, 0750); err != nil {
 		return fmt.Errorf("failed to create .skillrunner directory: %w", err)
 	}
 
 	// Create checkpoints subdirectory
 	checkpointsPath := filepath.Join(skillrunnerPath, CheckpointsDir)
-	if err := os.MkdirAll(checkpointsPath, 0755); err != nil {
+	if err := os.MkdirAll(checkpointsPath, 0750); err != nil {
 		return fmt.Errorf("failed to create checkpoints directory: %w", err)
 	}
 
 	// Create rules.md if it doesn't exist
 	rulesPath := filepath.Join(skillrunnerPath, RulesFile)
 	if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
-		if err := os.WriteFile(rulesPath, []byte(DefaultRulesContent), 0644); err != nil {
+		if err := os.WriteFile(rulesPath, []byte(DefaultRulesContent), 0600); err != nil {
 			return fmt.Errorf("failed to create rules.md: %w", err)
 		}
 	}

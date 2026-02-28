@@ -45,11 +45,11 @@ func newWorktreesListCmd() *cobra.Command {
 			}
 
 			if len(sessions) == 0 {
-				formatter.Info("No isolation worktrees found.")
+				_ = formatter.Info("No isolation worktrees found.")
 				return nil
 			}
 
-			formatter.Header("Isolation Worktrees")
+			_ = formatter.Header("Isolation Worktrees")
 			now := time.Now()
 			for _, s := range sessions {
 				age := now.Sub(s.CreatedAt).Truncate(time.Hour)
@@ -57,7 +57,7 @@ func newWorktreesListCmd() *cobra.Command {
 				if age > 7*24*time.Hour {
 					stale = " [stale]"
 				}
-				formatter.Item(s.SkillName, fmt.Sprintf("%s  (%s old%s)", s.WorktreePath, formatAge(age), stale))
+				_ = formatter.Item(s.SkillName, fmt.Sprintf("%s  (%s old%s)", s.WorktreePath, formatAge(age), stale))
 			}
 			return nil
 		},
@@ -95,9 +95,9 @@ func newWorktreesCleanCmd() *cobra.Command {
 			}
 
 			if n == 0 {
-				formatter.Info("No stale worktrees found.")
+				_ = formatter.Info("No stale worktrees found.")
 			} else {
-				formatter.Success("Removed %d stale worktree(s).", n)
+				_ = formatter.Success("Removed %d stale worktree(s).", n)
 			}
 			return nil
 		},

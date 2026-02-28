@@ -66,13 +66,13 @@ func (m *Manager) InitWorkspace(ctx context.Context, repoPath string) (*domainCo
 
 	// Create .skillrunner directory
 	skillrunnerPath := filepath.Join(repoPath, SkillrunnerDir)
-	if err := os.MkdirAll(skillrunnerPath, 0755); err != nil {
+	if err := os.MkdirAll(skillrunnerPath, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create .skillrunner directory: %w", err)
 	}
 
 	// Create checkpoints subdirectory
 	checkpointsPath := filepath.Join(skillrunnerPath, CheckpointsDir)
-	if err := os.MkdirAll(checkpointsPath, 0755); err != nil {
+	if err := os.MkdirAll(checkpointsPath, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create checkpoints directory: %w", err)
 	}
 
@@ -90,7 +90,7 @@ These rules will be included in the context for skill execution.
 - Write tests for new functionality
 - Update documentation when changing APIs
 `
-		if err := os.WriteFile(rulesPath, []byte(defaultRules), 0644); err != nil {
+		if err := os.WriteFile(rulesPath, []byte(defaultRules), 0600); err != nil {
 			return nil, fmt.Errorf("failed to create rules.md: %w", err)
 		}
 	}

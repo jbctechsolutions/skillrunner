@@ -57,7 +57,7 @@ checkpoints, and context that persists across skill executions.`,
 
 			// Check if already initialized
 			if workspaceFS.Exists(repoPath) {
-				formatter.Warning(".skillrunner directory already exists")
+				_ = formatter.Warning(".skillrunner directory already exists")
 				return nil
 			}
 
@@ -66,17 +66,17 @@ checkpoints, and context that persists across skill executions.`,
 				return fmt.Errorf("failed to initialize workspace: %w", err)
 			}
 
-			formatter.Success("Initialized .skillrunner directory in %s", repoPath)
-			formatter.Println("")
-			formatter.Info("Created:")
-			formatter.BulletItem(".skillrunner/")
-			formatter.BulletItem(".skillrunner/checkpoints/")
-			formatter.BulletItem(".skillrunner/rules.md")
-			formatter.Println("")
-			formatter.Info("Next steps:")
-			formatter.BulletItem("Edit .skillrunner/rules.md to add workspace-specific rules")
-			formatter.BulletItem("Run 'sr context focus <issue>' to set your current task")
-			formatter.BulletItem("Run 'sr context checkpoint' to save progress")
+			_ = formatter.Success("Initialized .skillrunner directory in %s", repoPath)
+			_ = formatter.Println("")
+			_ = formatter.Info("Created:")
+			_ = formatter.BulletItem(".skillrunner/")
+			_ = formatter.BulletItem(".skillrunner/checkpoints/")
+			_ = formatter.BulletItem(".skillrunner/rules.md")
+			_ = formatter.Println("")
+			_ = formatter.Info("Next steps:")
+			_ = formatter.BulletItem("Edit .skillrunner/rules.md to add workspace-specific rules")
+			_ = formatter.BulletItem("Run 'sr context focus <issue>' to set your current task")
+			_ = formatter.BulletItem("Run 'sr context checkpoint' to save progress")
 
 			_ = ctx // Silence unused variable warning
 			return nil

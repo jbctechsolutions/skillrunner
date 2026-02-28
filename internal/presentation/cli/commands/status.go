@@ -267,37 +267,37 @@ func determineOverallStatus(providers []ProviderStatus) string {
 // printStatusText prints the status in human-readable format.
 func printStatusText(formatter *output.Formatter, status SystemStatus, detailed bool) error {
 	// System header
-	formatter.Header("Skillrunner Status")
-	formatter.Println("")
+	_ = formatter.Header("Skillrunner Status")
+	_ = formatter.Println("")
 
 	// Overall status with color
 	statusIndicator := getStatusIndicator(formatter, status.Status)
-	formatter.Println("  %s  %s", formatter.Dim("System:"), statusIndicator)
-	formatter.Println("  %s  %s", formatter.Dim("Version:"), status.Version)
-	formatter.Println("")
+	_ = formatter.Println("  %s  %s", formatter.Dim("System:"), statusIndicator)
+	_ = formatter.Println("  %s  %s", formatter.Dim("Version:"), status.Version)
+	_ = formatter.Println("")
 
 	// Configuration
-	formatter.SubHeader("Configuration")
+	_ = formatter.SubHeader("Configuration")
 	if status.ConfigLoaded {
-		formatter.Success("Config loaded from %s", status.ConfigPath)
+		_ = formatter.Success("Config loaded from %s", status.ConfigPath)
 	} else {
-		formatter.Warning("Using default configuration")
+		_ = formatter.Warning("Using default configuration")
 	}
-	formatter.Println("  %s  %s (%d skills)", formatter.Dim("Skills Dir:"), status.SkillsDir, status.SkillCount)
-	formatter.Println("")
+	_ = formatter.Println("  %s  %s (%d skills)", formatter.Dim("Skills Dir:"), status.SkillsDir, status.SkillCount)
+	_ = formatter.Println("")
 
 	// Providers
-	formatter.SubHeader("Providers")
-	formatter.Println("")
+	_ = formatter.SubHeader("Providers")
+	_ = formatter.Println("")
 
 	for _, provider := range status.Providers {
 		printProviderStatus(formatter, provider, detailed)
 	}
 
 	// Summary
-	formatter.Println("")
+	_ = formatter.Println("")
 	healthy, degraded, unavailable := countProviderStatuses(status.Providers)
-	formatter.Println("%s %d healthy, %d degraded, %d unavailable",
+	_ = formatter.Println("%s %d healthy, %d degraded, %d unavailable",
 		formatter.Dim("Summary:"),
 		healthy, degraded, unavailable)
 
@@ -309,33 +309,33 @@ func printProviderStatus(formatter *output.Formatter, provider ProviderStatus, d
 	statusIndicator := getStatusIndicator(formatter, provider.Status)
 	typeLabel := formatter.Dim("[" + provider.Type + "]")
 
-	formatter.Println("  %s %s %s", statusIndicator, formatter.Bold(provider.Name), typeLabel)
+	_ = formatter.Println("  %s %s %s", statusIndicator, formatter.Bold(provider.Name), typeLabel)
 
 	if detailed {
 		if provider.Endpoint != "" {
-			formatter.Println("      %s %s", formatter.Dim("Endpoint:"), provider.Endpoint)
+			_ = formatter.Println("      %s %s", formatter.Dim("Endpoint:"), provider.Endpoint)
 		}
 		if provider.Latency != "" {
-			formatter.Println("      %s %s", formatter.Dim("Latency:"), provider.Latency)
+			_ = formatter.Println("      %s %s", formatter.Dim("Latency:"), provider.Latency)
 		}
 		// Show API key status for cloud providers
 		if provider.Type == "cloud" {
 			if provider.APIKeySet {
-				formatter.Println("      %s %s", formatter.Dim("API Key:"), formatter.Colorize("configured", output.ColorGreen))
+				_ = formatter.Println("      %s %s", formatter.Dim("API Key:"), formatter.Colorize("configured", output.ColorGreen))
 			} else {
-				formatter.Println("      %s %s", formatter.Dim("API Key:"), formatter.Colorize("not configured", output.ColorRed))
+				_ = formatter.Println("      %s %s", formatter.Dim("API Key:"), formatter.Colorize("not configured", output.ColorRed))
 			}
 		}
 		if len(provider.Models) > 0 {
-			formatter.Println("      %s", formatter.Dim("Models:"))
+			_ = formatter.Println("      %s", formatter.Dim("Models:"))
 			for _, model := range provider.Models {
-				formatter.Println("        • %s", model)
+				_ = formatter.Println("        • %s", model)
 			}
 		}
 	}
 
 	if provider.Error != "" {
-		formatter.Println("      %s", formatter.Colorize("Error: "+provider.Error, output.ColorRed))
+		_ = formatter.Println("      %s", formatter.Colorize("Error: "+provider.Error, output.ColorRed))
 	}
 }
 

@@ -68,27 +68,27 @@ func runOutcomesShow(ctx context.Context, skillArg string, limit int) error {
 		return fmt.Errorf("failed to get outcomes: %w", err)
 	}
 
-	formatter.Header(fmt.Sprintf("Outcomes — %s", skillName))
-	formatter.Println("")
+	_ = formatter.Header(fmt.Sprintf("Outcomes — %s", skillName))
+	_ = formatter.Println("")
 
 	if len(recent) == 0 {
-		formatter.Info("No outcomes recorded yet for this skill.")
-		formatter.Println("")
-		formatter.Println("  Outcomes are recorded automatically after each %s run.", formatter.Dim("sr run"))
+		_ = formatter.Info("No outcomes recorded yet for this skill.")
+		_ = formatter.Println("")
+		_ = formatter.Println("  Outcomes are recorded automatically after each %s run.", formatter.Dim("sr run"))
 		return nil
 	}
 
-	formatter.Println("  %s  %d", formatter.Dim("Total recorded:"), len(recent))
-	formatter.Println("")
+	_ = formatter.Println("  %s  %d", formatter.Dim("Total recorded:"), len(recent))
+	_ = formatter.Println("")
 
 	if len(stats) == 0 {
-		formatter.Info("No aggregated stats available.")
+		_ = formatter.Info("No aggregated stats available.")
 		return nil
 	}
 
 	// Stats table
-	formatter.SubHeader("Stats by Phase & Profile")
-	formatter.Println("")
+	_ = formatter.SubHeader("Stats by Phase & Profile")
+	_ = formatter.Println("")
 
 	tableData := output.TableData{
 		Columns: []output.TableColumn{
@@ -133,28 +133,28 @@ func runOutcomesShow(ctx context.Context, skillArg string, limit int) error {
 	if err := formatter.Table(tableData); err != nil {
 		return err
 	}
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Recommendations
 	recs := domainOutcome.Analyze(stats)
 	if len(recs) > 0 {
-		formatter.SubHeader("Routing Recommendations")
-		formatter.Println("")
+		_ = formatter.SubHeader("Routing Recommendations")
+		_ = formatter.Println("")
 		for _, r := range recs {
 			conf := fmt.Sprintf("%.0f%% confidence", r.Confidence*100)
-			formatter.Println("  %s  %s: %s → %s",
+			_ = formatter.Println("  %s  %s: %s → %s",
 				formatter.Colorize("→", output.ColorGreen),
 				formatter.Dim(r.PhaseName),
 				r.CurrentProfile,
 				formatter.Colorize(r.SuggestedProfile, output.ColorGreen))
-			formatter.Println("    %s  %s", formatter.Dim(r.Reason), formatter.Dim("("+conf+")"))
-			formatter.Println("")
+			_ = formatter.Println("    %s  %s", formatter.Dim(r.Reason), formatter.Dim("("+conf+")"))
+			_ = formatter.Println("")
 		}
 	} else {
-		formatter.Println("  %s  No profile changes recommended yet.",
+		_ = formatter.Println("  %s  No profile changes recommended yet.",
 			formatter.Colorize("✓", output.ColorGreen))
-		formatter.Println("  %s  Recommendations appear after 5+ runs per profile.", formatter.Dim("Tip:"))
-		formatter.Println("")
+		_ = formatter.Println("  %s  Recommendations appear after 5+ runs per profile.", formatter.Dim("Tip:"))
+		_ = formatter.Println("")
 	}
 
 	return nil
@@ -192,8 +192,8 @@ func runOutcomesReset(ctx context.Context, skillArg string, force bool) error {
 	}
 
 	if !force {
-		formatter.Warning("This will delete all outcome history for skill %q.", skillName)
-		formatter.Println("  Use --force to confirm.")
+		_ = formatter.Warning("This will delete all outcome history for skill %q.", skillName)
+		_ = formatter.Println("  Use --force to confirm.")
 		return nil
 	}
 
@@ -201,7 +201,7 @@ func runOutcomesReset(ctx context.Context, skillArg string, force bool) error {
 		return fmt.Errorf("reset failed: %w", err)
 	}
 
-	formatter.Success("Cleared outcome history for %q.", skillName)
+	_ = formatter.Success("Cleared outcome history for %q.", skillName)
 	return nil
 }
 

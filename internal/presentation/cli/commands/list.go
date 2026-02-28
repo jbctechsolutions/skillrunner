@@ -90,10 +90,10 @@ func runList(formatFlag string) error {
 // renderSkillsTable renders skills as a formatted table.
 func renderSkillsTable(formatter *output.Formatter, skills []SkillInfo) error {
 	if len(skills) == 0 {
-		formatter.Info("No skills available")
-		formatter.Println("")
-		formatter.Println("To add skills, place skill definitions in your skills directory.")
-		formatter.Println("Run 'sr --help' for more information.")
+		_ = formatter.Info("No skills available")
+		_ = formatter.Println("")
+		_ = formatter.Println("To add skills, place skill definitions in your skills directory.")
+		_ = formatter.Println("Run 'sr --help' for more information.")
 		return nil
 	}
 
@@ -120,9 +120,9 @@ func renderSkillsTable(formatter *output.Formatter, skills []SkillInfo) error {
 	}
 
 	// Print header
-	formatter.Println("")
-	formatter.Println("%s", formatter.Bold("Available Skills"))
-	formatter.Println("")
+	_ = formatter.Println("")
+	_ = formatter.Println("%s", formatter.Bold("Available Skills"))
+	_ = formatter.Println("")
 
 	// Render table
 	if err := formatter.Table(tableData); err != nil {
@@ -130,8 +130,8 @@ func renderSkillsTable(formatter *output.Formatter, skills []SkillInfo) error {
 	}
 
 	// Print summary
-	formatter.Println("")
-	formatter.Println("%s", formatter.Dim(fmt.Sprintf("Total: %d skill(s)", len(skills))))
+	_ = formatter.Println("")
+	_ = formatter.Println("%s", formatter.Dim(fmt.Sprintf("Total: %d skill(s)", len(skills))))
 
 	return nil
 }

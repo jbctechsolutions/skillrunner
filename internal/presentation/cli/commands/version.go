@@ -51,7 +51,7 @@ func runVersion(short bool) error {
 		if format == output.FormatJSON {
 			return formatter.JSON(map[string]string{"version": Version})
 		}
-		formatter.Println("%s", Version)
+		_ = formatter.Println("%s", Version)
 		return nil
 	}
 
@@ -68,13 +68,13 @@ func runVersion(short bool) error {
 	}
 
 	// Print version info in text format
-	formatter.Println("%s", formatter.Bold("Skillrunner"))
-	formatter.Println("%s", "───────────")
-	formatter.Println("  %s  %s", formatter.Dim("Version:"), info.Version)
-	formatter.Println("  %s  %s", formatter.Dim("Git Commit:"), info.GitCommit)
-	formatter.Println("  %s  %s", formatter.Dim("Build Date:"), info.BuildDate)
-	formatter.Println("  %s  %s", formatter.Dim("Go Version:"), info.GoVersion)
-	formatter.Println("  %s  %s", formatter.Dim("Platform:"), info.Platform)
+	_ = formatter.Println("%s", formatter.Bold("Skillrunner"))
+	_ = formatter.Println("%s", "───────────")
+	_ = formatter.Println("  %s  %s", formatter.Dim("Version:"), info.Version)
+	_ = formatter.Println("  %s  %s", formatter.Dim("Git Commit:"), info.GitCommit)
+	_ = formatter.Println("  %s  %s", formatter.Dim("Build Date:"), info.BuildDate)
+	_ = formatter.Println("  %s  %s", formatter.Dim("Go Version:"), info.GoVersion)
+	_ = formatter.Println("  %s  %s", formatter.Dim("Platform:"), info.Platform)
 
 	return nil
 }
