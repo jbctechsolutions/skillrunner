@@ -11,6 +11,7 @@ import (
 	mcpAdapter "github.com/jbctechsolutions/skillrunner/internal/adapters/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 )
 
@@ -22,6 +23,7 @@ type streamingPhaseExecutor struct {
 	provider      ports.ProviderPort
 	memoryContent string
 	mcpRegistry   ports.MCPToolRegistryPort // nil when tool calling is disabled
+	allowedTools  []string                  // skill-declared tool allowlist; empty = none
 	compressor    *compression.Compressor   // nil means no compression
 	modelHints    map[string]string         // v1.3: profile→model overrides; nil = use defaults
 }
@@ -68,12 +70,15 @@ func (e *streamingPhaseExecutor) ExecuteWithStreaming(
 		result.CompressionRatio = cr.Ratio
 	}
 
-	// Fetch MCP tools if this phase allows tool calling
+	// Fetch MCP tools if this phase allows tool calling, filtered to the skill's declared allowlist.
 	var tools []ports.Tool
-	if phase.AllowTools && e.mcpRegistry != nil {
+	if phase.AllowTools && e.mcpRegistry != nil && len(e.allowedTools) > 0 {
 		mcpTools, err := e.mcpRegistry.GetAllTools(ctx)
 		if err == nil && len(mcpTools) > 0 {
-			tools = mcpAdapter.ToProviderTools(mcpTools, false)
+			mcpTools = e.filterAllowedTools(mcpTools)
+			if len(mcpTools) > 0 {
+				tools = mcpAdapter.ToProviderTools(mcpTools, false)
+			}
 		}
 	}
 
@@ -147,8 +152,9 @@ func (e *streamingPhaseExecutor) ExecuteWithStreaming(
 		})
 	}
 
-	result.Status = PhaseStatusCompleted
-	result.Output = ""
+	// Max tool iterations exceeded without producing final content.
+	result.Status = PhaseStatusFailed
+	result.Error = fmt.Errorf("max tool iterations (%d) exceeded without producing final content", maxToolIterations)
 	result.InputTokens = totalInput
 	result.OutputTokens = totalOutput
 	result.ModelUsed = modelUsed
@@ -228,6 +234,24 @@ func (e *streamingPhaseExecutor) executeToolCall(ctx context.Context, tc ports.T
 // Execute runs a single phase without streaming (for compatibility).
 func (e *streamingPhaseExecutor) Execute(ctx context.Context, phase *skill.Phase, dependencyOutputs map[string]string) *PhaseResult {
 	return e.ExecuteWithStreaming(ctx, phase, dependencyOutputs, nil)
+}
+
+// filterAllowedTools returns only the tools whose FullName matches the executor's allowedTools list.
+func (e *streamingPhaseExecutor) filterAllowedTools(tools []*mcp.Tool) []*mcp.Tool {
+	if len(e.allowedTools) == 0 {
+		return nil
+	}
+	allowed := make(map[string]struct{}, len(e.allowedTools))
+	for _, name := range e.allowedTools {
+		allowed[name] = struct{}{}
+	}
+	var filtered []*mcp.Tool
+	for _, t := range tools {
+		if _, ok := allowed[t.FullName()]; ok {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered
 }
 
 // buildPrompt renders the phase's prompt template with the dependency outputs.

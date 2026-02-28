@@ -79,6 +79,7 @@ func NewStreamingExecutor(provider ports.ProviderPort, config ExecutorConfig) St
 		spe.compressor = compression.NewFromProfile(config.RoutingProfile)
 	}
 	spe.modelHints = config.ModelHints
+	spe.allowedTools = config.AllowedTools
 
 	return &streamingExecutor{
 		provider:               provider,

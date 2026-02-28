@@ -12,6 +12,7 @@ import (
 	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/confidence"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 )
 
@@ -23,6 +24,7 @@ type phaseExecutor struct {
 	provider                 ports.ProviderPort
 	memoryContent            string
 	mcpRegistry              ports.MCPToolRegistryPort // nil when tool calling is disabled
+	allowedTools             []string                  // skill-declared tool allowlist; empty = none
 	compressor               *compression.Compressor   // nil means no compression
 	modelHints               map[string]string         // v1.3: profile→model overrides; nil = use defaults
 	confidenceThresholds     map[string]float64        // v1.4: profile→confidence threshold
@@ -66,12 +68,15 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 		result.CompressionRatio = cr.Ratio
 	}
 
-	// Fetch MCP tools if this phase allows tool calling
+	// Fetch MCP tools if this phase allows tool calling, filtered to the skill's declared allowlist.
 	var tools []ports.Tool
-	if phase.AllowTools && e.mcpRegistry != nil {
+	if phase.AllowTools && e.mcpRegistry != nil && len(e.allowedTools) > 0 {
 		mcpTools, err := e.mcpRegistry.GetAllTools(ctx)
 		if err == nil && len(mcpTools) > 0 {
-			tools = mcpAdapter.ToProviderTools(mcpTools, false)
+			mcpTools = e.filterAllowedTools(mcpTools)
+			if len(mcpTools) > 0 {
+				tools = mcpAdapter.ToProviderTools(mcpTools, false)
+			}
 		}
 	}
 
@@ -134,9 +139,14 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 			ToolResults: toolResults,
 		})
 
-		// If this is the last iteration, capture whatever was in last response
+		// If this is the last iteration and the model is still calling tools,
+		// fail the phase to avoid silently succeeding with incomplete output.
 		if i == maxToolIterations-1 {
-			finalContent = resp.Content
+			result.Status = PhaseStatusFailed
+			result.Error = fmt.Errorf("max tool iterations (%d) exceeded without producing final content", maxToolIterations)
+			result.EndTime = time.Now()
+			result.Duration = result.EndTime.Sub(result.StartTime)
+			return result
 		}
 	}
 
@@ -149,7 +159,7 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 			if escalatedProfile != phase.RoutingProfile {
 				// Build escalated request with the higher-tier model
 				escalatedReq := req
-				escalatedReq.ModelID = e.defaultModel(escalatedProfile)
+				escalatedReq.ModelID = e.selectModel(ctx, escalatedProfile)
 				if resp, err := e.provider.Complete(ctx, escalatedReq); err == nil {
 					finalContent = resp.Content
 					totalInput += resp.InputTokens
@@ -264,6 +274,24 @@ func (e *phaseExecutor) executeToolCall(ctx context.Context, tc ports.ToolCall) 
 		Content:    callResult.TextContent(),
 		IsError:    callResult.IsError,
 	}
+}
+
+// filterAllowedTools returns only the tools whose FullName matches the executor's allowedTools list.
+func (e *phaseExecutor) filterAllowedTools(tools []*mcp.Tool) []*mcp.Tool {
+	if len(e.allowedTools) == 0 {
+		return nil
+	}
+	allowed := make(map[string]struct{}, len(e.allowedTools))
+	for _, name := range e.allowedTools {
+		allowed[name] = struct{}{}
+	}
+	var filtered []*mcp.Tool
+	for _, t := range tools {
+		if _, ok := allowed[t.FullName()]; ok {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered
 }
 
 // buildPrompt renders the phase's prompt template with the dependency outputs.

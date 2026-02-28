@@ -99,7 +99,7 @@ func (r *OutcomeRepository) GetStats(ctx context.Context, skillID string) ([]out
 			AVG(duration_ms) AS avg_duration_ms
 		FROM outcomes
 		WHERE skill_id = ?
-		GROUP BY skill_id, phase_id, profile
+		GROUP BY skill_id, phase_id, phase_name, profile, model
 		ORDER BY phase_id, profile`, skillID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query outcome stats: %w", err)

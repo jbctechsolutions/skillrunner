@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -50,7 +51,7 @@ func NewIsolationManager(baseDir string) (*IsolationManager, error) {
 // The worktree is created at baseDir/<skillName>-<date>-<hash>/.
 func (im *IsolationManager) Setup(ctx context.Context, repoRoot, skillName string) (*isolation.Session, error) {
 	// Ensure worktree base directory exists
-	if err := os.MkdirAll(im.baseDir, 0o755); err != nil {
+	if err := os.MkdirAll(im.baseDir, 0o750); err != nil {
 		return nil, fmt.Errorf("failed to create worktree base dir: %w", err)
 	}
 
@@ -94,14 +95,24 @@ func (im *IsolationManager) Diff(ctx context.Context, sess *isolation.Session) (
 
 	if err := cmd.Run(); err != nil {
 		// Exit code 1 from git diff means there are differences — that's normal.
-		return out.String(), nil
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return out.String(), nil
+		}
+		return "", fmt.Errorf("git diff failed: %w", err)
 	}
 
 	return out.String(), nil
 }
 
-// ChangedFiles returns paths (relative to repo root) of files changed in the worktree.
-func (im *IsolationManager) ChangedFiles(ctx context.Context, sess *isolation.Session) ([]string, error) {
+// FileChange represents a file change from git status, including the status code.
+type FileChange struct {
+	Path   string
+	Status byte // 'M' modified, 'A' added, 'D' deleted, 'R' renamed, '?' untracked
+}
+
+// ChangedFiles returns file changes in the worktree with their status codes.
+func (im *IsolationManager) ChangedFiles(ctx context.Context, sess *isolation.Session) ([]FileChange, error) {
 	if !sess.IsActive() {
 		return nil, nil
 	}
@@ -116,43 +127,57 @@ func (im *IsolationManager) ChangedFiles(ctx context.Context, sess *isolation.Se
 		return nil, fmt.Errorf("git status failed: %w", err)
 	}
 
-	var files []string
+	var changes []FileChange
 	for _, line := range strings.Split(strings.TrimSpace(out.String()), "\n") {
 		if len(line) < 4 {
 			continue
 		}
 		// git status --porcelain: "XY filename" where XY are status codes
+		status := line[0]
+		if status == ' ' {
+			status = line[1]
+		}
 		relPath := strings.TrimSpace(line[3:])
 		if relPath != "" {
-			files = append(files, relPath)
+			changes = append(changes, FileChange{Path: relPath, Status: status})
 		}
 	}
 
-	return files, nil
+	return changes, nil
 }
 
 // Apply copies all changed files from the worktree back to the repo root.
+// Deletions in the worktree are propagated by removing the file from the repo root.
 func (im *IsolationManager) Apply(ctx context.Context, sess *isolation.Session) error {
 	if !sess.IsActive() {
 		return nil
 	}
 
-	files, err := im.ChangedFiles(ctx, sess)
+	changes, err := im.ChangedFiles(ctx, sess)
 	if err != nil {
 		return err
 	}
 
-	for _, relPath := range files {
-		src := filepath.Join(sess.WorktreePath, relPath)
-		dst := filepath.Join(sess.RepoRoot, relPath)
+	for _, change := range changes {
+		dst := filepath.Join(sess.RepoRoot, change.Path)
+
+		// Handle deletions
+		if change.Status == 'D' {
+			if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to delete %s: %w", change.Path, err)
+			}
+			continue
+		}
+
+		src := filepath.Join(sess.WorktreePath, change.Path)
 
 		// Ensure destination directory exists
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return fmt.Errorf("failed to create directory for %s: %w", relPath, err)
+		if err := os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", change.Path, err)
 		}
 
 		if err := copyFile(src, dst); err != nil {
-			return fmt.Errorf("failed to copy %s: %w", relPath, err)
+			return fmt.Errorf("failed to copy %s: %w", change.Path, err)
 		}
 	}
 
@@ -223,7 +248,7 @@ func (im *IsolationManager) CleanStale(ctx context.Context, repoRoot string) (in
 
 // command is a helper that builds an exec.Cmd using the worktree manager's git path.
 func (wm *WorktreeManager) command(ctx context.Context, args ...string) *exec.Cmd {
-	return exec.CommandContext(ctx, wm.gitPath, args...)
+	return exec.CommandContext(ctx, wm.gitPath, args...) // #nosec G204 -- gitPath is resolved via exec.LookPath, not user input
 }
 
 // randomHex returns n random hex bytes.
@@ -254,13 +279,13 @@ func sanitizeLabel(s string) string {
 
 // copyFile copies src to dst, creating dst if it does not exist.
 func copyFile(src, dst string) error {
-	in, err := os.Open(src)
+	in, err := os.Open(src) // #nosec G304 -- paths are constructed from git worktree paths, not user input
 	if err != nil {
 		return err
 	}
 	defer in.Close()
 
-	out, err := os.Create(dst)
+	out, err := os.Create(dst) // #nosec G304 -- paths are constructed from git worktree paths, not user input
 	if err != nil {
 		return err
 	}

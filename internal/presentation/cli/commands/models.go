@@ -58,13 +58,16 @@ func runModelsRecommend(ctx context.Context) error {
 	}
 	skills := registry.ListSkills()
 
-	// Get Ollama provider for availability checks
+	// Get local (Ollama) provider for availability checks
 	var availableModels []string
 	providerReg := container.ProviderRegistry()
 	providers := providerReg.ListProviders()
-	if len(providers) > 0 {
-		if models, err := providers[0].ListModels(ctx); err == nil {
-			availableModels = models
+	for _, p := range providers {
+		if p.Info().IsLocal {
+			if models, err := p.ListModels(ctx); err == nil {
+				availableModels = models
+			}
+			break
 		}
 	}
 

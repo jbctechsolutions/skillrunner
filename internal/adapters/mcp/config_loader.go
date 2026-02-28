@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -49,18 +50,24 @@ func (l *ConfigLoader) Load(ctx context.Context) (map[string]domainMCP.ServerCon
 
 	// 1. ~/.claude/mcp.json (Claude format)
 	claudePath := filepath.Join(homeDir, ".claude", "mcp.json")
-	if claudeConfigs, err := l.LoadFromPath(ctx, claudePath); err == nil {
+	claudeConfigs, claudeErr := l.LoadFromPath(ctx, claudePath)
+	if claudeErr == nil {
 		for k, v := range claudeConfigs {
 			merged[k] = v
 		}
+	} else if !errors.Is(claudeErr, domainMCP.ErrConfigNotFound) {
+		return nil, fmt.Errorf("invalid Claude MCP config at %s: %w", claudePath, claudeErr)
 	}
 
 	// 2. ~/.skillrunner/mcp_servers.json (flat format — takes precedence)
 	srPath := filepath.Join(homeDir, ".skillrunner", "mcp_servers.json")
-	if srConfigs, err := l.loadFlatFormat(srPath); err == nil {
+	srConfigs, srErr := l.loadFlatFormat(srPath)
+	if srErr == nil {
 		for k, v := range srConfigs {
 			merged[k] = v
 		}
+	} else if !os.IsNotExist(srErr) {
+		return nil, fmt.Errorf("invalid MCP config at %s: %w", srPath, srErr)
 	}
 
 	return merged, nil

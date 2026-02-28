@@ -47,7 +47,7 @@ func WriteMCPServersConfig(path string) (created bool, err error) {
 		return false, nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return false, fmt.Errorf("create config dir: %w", err)
 	}
 
@@ -57,7 +57,7 @@ func WriteMCPServersConfig(path string) (created bool, err error) {
 		return false, fmt.Errorf("marshal MCP config: %w", err)
 	}
 
-	if err := os.WriteFile(path, append(data, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(path, append(data, '\n'), 0o600); err != nil {
 		return false, fmt.Errorf("write MCP config: %w", err)
 	}
 	return true, nil

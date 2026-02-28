@@ -98,46 +98,46 @@ func runCostReport(ctx context.Context, filter metrics.MetricsFilter, label, exp
 	}
 
 	// ── Text output ──────────────────────────────────────────────
-	formatter.Header("Cost Report — " + label)
-	formatter.Println("")
-	formatter.Println("  %s  %s → %s",
+	_ = formatter.Header("Cost Report — " + label)
+	_ = formatter.Println("")
+	_ = formatter.Println("  %s  %s → %s",
 		formatter.Dim("Period:"),
 		filter.StartDate.Format("Jan 02, 2006"),
 		filter.EndDate.Format("Jan 02, 2006"))
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Summary
-	formatter.SubHeader("Summary")
-	formatter.Println("")
-	formatter.Println("  %s  %s",
+	_ = formatter.SubHeader("Summary")
+	_ = formatter.Println("")
+	_ = formatter.Println("  %s  %s",
 		formatter.Dim("Total Cost:"),
 		formatter.Colorize(fmt.Sprintf("$%.4f", summary.TotalCost), output.ColorYellow))
-	formatter.Println("  %s  %s input / %s output (%s total)",
+	_ = formatter.Println("  %s  %s input / %s output (%s total)",
 		formatter.Dim("Tokens:"),
 		formatNumber(summary.InputTokens),
 		formatNumber(summary.OutputTokens),
 		formatNumber(summary.TotalTokens))
-	formatter.Println("  %s  %d", formatter.Dim("Executions:"), agg.TotalExecutions)
-	formatter.Println("")
+	_ = formatter.Println("  %s  %d", formatter.Dim("Executions:"), agg.TotalExecutions)
+	_ = formatter.Println("")
 
 	// Budget status
 	printBudgetStatus(formatter)
 
 	// ASCII bar chart: cost by provider
 	if len(summary.ByProvider) > 0 {
-		formatter.SubHeader("Cost by Provider")
-		formatter.Println("")
+		_ = formatter.SubHeader("Cost by Provider")
+		_ = formatter.Println("")
 		printASCIIBar(formatter, summary.ByProvider, summary.TotalCost, "$")
-		formatter.Println("")
+		_ = formatter.Println("")
 	}
 
 	// ASCII bar chart: cost by skill (top 5)
 	if len(summary.BySkill) > 0 {
-		formatter.SubHeader("Cost by Skill")
-		formatter.Println("")
+		_ = formatter.SubHeader("Cost by Skill")
+		_ = formatter.Println("")
 		top5 := topN(summary.BySkill, 5)
 		printASCIIBar(formatter, top5, summary.TotalCost, "$")
-		formatter.Println("")
+		_ = formatter.Println("")
 	}
 
 	return nil
@@ -274,7 +274,6 @@ func newCostSavingsCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&last7Days, "last-7-days", false, "Analyse last 7 days")
 	cmd.Flags().BoolVar(&last30Days, "last-30-days", false, "Analyse last 30 days")
-	cmd.Flags().BoolVar(&last7Days, "potential", false, "Show potential savings (default 7-day window)")
 	cmd.Flags().StringVar(&since, "since", "", "Custom period")
 	cmd.Flags().StringVar(&export, "export", "", "Export format: json, markdown")
 

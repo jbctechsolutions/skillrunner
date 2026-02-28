@@ -78,7 +78,10 @@ func newWorktreesCleanCmd() *cobra.Command {
 			ctx := context.Background()
 
 			// Determine repo root from CWD for pruning
-			cwd, _ := os.Getwd()
+			cwd, cwdErr := os.Getwd()
+			if cwdErr != nil {
+				return fmt.Errorf("failed to determine working directory: %w", cwdErr)
+			}
 			repoRoot := cwd
 			if wm, wmErr := infraGit.NewWorktreeManager(); wmErr == nil {
 				if root, rootErr := wm.GetRepositoryRoot(ctx, cwd); rootErr == nil {

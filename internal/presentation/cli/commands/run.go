@@ -309,6 +309,7 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	if mcpReg := container.MCPRegistry(); mcpReg != nil {
 		baseConfig.MCPRegistry = mcpReg
 	}
+	baseConfig.AllowedTools = sk.Tools()
 
 	// Validate export format early
 	if runOpts.ExportFormat != "" {
@@ -393,23 +394,30 @@ func exportResult(result *workflow.ExecutionResult, skillName, skillID, input, p
 }
 
 // handleIsolationResult presents the worktree diff and prompts the user to merge or discard.
+// In JSON output mode, changes are auto-discarded to avoid blocking non-interactive scripts.
 func handleIsolationResult(ctx context.Context, formatter *output.Formatter, im *infraGit.IsolationManager, sess *isolation.Session, execErr error) {
 	if execErr != nil {
-		formatter.Warning("Execution failed — discarding worktree (%s)", sess.WorktreePath)
+		_ = formatter.Warning("Execution failed — discarding worktree (%s)", sess.WorktreePath)
 		_ = im.Discard(ctx, sess)
 		return
 	}
 
 	diff, err := im.Diff(ctx, sess)
 	if err != nil || strings.TrimSpace(diff) == "" {
-		formatter.Info("No file changes detected in isolation worktree.")
+		_ = formatter.Info("No file changes detected in isolation worktree.")
 		_ = im.Discard(ctx, sess)
 		return
 	}
 
-	formatter.Println("")
-	formatter.SubHeader("Isolation Diff")
-	formatter.Println(diff)
+	// In JSON mode, auto-discard to avoid blocking non-interactive scripts.
+	if formatter.Format() == output.FormatJSON {
+		_ = im.Discard(ctx, sess)
+		return
+	}
+
+	_ = formatter.Println("")
+	_ = formatter.SubHeader("Isolation Diff")
+	_ = formatter.Println(diff)
 
 	// Prompt user to apply or discard
 	fmt.Print("Apply changes to working tree? [y/N] ")
@@ -420,13 +428,13 @@ func handleIsolationResult(ctx context.Context, formatter *output.Formatter, im 
 
 	if strings.ToLower(strings.TrimSpace(answer)) == "y" {
 		if applyErr := im.Apply(ctx, sess); applyErr != nil {
-			formatter.Error("Failed to apply changes: %v", applyErr)
+			_ = formatter.Error("Failed to apply changes: %v", applyErr)
 		} else {
-			formatter.Success("Changes applied to working tree.")
+			_ = formatter.Success("Changes applied to working tree.")
 		}
 		_ = im.Discard(ctx, sess)
 	} else {
-		formatter.Info("Changes discarded. Worktree removed.")
+		_ = formatter.Info("Changes discarded. Worktree removed.")
 		_ = im.Discard(ctx, sess)
 	}
 }
@@ -876,7 +884,7 @@ func checkBudget(ctx context.Context, formatter *output.Formatter, workflowCap f
 		return nil
 	}
 	appCtxVal := GetAppContext()
-	if appCtxVal == nil {
+	if appCtxVal == nil || appCtxVal.Config == nil {
 		return nil
 	}
 

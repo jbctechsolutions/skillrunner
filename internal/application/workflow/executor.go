@@ -78,6 +78,7 @@ type ExecutorConfig struct {
 	ConfidenceThresholds     map[string]float64        // v1.4: profile→threshold (0 = use defaults)
 	SkipConfidenceEscalation bool                      // v1.4: disable auto-escalation
 	SkipPostCompletionReview bool                      // v1.4: disable post-completion review phases
+	AllowedTools             []string                  // v1.4: skill-declared tool allowlist (mcp__server__tool names)
 }
 
 // DefaultExecutorConfig returns the default executor configuration.
@@ -118,6 +119,7 @@ func NewExecutor(provider ports.ProviderPort, config ExecutorConfig) Executor {
 	pe.confidenceThresholds = config.ConfidenceThresholds
 	pe.skipConfidenceEscalation = config.SkipConfidenceEscalation
 	pe.skipPostCompletionReview = config.SkipPostCompletionReview
+	pe.allowedTools = config.AllowedTools
 
 	return &executor{
 		provider:      provider,

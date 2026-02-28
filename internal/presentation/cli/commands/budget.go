@@ -58,45 +58,45 @@ Alerts are shown when spending reaches 50%, 80%, 90%, or 100% of a limit.`,
 			}
 
 			// Print spend summary
-			formatter.Header("Budget Status")
-			formatter.Println("")
-			formatter.Item("Daily spend", fmt.Sprintf("$%.4f", usage.DailySpend))
+			_ = formatter.Header("Budget Status")
+			_ = formatter.Println("")
+			_ = formatter.Item("Daily spend", fmt.Sprintf("$%.4f", usage.DailySpend))
 			if limits.DailyLimit > 0 {
 				pct := usage.DailySpend / limits.DailyLimit * 100
-				formatter.Item("Daily limit", fmt.Sprintf("$%.2f  (%.1f%% used)", limits.DailyLimit, pct))
+				_ = formatter.Item("Daily limit", fmt.Sprintf("$%.2f  (%.1f%% used)", limits.DailyLimit, pct))
 			} else {
-				formatter.Item("Daily limit", "not set")
+				_ = formatter.Item("Daily limit", "not set")
 			}
-			formatter.Println("")
-			formatter.Item("Monthly spend", fmt.Sprintf("$%.4f", usage.MonthlySpend))
+			_ = formatter.Println("")
+			_ = formatter.Item("Monthly spend", fmt.Sprintf("$%.4f", usage.MonthlySpend))
 			if limits.MonthlyLimit > 0 {
 				pct := usage.MonthlySpend / limits.MonthlyLimit * 100
-				formatter.Item("Monthly limit", fmt.Sprintf("$%.2f  (%.1f%% used)", limits.MonthlyLimit, pct))
+				_ = formatter.Item("Monthly limit", fmt.Sprintf("$%.2f  (%.1f%% used)", limits.MonthlyLimit, pct))
 			} else {
-				formatter.Item("Monthly limit", "not set")
+				_ = formatter.Item("Monthly limit", "not set")
 			}
 
 			// Show alerts
 			alerts := budget.CheckAlerts(limits, usage)
 			if len(alerts) > 0 {
-				formatter.Println("")
+				_ = formatter.Println("")
 				for _, a := range alerts {
 					if a.IsError() {
-						formatter.Error("Alert: %s", a.Message())
+						_ = formatter.Error("Alert: %s", a.Message())
 					} else {
-						formatter.Warning("Alert: %s", a.Message())
+						_ = formatter.Warning("Alert: %s", a.Message())
 					}
 				}
 			}
 
 			// Tip if no limits configured
 			if !limits.Enabled() {
-				formatter.Println("")
-				formatter.Info("No budget limits configured.")
-				formatter.Info("Set limits in ~/.skillrunner/config.yaml:")
-				formatter.Println("  budget:")
-				formatter.Println("    daily_limit: 5.00")
-				formatter.Println("    monthly_limit: 50.00")
+				_ = formatter.Println("")
+				_ = formatter.Info("No budget limits configured.")
+				_ = formatter.Info("Set limits in ~/.skillrunner/config.yaml:")
+				_ = formatter.Println("  budget:")
+				_ = formatter.Println("    daily_limit: 5.00")
+				_ = formatter.Println("    monthly_limit: 50.00")
 			}
 
 			return nil
