@@ -67,3 +67,8 @@ temp/
 .loki/STOP
 .loki/HUMAN_INPUT.md
 .loki/CONTINUITY.md
+
+# Editor/agent local dirs
+.continue/
+.qoder/
+.factory/

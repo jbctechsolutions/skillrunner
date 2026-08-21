@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>SkillRunner Curated Feeds - Verified Working</title>
+    <dateCreated>2025-12-05</dateCreated>
+  </head>
+  <body>
+    <outline text="Spiritual" title="Spiritual">
+      <outline type="rss" text="Gospel Coalition" title="Gospel Coalition" xmlUrl="https://www.thegospelcoalition.org/feed/" htmlUrl="https://www.thegospelcoalition.org"/>
+      <outline type="rss" text="Tim Challies" title="Tim Challies" xmlUrl="https://www.challies.com/feed/" htmlUrl="https://www.challies.com"/>
+      <outline type="rss" text="Justin Taylor" title="Justin Taylor" xmlUrl="https://www.thegospelcoalition.org/blogs/justin-taylor/feed/" htmlUrl="https://www.thegospelcoalition.org/blogs/justin-taylor"/>
+      <outline type="rss" text="Church Answers" title="Church Answers" xmlUrl="https://churchanswers.com/feed/" htmlUrl="https://churchanswers.com"/>
+      <outline type="rss" text="9Marks" title="9Marks" xmlUrl="https://www.9marks.org/feed/" htmlUrl="https://www.9marks.org"/>
+    </outline>
+    <outline text="AI and LLM" title="AI and LLM">
+      <outline type="rss" text="OpenAI Blog" title="OpenAI Blog" xmlUrl="https://openai.com/blog/rss.xml" htmlUrl="https://openai.com/blog"/>
+      <outline type="rss" text="Simon Willison" title="Simon Willison" xmlUrl="https://simonwillison.net/atom/everything/" htmlUrl="https://simonwillison.net"/>
+      <outline type="rss" text="Hugging Face Blog" title="Hugging Face Blog" xmlUrl="https://huggingface.co/blog/feed.xml" htmlUrl="https://huggingface.co/blog"/>
+      <outline type="rss" text="LlamaIndex Blog" title="LlamaIndex Blog" xmlUrl="https://medium.com/feed/llamaindex-blog" htmlUrl="https://blog.llamaindex.ai"/>
+      <outline type="rss" text="LangChain Blog" title="LangChain Blog" xmlUrl="https://blog.langchain.dev/rss/" htmlUrl="https://blog.langchain.dev"/>
+      <outline type="rss" text="Weights and Biases" title="Weights and Biases" xmlUrl="https://wandb.ai/fully-connected/rss.xml" htmlUrl="https://wandb.ai/fully-connected"/>
+      <outline type="rss" text="The Gradient" title="The Gradient" xmlUrl="https://thegradient.pub/rss/" htmlUrl="https://thegradient.pub"/>
+      <outline type="rss" text="AI Snake Oil" title="AI Snake Oil" xmlUrl="https://www.aisnakeoil.com/feed" htmlUrl="https://www.aisnakeoil.com"/>
+      <outline type="rss" text="Latent Space" title="Latent Space" xmlUrl="https://www.latent.space/feed" htmlUrl="https://www.latent.space"/>
+      <outline type="rss" text="Last Week in AI" title="Last Week in AI" xmlUrl="https://lastweekin.ai/feed" htmlUrl="https://lastweekin.ai"/>
+      <outline type="rss" text="Ahead of AI (Sebastian Raschka)" title="Ahead of AI" xmlUrl="https://magazine.sebastianraschka.com/feed" htmlUrl="https://magazine.sebastianraschka.com"/>
+      <outline type="rss" text="Mitchell Hashimoto" title="Mitchell Hashimoto" xmlUrl="https://mitchellh.com/feed.xml" htmlUrl="https://mitchellh.com"/>
+      <outline type="rss" text="Chip Huyen" title="Chip Huyen" xmlUrl="https://huyenchip.com/feed.xml" htmlUrl="https://huyenchip.com"/>
+      <outline type="rss" text="Julia Evans" title="Julia Evans" xmlUrl="https://jvns.ca/atom.xml" htmlUrl="https://jvns.ca"/>
+      <outline type="rss" text="Dan Luu" title="Dan Luu" xmlUrl="https://danluu.com/atom.xml" htmlUrl="https://danluu.com"/>
+    </outline>
+    <outline text="DevOps and Infrastructure" title="DevOps and Infrastructure">
+      <outline type="rss" text="Tailscale Blog" title="Tailscale Blog" xmlUrl="https://tailscale.com/blog/index.xml" htmlUrl="https://tailscale.com/blog"/>
+      <outline type="rss" text="Fly.io Blog" title="Fly.io Blog" xmlUrl="https://fly.io/blog/feed.xml" htmlUrl="https://fly.io/blog"/>
+      <outline type="rss" text="Cloudflare Blog" title="Cloudflare Blog" xmlUrl="https://blog.cloudflare.com/rss/" htmlUrl="https://blog.cloudflare.com"/>
+      <outline type="rss" text="Railway Blog" title="Railway Blog" xmlUrl="https://blog.railway.app/feed.xml" htmlUrl="https://blog.railway.app"/>
+      <outline type="rss" text="Vercel Blog" title="Vercel Blog" xmlUrl="https://vercel.com/atom" htmlUrl="https://vercel.com/blog"/>
+      <outline type="rss" text="Supabase Blog" title="Supabase Blog" xmlUrl="https://supabase.com/blog/rss.xml" htmlUrl="https://supabase.com/blog"/>
+      <outline type="rss" text="PlanetScale Blog" title="PlanetScale Blog" xmlUrl="https://planetscale.com/blog/rss.xml" htmlUrl="https://planetscale.com/blog"/>
+      <outline type="rss" text="Neon Blog" title="Neon Blog" xmlUrl="https://neon.tech/blog/rss.xml" htmlUrl="https://neon.tech/blog"/>
+      <outline type="rss" text="Grafana Blog" title="Grafana Blog" xmlUrl="https://grafana.com/blog/index.xml" htmlUrl="https://grafana.com/blog"/>
+    </outline>
+    <outline text="Go Programming" title="Go Programming">
+      <outline type="rss" text="Go Blog" title="Go Blog" xmlUrl="https://go.dev/blog/feed.atom" htmlUrl="https://go.dev/blog"/>
+      <outline type="rss" text="Eli Bendersky" title="Eli Bendersky" xmlUrl="https://eli.thegreenplace.net/feeds/all.atom.xml" htmlUrl="https://eli.thegreenplace.net"/>
+      <outline type="rss" text="Three Dots Labs" title="Three Dots Labs" xmlUrl="https://threedots.tech/index.xml" htmlUrl="https://threedots.tech"/>
+      <outline type="rss" text="Applied Go" title="Applied Go" xmlUrl="https://appliedgo.net/index.xml" htmlUrl="https://appliedgo.net"/>
+    </outline>
+    <outline text="Startup and Founder" title="Startup and Founder">
+      <outline type="rss" text="Paul Graham Essays" title="Paul Graham Essays" xmlUrl="http://www.aaronsw.com/2002/feeds/pgessays.rss" htmlUrl="http://paulgraham.com"/>
+      <outline type="rss" text="a16z Future" title="a16z Future" xmlUrl="https://future.a16z.com/feed/" htmlUrl="https://future.a16z.com"/>
+      <outline type="rss" text="Lenny's Newsletter" title="Lenny's Newsletter" xmlUrl="https://www.lennysnewsletter.com/feed" htmlUrl="https://www.lennysnewsletter.com"/>
+      <outline type="rss" text="The Pragmatic Engineer" title="The Pragmatic Engineer" xmlUrl="https://newsletter.pragmaticengineer.com/feed" htmlUrl="https://newsletter.pragmaticengineer.com"/>
+      <outline type="rss" text="Indie Hackers" title="Indie Hackers" xmlUrl="https://www.indiehackers.com/feed.xml" htmlUrl="https://www.indiehackers.com"/>
+      <outline type="rss" text="Stratechery" title="Stratechery" xmlUrl="https://stratechery.com/feed/" htmlUrl="https://stratechery.com"/>
+      <outline type="rss" text="Benedict Evans" title="Benedict Evans" xmlUrl="https://www.ben-evans.com/benedictevans?format=rss" htmlUrl="https://www.ben-evans.com"/>
+      <outline type="rss" text="Not Boring" title="Not Boring" xmlUrl="https://www.notboring.co/feed" htmlUrl="https://www.notboring.co"/>
+      <outline type="rss" text="SaaStr" title="SaaStr" xmlUrl="https://www.saastr.com/feed/" htmlUrl="https://www.saastr.com"/>
+      <outline type="rss" text="Will Larson" title="Will Larson" xmlUrl="https://lethain.com/feeds/" htmlUrl="https://lethain.com"/>
+    </outline>
+    <outline text="Church Tech and AVL" title="Church Tech and AVL">
+      <outline type="rss" text="Technologies for Worship" title="Technologies for Worship" xmlUrl="https://www.tfwm.com/feed/" htmlUrl="https://www.tfwm.com"/>
+      <outline type="rss" text="ProSoundWeb" title="ProSoundWeb" xmlUrl="https://www.prosoundweb.com/feed/" htmlUrl="https://www.prosoundweb.com"/>
+      <outline type="rss" text="Behind the Mixer" title="Behind the Mixer" xmlUrl="https://www.behindthemixer.com/feed/" htmlUrl="https://www.behindthemixer.com"/>
+    </outline>
+  </body>
+</opml>

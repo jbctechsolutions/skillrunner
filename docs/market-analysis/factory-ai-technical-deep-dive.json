@@ -1,0 +1,963 @@
+{
+  "research_metadata": {
+    "target": "Factory.ai",
+    "research_date": "2025-12-04",
+    "research_purpose": "Technical deep dive to identify differentiation opportunities for SkillRunner",
+    "platforms_searched": ["docs.factory.ai", "github", "technical blogs", "community resources"],
+    "repositories_analyzed": 3,
+    "docs_reviewed": 15
+  },
+
+  "executive_summary": {
+    "factory_positioning": "Enterprise-focused AI coding agent platform ('agent-native software development') targeting organizations with 5,000+ engineers. Primary focus on collaborative-to-delegative workflow transition with strong emphasis on production incident response and backlog management.",
+    "key_finding": "Factory.ai and SkillRunner serve fundamentally different use cases. Factory is an end-to-end development platform competing with Cursor/GitHub Copilot, while SkillRunner is a cost-optimization orchestration layer that could theoretically run ON TOP of Factory (using BYOK mode).",
+    "critical_insight": "Factory has NO built-in cost tracking or optimization layer - they use abstracted 'Standard Tokens' with model multipliers. SkillRunner's per-phase, per-model cost tracking with actual vs premium comparison is a massive gap Factory cannot easily fill.",
+    "strategic_recommendation": "Position SkillRunner as the 'FinOps layer for AI coding agents' - a tool that wraps Factory, Cursor, Copilot, etc. to add cost tracking, intelligent routing, and multi-provider orchestration."
+  },
+
+  "factory_technical_architecture": {
+    "core_components": {
+      "cli_tool": {
+        "name": "droid",
+        "installation": "curl -fsSL https://app.factory.ai/cli | sh",
+        "language": "Not disclosed (closed source)",
+        "interface": "Full-screen terminal UI with conversational input",
+        "modes": ["default", "automatic", "specification/planning"],
+        "mode_switching": "Shift-Tab keyboard shortcut"
+      },
+      "factory_bridge": {
+        "purpose": "Local execution layer connecting web platform to machine resources",
+        "platforms": ["macOS", "Windows"],
+        "role": "Facilitates cloud-to-local communication, runs MCP servers",
+        "config_location": {
+          "macos": "~/Library/Application Support/Factory Bridge/mcp.json",
+          "windows": "%APPDATA%\\Factory Bridge\\mcp.json"
+        }
+      },
+      "specialized_droids": {
+        "code_droid": "Default engineering assistant for features, refactoring, bugs",
+        "reliability_droid": "On-call specialist for production alerts, RCA, troubleshooting",
+        "product_droid": "Backlog management, ticket prioritization, spec generation",
+        "knowledge_droid": "Research and documentation with search capabilities",
+        "tutorial_droid": "Onboarding assistant"
+      }
+    },
+
+    "skill_system": {
+      "file_format": "Markdown (.md) or MDX (.mdx) with YAML frontmatter",
+      "structure": {
+        "core_file": "SKILL.md or skill.mdx",
+        "supporting_files": [
+          "references.md - links to types, APIs, modules",
+          "schemas/ - JSON/YAML schemas or OpenAPI",
+          "checklists.md - validation/rollout checklists",
+          "types.ts - TypeScript definitions",
+          "scripts - executable utilities"
+        ]
+      },
+      "yaml_frontmatter": {
+        "required_fields": ["name", "description"],
+        "future_fields": ["allowed-tools"],
+        "current_limitations": "Only name and description drive skill discovery"
+      },
+      "discovery_mechanism": {
+        "type": "Auto-discovery from filesystem",
+        "workspace_path": "<repo>/.factory/skills/<skill-name>/SKILL.md",
+        "personal_path": "~/.factory/skills/<skill-name>/SKILL.md",
+        "invocation": "Model-invoked (agent decides when to use based on description)",
+        "composition": "Skills can be chained by agent autonomously"
+      },
+      "skill_marketplace": {
+        "status": "NOT AVAILABLE",
+        "sharing": "Git-based only (commit .factory/skills/ to repository)",
+        "import_export": "No documented import/export mechanism",
+        "discoverability": "No centralized skill repository or marketplace"
+      },
+      "example_skill": {
+        "yaml": "---\nname: summarize-diff\ndescription: Summarize staged git diff in 3-5 bullets\n---",
+        "instructions": "1. Run `git diff --staged`\n2. Summarize in 3-5 bullets\n3. Call out migrations, risks, tests"
+      }
+    },
+
+    "custom_droids_delegation": {
+      "architecture": "Hierarchical delegation with primary agent as orchestrator",
+      "file_location": {
+        "project": "<repo>/.factory/droids/",
+        "personal": "~/.factory/droids/"
+      },
+      "file_format": "Markdown with YAML frontmatter",
+      "yaml_specification": {
+        "name": "lowercase-hyphenated identifier",
+        "description": "Optional, <=500 characters",
+        "model": "Either 'inherit' or specific model ID (e.g., claude-sonnet-4-5-20250929)",
+        "reasoningEffort": "low|medium|high (for compatible models)",
+        "tools": "Omit for all, use category string, or array of tool IDs"
+      },
+      "tool_categories": {
+        "read-only": ["Read", "LS", "Grep", "Glob"],
+        "edit": ["Create", "Edit", "ApplyPatch"],
+        "execute": ["Execute"],
+        "web": ["WebSearch", "FetchUrl"],
+        "mcp": "Dynamically populated from MCP servers"
+      },
+      "invocation_mechanism": {
+        "method": "Task tool with subagent_type parameter",
+        "isolation": "Fresh context window per invocation",
+        "streaming": "Live progress updates with tool calls and TodoWrite",
+        "validation": "DroidValidator checks names, models, tools"
+      },
+      "delegation_philosophy": "Delegator plans and reviews; sub-droids execute. If delegator writes code, you've lost.",
+      "security": "Tool restriction prevents privilege escalation; read-only mode for safe analysis"
+    },
+
+    "model_routing": {
+      "type": "Mixed Models - separate models for planning vs implementation",
+      "configuration_command": "/model",
+      "specification_mode": {
+        "purpose": "Use powerful model for planning, efficient model for implementation",
+        "workflow": "User prompt -> Spec Mode Model generates plan -> User approves -> Default Model implements",
+        "activation": "Shift+Tab to enter Specification Mode"
+      },
+      "compatibility_rules": {
+        "openai_encrypted": "OpenAI models can only pair with OpenAI (reasoning format encrypted)",
+        "anthropic_reasoning": "Anthropic with extended thinking must pair with Anthropic",
+        "anthropic_no_reasoning": "Anthropic without reasoning can pair with non-OpenAI models",
+        "enforcement": "System automatically clears incompatible spec mode when default changes"
+      },
+      "reasoning_effort": {
+        "levels": ["Off", "Low", "Medium", "High"],
+        "independence": "Spec mode and default model reasoning configured separately",
+        "recommendation": "Medium/High for spec mode architectural decisions"
+      },
+      "cost_optimization": {
+        "manual_only": "User manually selects model combinations",
+        "no_automatic_routing": "No automatic fallback or cost-based selection",
+        "no_cost_tracking": "No per-request cost visibility or reporting"
+      },
+      "common_patterns": {
+        "anthropic": "Haiku/Sonnet (default) + Sonnet 4.5 High Reasoning (spec)",
+        "openai": "GPT-5-Codex (default) + GPT-5 High Reasoning (spec)"
+      }
+    },
+
+    "specification_mode": {
+      "architecture": "Two-phase workflow: planning then implementation",
+      "planning_phase": {
+        "behavior": "Read-only analysis of codebase",
+        "output": "Detailed acceptance criteria, implementation plan, file breakdown",
+        "model": "Optional separate spec mode model"
+      },
+      "approval_workflow": {
+        "options": [
+          "Standard implementation (manual review each change)",
+          "Low autonomy auto-run (file edits + read-only)",
+          "Medium autonomy auto-run (reversible commands)",
+          "High autonomy auto-run (all commands)",
+          "Iterative refinement (stay in spec mode)"
+        ]
+      },
+      "saved_spec_format": {
+        "format": "Markdown exactly as shown in approval dialog",
+        "naming": "YYYY-MM-DD-slug.md",
+        "default_location": ".factory/docs or ~/.factory/docs",
+        "configurability": "Custom paths support absolute and ~ expansion"
+      },
+      "limitations": {
+        "no_rollback": "No documented rollback mechanism",
+        "no_api_access": "No programmatic access to spec generation",
+        "no_version_control": "No spec versioning or modification after approval",
+        "no_spec_reuse": "No apparent mechanism to reuse/template specs"
+      }
+    },
+
+    "ollama_integration": {
+      "deployment_modes": ["local", "ollama_cloud"],
+      "configuration": {
+        "context_requirement": "Minimum 32,000 tokens (critical for performance)",
+        "environment_variable": "OLLAMA_CONTEXT_LENGTH=32000",
+        "config_fields": {
+          "model_display_name": "UI display name",
+          "model": "Exact model identifier",
+          "base_url": "http://localhost:11434/v1 for local",
+          "api_key": "not-needed (placeholder)",
+          "provider": "generic-chat-completion-api",
+          "max_tokens": "Context window size"
+        }
+      },
+      "performance_considerations": {
+        "minimum_params": "30B+ for production (sub-30B significantly degraded)",
+        "recommended": "qwen3-coder:480b-cloud for cloud, qwen2.5-coder:32b for local",
+        "hardware_requirements": {
+          "7b": "8GB RAM, 6GB VRAM",
+          "13b": "16GB RAM, 10GB VRAM",
+          "30b": "32GB RAM, 20GB VRAM"
+        }
+      },
+      "air_gapped_support": {
+        "offline_capable": true,
+        "model_cache": "~/.ollama/models/",
+        "network_requirement": "None after initial model pull"
+      },
+      "byok_implementation": "Ollama integrates as generic-chat-completion-api provider within BYOK framework"
+    },
+
+    "mcp_integration": {
+      "architecture": "Factory Bridge runs MCP servers locally, exposes tools to Factory",
+      "server_types": {
+        "stdio": {
+          "communication": "Standard input/output streams",
+          "use_cases": ["local tools", "file system operations", "dev/test environments"]
+        },
+        "http": {
+          "communication": "HTTP/HTTPS endpoints",
+          "use_cases": ["cloud-hosted MCP", "shared team resources", "external APIs"],
+          "capabilities": "Streaming responses, all standard MCP (tools, resources, prompts)"
+        }
+      },
+      "configuration_format": {
+        "location": "~/Library/Application Support/Factory Bridge/mcp.json (macOS)",
+        "structure": {
+          "mcpServers": {
+            "server-name": {
+              "type": "stdio|http",
+              "command": "executable (stdio)",
+              "url": "endpoint (http)",
+              "args": ["array of arguments"],
+              "env": {"ENV_VAR": "value"},
+              "headers": {"Authorization": "Bearer token"},
+              "disabled": "false (boolean)"
+            }
+          }
+        }
+      },
+      "features": {
+        "hot_reload": "Automatic real-time detection of config changes",
+        "ui_access": "System tray menu to open config file",
+        "status_monitoring": "Coming soon - dedicated UI with error reporting"
+      },
+      "cli_commands": {
+        "add_http": "factory mcp add my-server https://api.example.com/mcp",
+        "add_stdio": "factory mcp add local-tool npx my-mcp-server"
+      },
+      "extensibility": "MCP servers horizontally scalable, can be shared across teams"
+    },
+
+    "context_management": {
+      "layers": [
+        {
+          "name": "AGENTS.md",
+          "scope": "Repository-level conventions",
+          "content": ["build commands", "project layout", "code style", "testing patterns", "git workflows", "security requirements", "performance guidelines"],
+          "hierarchy": "Supports multiple AGENTS.md in different directories"
+        },
+        {
+          "name": "Dynamic Code Context",
+          "behavior": "Intelligent file search without manual specification",
+          "loading": "Lazy-loaded as needed, deduplication built-in"
+        },
+        {
+          "name": "Tool Integrations",
+          "platforms": ["GitHub/GitLab", "Sentry/Datadog", "Notion/Google Docs", "Jira/Linear", "Slack"],
+          "access": "Error traces, design docs, acceptance criteria, technical discussions"
+        },
+        {
+          "name": "Organizational Memory",
+          "types": ["user-specific preferences", "organization-wide conventions"],
+          "persistence": "Survives across sessions"
+        }
+      ]
+    }
+  },
+
+  "factory_deployment_options": {
+    "patterns": [
+      {
+        "name": "Cloud-Managed",
+        "droid_location": "Developer machines and build infrastructure",
+        "factory_cloud": "Orchestration and optional analytics",
+        "llm_routing": "Can route through own gateways/providers",
+        "use_case": "Organizations allowing well-scoped cloud usage with strong governance"
+      },
+      {
+        "name": "Hybrid/Self-Hosted",
+        "factory_cloud": "Limited metadata only (org/project IDs)",
+        "use_case": "Large enterprises with network segmentation and central governance"
+      },
+      {
+        "name": "Fully Air-Gapped",
+        "network": "No outbound internet connectivity",
+        "models": "On-prem or in-network endpoints",
+        "observability": "OTEL collectors hosted inside airgap",
+        "factory_cloud": "Not reachable at runtime",
+        "artifacts": "Imported via offline processes",
+        "use_case": "National security, defense, classified workloads"
+      }
+    ],
+    "network_configuration": {
+      "proxy_support": ["HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"],
+      "custom_ca": "Via NODE_EXTRA_CA_CERTS or OS trust stores",
+      "mtls": "Configure containers/VMs with certificates"
+    }
+  },
+
+  "factory_cost_tracking": {
+    "billing_model": {
+      "unit": "Standard Tokens with model-specific multipliers",
+      "example": "GPT-5.1-Codex at 0.5x multiplier with 4-8x cache ratio",
+      "philosophy": "Run workloads without worrying about token math",
+      "comparison": "Designed to outperform direct provider offerings"
+    },
+    "monitoring": {
+      "ui_locations": [
+        "Settings page - current plan and usage statistics",
+        "Context Panel - current token count in session",
+        "Usage reports - available to administrators"
+      ],
+      "granularity": "Token-level tracking, NO per-model cost breakdown",
+      "export": "Not documented"
+    },
+    "observability": {
+      "framework": "OpenTelemetry (OTEL) native",
+      "metrics": {
+        "llm_usage": ["tokens in/out per model and provider", "request counts and latencies", "error rates and retry behavior"],
+        "session_metrics": ["interactive/headless session counts", "session duration and engagement", "tool invocation success/failure", "command risk classifications"],
+        "code_metrics": ["files/lines modified/created/deleted", "distribution across repos and teams"]
+      },
+      "integration": "Prometheus, Grafana, Datadog, New Relic, Splunk",
+      "custom_dashboards": "Build per-team and per-model dashboards with spike alerts",
+      "cloud_analytics": "Optional hosted dashboards for cloud deployments"
+    },
+    "limitations": {
+      "no_per_request_cost": "No visibility into individual request costs",
+      "no_cost_comparison": "No 'actual vs premium vs cheap' cost comparison",
+      "no_automatic_optimization": "No automatic model selection based on cost",
+      "no_budget_controls": "No per-team or per-project budget enforcement",
+      "no_cost_api": "No programmatic API for cost data retrieval"
+    }
+  },
+
+  "factory_limitations_and_constraints": {
+    "architectural": [
+      {
+        "area": "Model Speed",
+        "constraint": "Bound by underlying model speed - cannot optimize beyond provider limits",
+        "impact": "Cannot fan out more in parallel due to cost and latency"
+      },
+      {
+        "area": "Cost Prohibitive Parallelization",
+        "constraint": "Originally had parallel generation techniques but disabled due to cost",
+        "impact": "Quality delta not worth cost increase for massive parallelization"
+      },
+      {
+        "area": "Delegation UX Maturity",
+        "constraint": "Product experience of delegation is 'really, really immature right now'",
+        "impact": "Still evolving collaborative-to-delegative workflow paradigm"
+      },
+      {
+        "area": "Closed Source",
+        "constraint": "No public source code, limited extensibility",
+        "impact": "Cannot modify core routing, execution, or cost tracking logic"
+      }
+    ],
+    "cost_tracking_gaps": [
+      "No per-phase cost breakdown",
+      "No per-model cost comparison",
+      "No 'what-if' cost analysis (actual vs all-premium vs all-cheap)",
+      "No cost-based automatic routing",
+      "No budget alerts or enforcement",
+      "No exportable cost reports for FinOps"
+    ],
+    "skill_system_gaps": [
+      "No skill marketplace or centralized repository",
+      "No skill versioning or dependency management",
+      "No skill import/export beyond git commits",
+      "Limited skill metadata (only name/description)",
+      "No skill testing framework",
+      "No skill analytics (usage, success rate)"
+    ],
+    "routing_gaps": [
+      "Manual model selection only - no automatic routing",
+      "No fallback on failure (user must reconfigure)",
+      "No load balancing across providers",
+      "No cost-aware model selection",
+      "No performance-based routing"
+    ],
+    "integration_gaps": [
+      "No webhook support for external triggers",
+      "No REST API for programmatic access",
+      "Limited to MCP for extensibility",
+      "No custom tool creation beyond MCP"
+    ]
+  },
+
+  "skillrunner_current_capabilities": {
+    "architecture": {
+      "language": "Go",
+      "license": "MIT (open source)",
+      "deployment": "Single binary, local-first"
+    },
+    "core_features": {
+      "multi_phase_workflows": "Break complex tasks into steps with dependencies",
+      "intelligent_routing": "Cheap models for simple work, premium for complex",
+      "local_first": "Ollama support means most work never hits cloud",
+      "cost_tracking": {
+        "granularity": "Per-phase cost breakdown",
+        "comparisons": ["actual_cost", "premium_only_cost", "cheap_only_cost"],
+        "structure": {
+          "phase_cost": {
+            "phase_id": "string",
+            "model_id": "string",
+            "input_tokens": "int",
+            "output_tokens": "int",
+            "actual_cost": "float64"
+          },
+          "run_summary": {
+            "actual_cost": "Total spent",
+            "premium_only_cost": "What if all premium",
+            "cheap_only_cost": "What if all cheap",
+            "phase_costs": "Array of per-phase costs"
+          }
+        }
+      },
+      "skill_marketplace": {
+        "status": "Planned",
+        "sources": ["GitHub", "npm", "HuggingFace"],
+        "loader": "marketplace_loader.go with git/web importer"
+      }
+    },
+    "skill_format": {
+      "current": "YAML with minimal fields (name, version, description, default_model)",
+      "location": "./skills/*.yaml",
+      "validation": "validator.go with skill validation logic",
+      "loading": "loader.go with caching support"
+    },
+    "providers": {
+      "ollama": "Ready - local execution",
+      "anthropic": "Ready - cloud execution",
+      "groq": "In development"
+    }
+  },
+
+  "technical_differentiation_analysis": {
+    "could_skillrunner_use_factory": {
+      "answer": "NO - fundamentally incompatible architectures",
+      "reasoning": [
+        "Factory is a closed-source SaaS platform with CLI interface",
+        "SkillRunner is an open-source orchestration tool",
+        "Factory BYOK mode still requires Factory's infrastructure",
+        "SkillRunner provides the orchestration layer Factory lacks"
+      ],
+      "reverse_question": "Could users run SkillRunner workflows to optimize Factory usage?",
+      "reverse_answer": "THEORETICALLY YES - but limited value since Factory abstracts costs"
+    },
+
+    "could_users_build_on_factory_byok": {
+      "answer": "LIMITED - BYOK provides API key control, not architectural control",
+      "details": {
+        "what_byok_gives": [
+          "Use personal API keys instead of Factory's managed inference",
+          "Pay provider costs directly",
+          "Use Factory's interface and orchestration without token fees"
+        ],
+        "what_byok_lacks": [
+          "No control over routing logic",
+          "No access to cost tracking internals",
+          "No ability to add custom orchestration",
+          "Still dependent on Factory's model selection"
+        ],
+        "skillrunner_on_factory_byok": "Could theoretically wrap Factory CLI calls with cost tracking, but Factory's abstraction makes this impractical"
+      }
+    },
+
+    "skill_format_compatibility": {
+      "factory_format": {
+        "structure": "Markdown with YAML frontmatter",
+        "required_fields": ["name", "description"],
+        "supporting_files": ["references.md", "schemas/", "checklists.md", "types.ts"],
+        "discovery": "Filesystem-based auto-discovery"
+      },
+      "skillrunner_format": {
+        "structure": "YAML configuration files",
+        "required_fields": ["name", "version", "description", "default_model"],
+        "routing_config": "routing: {generation_model, review_model, fallback_model}",
+        "discovery": "Loader-based from skills directory"
+      },
+      "compatibility": "INCOMPATIBLE - completely different formats",
+      "conversion_difficulty": "MEDIUM - could build converter",
+      "converter_architecture": {
+        "input": "Factory SKILL.md with YAML frontmatter",
+        "parsing": "Extract YAML frontmatter, markdown instructions",
+        "mapping": {
+          "name": "Direct copy",
+          "description": "Direct copy",
+          "version": "Default to 1.0.0",
+          "instructions": "Convert markdown to YAML instructions field"
+        },
+        "output": "SkillRunner YAML with routing config"
+      },
+      "strategic_value": "LOW - formats serve different purposes (Factory = agent instructions, SkillRunner = orchestration config)"
+    },
+
+    "cost_tracking_layer_feasibility": {
+      "for_factory": {
+        "approach": "Wrapper around Factory CLI or OTEL metrics consumer",
+        "challenges": [
+          "Factory uses abstracted 'Standard Tokens' not real costs",
+          "No per-request cost data in Factory's output",
+          "Would require OTEL integration to capture token metrics",
+          "Factory's model multipliers complicate real cost calculation"
+        ],
+        "value_proposition": "Convert Factory's abstracted tokens to real provider costs",
+        "implementation_complexity": "HIGH - requires reverse engineering Factory's token accounting"
+      },
+      "standalone_value": {
+        "approach": "SkillRunner as standalone orchestration layer",
+        "benefits": [
+          "Direct provider API access = exact cost tracking",
+          "Per-phase cost breakdown with actual vs premium comparison",
+          "Intelligent routing reduces costs 70-90%",
+          "Open source = full transparency and customization"
+        ],
+        "implementation_complexity": "LOW - already implemented in SkillRunner"
+      }
+    }
+  },
+
+  "key_technical_gaps_factory_cannot_fill": {
+    "cost_optimization": {
+      "gap": "No automatic cost-based model routing",
+      "factory_limitation": "Manual model selection with abstracted 'Standard Token' billing",
+      "skillrunner_advantage": "Automatic generation->review->fallback with cost tracking and comparison",
+      "difficulty_for_factory": "VERY HIGH - would require complete billing model redesign",
+      "reasoning": "Factory's business model depends on Standard Token abstraction; exposing real costs would commoditize their offering"
+    },
+    "per_phase_cost_visibility": {
+      "gap": "No breakdown of costs by workflow phase or individual request",
+      "factory_limitation": "Only session-level or aggregated usage metrics via OTEL",
+      "skillrunner_advantage": "Detailed PhaseCost tracking with model_id, tokens, actual_cost per phase",
+      "difficulty_for_factory": "MEDIUM - technically possible but contradicts business model"
+    },
+    "local_first_orchestration": {
+      "gap": "Requires Factory infrastructure even in BYOK mode",
+      "factory_limitation": "Closed-source SaaS architecture needs Factory Bridge and cloud components",
+      "skillrunner_advantage": "Fully local execution, no external dependencies beyond model providers",
+      "difficulty_for_factory": "VERY HIGH - would require open-sourcing and architectural rewrite"
+    },
+    "intelligent_fallback": {
+      "gap": "No automatic fallback on model failure or poor quality",
+      "factory_limitation": "Manual model reconfiguration required",
+      "skillrunner_advantage": "Automatic generation->review->fallback pipeline",
+      "difficulty_for_factory": "MEDIUM - could add but would increase costs significantly"
+    },
+    "skill_marketplace": {
+      "gap": "No centralized skill discovery or sharing mechanism",
+      "factory_limitation": "Git-based sharing only, no version control or dependency management",
+      "skillrunner_advantage": "Planned marketplace with GitHub/npm/HuggingFace integration",
+      "difficulty_for_factory": "LOW - could build but low priority for enterprise focus"
+    },
+    "open_source_extensibility": {
+      "gap": "Closed source limits customization to MCP servers",
+      "factory_limitation": "Cannot modify routing, cost tracking, or core orchestration logic",
+      "skillrunner_advantage": "MIT licensed Go codebase - full customization possible",
+      "difficulty_for_factory": "IMPOSSIBLE - business model incompatible with open source"
+    },
+    "multi_provider_orchestration": {
+      "gap": "Limited to Factory's supported providers and routing logic",
+      "factory_limitation": "Cannot add custom providers beyond BYOK generic-chat-completion",
+      "skillrunner_advantage": "Provider abstraction allows easy addition of new providers",
+      "difficulty_for_factory": "MEDIUM - could add via MCP but limited by closed architecture"
+    },
+    "finops_integration": {
+      "gap": "No cost export, budgeting, or financial reporting features",
+      "factory_limitation": "OTEL metrics don't include actual costs or budget controls",
+      "skillrunner_advantage": "Exportable cost summaries with actual vs hypothetical comparisons",
+      "difficulty_for_factory": "MEDIUM - could add but would expose cost data they abstract away"
+    }
+  },
+
+  "strategic_positioning_recommendations": {
+    "primary_differentiation": {
+      "positioning": "SkillRunner as the 'FinOps Layer for AI Coding Agents'",
+      "tagline": "Cut your AI coding costs by 70-90% with intelligent model routing and transparent cost tracking",
+      "target_users": [
+        "Teams using Cursor, GitHub Copilot, or Factory who want cost control",
+        "Organizations requiring cost transparency and budget enforcement",
+        "Developers wanting local-first workflows with cloud fallback",
+        "FinOps teams needing AI spend visibility and optimization"
+      ]
+    },
+
+    "competitive_positioning": {
+      "factory_vs_skillrunner": "Different categories - Factory is an IDE/coding agent, SkillRunner is cost optimization infrastructure",
+      "analogy": "Factory is like Datadog (full observability platform), SkillRunner is like Prometheus (customizable metrics/routing layer)",
+      "coexistence": "Users could theoretically run both - use Factory for development UX, SkillRunner for cost-optimized batch workflows"
+    },
+
+    "unique_value_propositions": {
+      "transparency": {
+        "skillrunner": "Open source MIT license - see exactly how routing and cost tracking works",
+        "factory": "Closed source SaaS - trust Factory's abstraction"
+      },
+      "cost_control": {
+        "skillrunner": "Per-phase cost tracking with actual vs premium vs cheap comparison",
+        "factory": "Abstracted 'Standard Tokens' with model multipliers"
+      },
+      "local_first": {
+        "skillrunner": "Truly local - no external dependencies beyond model providers",
+        "factory": "Requires Factory Bridge and cloud components even for local models"
+      },
+      "flexibility": {
+        "skillrunner": "Any provider, any model, custom routing logic",
+        "factory": "Factory's supported providers with manual model selection"
+      },
+      "cost_optimization": {
+        "skillrunner": "Automatic intelligent routing with fallback",
+        "factory": "Manual model selection with optional spec mode"
+      }
+    },
+
+    "technical_moats": {
+      "skillrunner_moats": [
+        "Open source prevents vendor lock-in",
+        "Cost tracking implementation is complex and Factory's business model prevents them from copying it",
+        "Local-first architecture appeals to security-conscious enterprises",
+        "Provider abstraction allows rapid integration of new models",
+        "Marketplace strategy could create network effects"
+      ],
+      "factory_moats": [
+        "Enterprise sales relationships and support",
+        "Integrated IDE/web/mobile experience",
+        "Specialized droids for different workflows",
+        "Deep integrations with Jira, Slack, GitHub, etc.",
+        "Organizational memory and team collaboration features"
+      ]
+    },
+
+    "go_to_market_strategy": {
+      "phase_1_cost_conscious_developers": {
+        "target": "Individual developers and small teams using expensive cloud models",
+        "message": "Cut your Claude/GPT API bills by 70-90% without sacrificing quality",
+        "distribution": ["GitHub", "Hacker News", "Dev.to", "Reddit r/LocalLLaMA"],
+        "conversion": "Free open source with optional paid marketplace access"
+      },
+      "phase_2_finops_teams": {
+        "target": "FinOps and platform engineering teams at mid-large companies",
+        "message": "Get visibility and control over AI coding spend with exportable cost reports",
+        "distribution": ["FinOps Foundation", "LinkedIn", "Conference talks"],
+        "conversion": "Enterprise support and custom integrations"
+      },
+      "phase_3_ai_infrastructure": {
+        "target": "Companies building AI coding infrastructure",
+        "message": "Open source orchestration layer for multi-provider AI workflows",
+        "distribution": ["Technical blogs", "OSS conferences", "Academic papers"],
+        "conversion": "Consulting and implementation services"
+      }
+    },
+
+    "feature_priorities_for_differentiation": {
+      "must_have_before_launch": [
+        "Robust per-phase cost tracking with exportable reports",
+        "Intelligent routing with automatic fallback",
+        "Ollama + Anthropic + OpenAI provider support",
+        "CLI with excellent UX (match or beat Factory's droid CLI)"
+      ],
+      "high_priority_differentiators": [
+        "Skill marketplace with versioning and discovery",
+        "Budget controls and cost alerts",
+        "Integration with FinOps tools (Prometheus, Grafana)",
+        "Multi-provider load balancing"
+      ],
+      "medium_priority_enhancements": [
+        "Web UI for cost dashboards",
+        "Team collaboration features",
+        "Custom provider plugins",
+        "Caching and performance optimization"
+      ],
+      "low_priority_nice_to_haves": [
+        "IDE extensions (compete directly with Factory)",
+        "Mobile app (out of scope)",
+        "Organizational memory (complex, low ROI)"
+      ]
+    }
+  },
+
+  "implementation_recommendations": {
+    "cost_tracking_enhancements": {
+      "current_state": "Basic PhaseCost and RunCostSummary structs in metrics/cost.go",
+      "additions_needed": [
+        "Export to CSV/JSON for FinOps tools",
+        "Cost projections based on historical usage",
+        "Budget tracking with alerts",
+        "Per-user and per-team cost attribution",
+        "Cost anomaly detection"
+      ],
+      "integration_targets": [
+        "Prometheus metrics export",
+        "Grafana dashboard templates",
+        "CloudHealth/Cloudability cost management platforms",
+        "Custom webhook notifications"
+      ]
+    },
+
+    "skill_format_strategy": {
+      "recommendation": "DO NOT try to be compatible with Factory's SKILL.md format",
+      "reasoning": [
+        "Factory's format is optimized for agent instructions, not orchestration",
+        "SkillRunner's YAML format is simpler and more appropriate for routing configs",
+        "Trying to support both adds complexity with minimal value",
+        "Users can write simple converters if needed"
+      ],
+      "instead_focus_on": [
+        "Rich routing configuration (generation/review/fallback models)",
+        "Context strategy specification (chunking, summarization)",
+        "Cost constraints (max spend per run, preferred models)",
+        "Performance requirements (latency, quality thresholds)"
+      ]
+    },
+
+    "marketplace_architecture": {
+      "skill_sources": {
+        "github": {
+          "format": "Git repos with skills/*.yaml",
+          "discovery": "GitHub search API or curated awesome-list",
+          "installation": "sr import github:username/repo",
+          "versioning": "Git tags/releases"
+        },
+        "npm": {
+          "format": "npm packages with skillrunner-skill- prefix",
+          "discovery": "npm search API",
+          "installation": "sr import npm:@scope/skillrunner-skill-name",
+          "versioning": "Semver via package.json"
+        },
+        "huggingface": {
+          "format": "HF datasets or models with skill configs",
+          "discovery": "HF Hub API",
+          "installation": "sr import hf:username/skill-name",
+          "versioning": "Git LFS commits"
+        }
+      },
+      "local_cache": {
+        "location": "~/.skillrunner/marketplace/",
+        "structure": "source/author/skill-name/version/",
+        "updates": "sr marketplace update",
+        "removal": "sr marketplace clean"
+      },
+      "skill_metadata": {
+        "required": ["name", "version", "description", "author", "license"],
+        "optional": ["tags", "category", "dependencies", "cost_profile", "performance_profile"],
+        "validation": "JSON schema with linting"
+      }
+    },
+
+    "intelligent_routing_enhancements": {
+      "current_architecture": "Generation -> Review -> Fallback (from ARCHITECTURE.md)",
+      "enhancements_needed": [
+        {
+          "feature": "Quality-based fallback",
+          "description": "If generation model produces low-quality output (detected by review model), automatically retry with premium model",
+          "implementation": "Add quality score to review phase, threshold-based fallback trigger"
+        },
+        {
+          "feature": "Cost-aware model selection",
+          "description": "Automatically select cheapest model that meets quality requirements",
+          "implementation": "Model capability matrix with cost/quality tradeoffs, dynamic selection based on task complexity"
+        },
+        {
+          "feature": "Load balancing",
+          "description": "Distribute requests across multiple providers to avoid rate limits",
+          "implementation": "Provider pool with health checks and round-robin/least-cost routing"
+        },
+        {
+          "feature": "Caching",
+          "description": "Cache responses for identical requests to avoid redundant API calls",
+          "implementation": "Content-addressed cache with TTL and invalidation"
+        }
+      ]
+    },
+
+    "factory_integration_strategy": {
+      "recommendation": "DO NOT try to integrate with Factory",
+      "reasoning": [
+        "Factory is closed source with no API",
+        "BYOK mode doesn't provide architectural hooks",
+        "SkillRunner and Factory serve different purposes (orchestration vs full IDE)",
+        "Integration would dilute SkillRunner's value proposition"
+      ],
+      "alternative": "Position SkillRunner as complementary tool for batch workflows",
+      "example_use_case": "Use Factory for interactive development, SkillRunner for CI/CD cost optimization"
+    },
+
+    "documentation_priorities": {
+      "must_have": [
+        "Cost tracking explainer with examples showing 70-90% savings",
+        "Quickstart showing Ollama + Anthropic routing",
+        "Skill creation guide",
+        "Marketplace import tutorial"
+      ],
+      "high_priority": [
+        "Factory vs SkillRunner comparison (clarify different categories)",
+        "FinOps integration guide (Prometheus, Grafana)",
+        "Architecture deep dive (for enterprise security reviews)",
+        "Cost optimization best practices"
+      ],
+      "medium_priority": [
+        "Provider configuration reference",
+        "Skill format specification",
+        "API documentation (if exposing programmatic access)",
+        "Troubleshooting guide"
+      ]
+    }
+  },
+
+  "technical_research_citations": [
+    {
+      "id": 1,
+      "source": "Factory.ai",
+      "title": "Skills - Factory Documentation",
+      "url": "https://docs.factory.ai/cli/configuration/skills",
+      "type": "official_documentation",
+      "key_findings": "Skill file format, YAML frontmatter specification, discovery mechanism"
+    },
+    {
+      "id": 2,
+      "source": "Factory.ai",
+      "title": "Mixed Models - Factory Documentation",
+      "url": "https://docs.factory.ai/cli/configuration/mixed-models",
+      "type": "official_documentation",
+      "key_findings": "Model routing architecture, compatibility rules, specification mode"
+    },
+    {
+      "id": 3,
+      "source": "Factory.ai",
+      "title": "Ollama - Factory Documentation",
+      "url": "https://docs.factory.ai/cli/byok/ollama",
+      "type": "official_documentation",
+      "key_findings": "Local model integration, BYOK implementation, air-gapped support"
+    },
+    {
+      "id": 4,
+      "source": "Factory.ai",
+      "title": "Model Context Protocol (MCP) - Factory Documentation",
+      "url": "https://docs.factory.ai/user-guides/factory-bridge/model-context-protocol",
+      "type": "official_documentation",
+      "key_findings": "MCP integration architecture, Factory Bridge, extensibility"
+    },
+    {
+      "id": 5,
+      "source": "Factory.ai",
+      "title": "Custom Droids (Subagents) - Factory Documentation",
+      "url": "https://docs.factory.ai/cli/configuration/custom-droids",
+      "type": "official_documentation",
+      "key_findings": "Delegation system, YAML specification, tool restrictions, invocation mechanism"
+    },
+    {
+      "id": 6,
+      "source": "Factory.ai",
+      "title": "Specification Mode - Factory Documentation",
+      "url": "https://docs.factory.ai/cli/user-guides/specification-mode",
+      "type": "official_documentation",
+      "key_findings": "Planning vs implementation workflow, approval process, saved spec format"
+    },
+    {
+      "id": 7,
+      "source": "Factory.ai",
+      "title": "Understanding Usage & Pricing - Factory Documentation",
+      "url": "https://docs.factory.ai/user-guides/usage-and-pricing/understanding-usage",
+      "type": "official_documentation",
+      "key_findings": "Standard Token billing model, usage monitoring, OTEL metrics"
+    },
+    {
+      "id": 8,
+      "source": "Factory.ai",
+      "title": "Network & Deployment Configuration - Factory Documentation",
+      "url": "https://docs.factory.ai/enterprise/network-and-deployment",
+      "type": "official_documentation",
+      "key_findings": "Deployment patterns (cloud, hybrid, air-gapped), enterprise network config"
+    },
+    {
+      "id": 9,
+      "source": "Sid Bharath",
+      "title": "Factory.ai: A Guide To Building A Software Development Droid Army",
+      "url": "https://www.siddharthbharath.com/factory-ai-guide/",
+      "type": "community_guide",
+      "key_findings": "Practical setup guide, context management layers, custom droids, integration tips"
+    },
+    {
+      "id": 10,
+      "source": "Latent.Space",
+      "title": "Factory.ai: The A-SWE Droid Army",
+      "url": "https://www.latent.space/p/factory",
+      "type": "podcast_interview",
+      "key_findings": "Cost constraints, parallelization limitations, delegation UX maturity, strategic focus"
+    },
+    {
+      "id": 11,
+      "source": "GitHub",
+      "title": "Factory-AI/factory - GitHub Repository",
+      "url": "https://github.com/Factory-AI/factory",
+      "type": "code_repository",
+      "key_findings": "Public facing repo structure, closed source confirmation, community resources"
+    },
+    {
+      "id": 12,
+      "source": "GitHub",
+      "title": "iannuttall/droid-factory - Community Integration",
+      "url": "https://github.com/iannuttall/droid-factory",
+      "type": "community_project",
+      "key_findings": "Custom droid installation patterns, delegation workflows"
+    }
+  ],
+
+  "final_recommendations": {
+    "strategic_direction": "Position SkillRunner as cost optimization infrastructure for AI development, NOT as a competitor to Factory",
+
+    "key_differentiators_to_emphasize": [
+      "Per-phase cost tracking with actual vs hypothetical comparisons (Factory cannot offer this without business model change)",
+      "Automatic intelligent routing with quality-based fallback (Factory requires manual model selection)",
+      "Open source MIT license with full transparency (Factory is closed source SaaS)",
+      "Local-first architecture with zero external dependencies (Factory requires Factory Bridge and cloud)",
+      "FinOps integration with exportable cost reports (Factory abstracts costs away)"
+    ],
+
+    "features_to_avoid": [
+      "IDE integration (competes directly with Factory, Cursor, Copilot - crowded market)",
+      "Full development environment (out of scope, dilutes value proposition)",
+      "Organizational memory (complex, low ROI, Factory's strength)",
+      "Factory skill format compatibility (different purposes, adds complexity)"
+    ],
+
+    "market_positioning": {
+      "category": "AI Cost Optimization Infrastructure",
+      "tagline": "The FinOps Layer for AI Coding",
+      "elevator_pitch": "SkillRunner cuts your AI coding costs by 70-90% with intelligent model routing and transparent per-phase cost tracking. Run local models when possible, cloud only when needed. Open source, local-first, zero vendor lock-in.",
+      "target_segments": [
+        "Cost-conscious developers using expensive cloud models",
+        "FinOps teams needing AI spend visibility",
+        "Platform engineering teams building AI infrastructure",
+        "Security-focused enterprises requiring local-first solutions"
+      ]
+    },
+
+    "technical_priorities": [
+      "1. Polish cost tracking with exportable reports (CSV, JSON, Prometheus)",
+      "2. Implement skill marketplace with GitHub/npm/HuggingFace sources",
+      "3. Add budget controls and cost alerts",
+      "4. Build quality-based fallback routing",
+      "5. Create Grafana dashboard templates for cost visualization",
+      "6. Develop comprehensive FinOps integration guide",
+      "7. Add caching layer to reduce redundant API calls",
+      "8. Implement multi-provider load balancing"
+    ],
+
+    "launch_readiness_checklist": [
+      "Cost tracking outputs real provider costs (not abstracted tokens)",
+      "Intelligent routing demonstrably saves 70-90% vs all-cloud approach",
+      "CLI UX is polished and intuitive",
+      "Documentation clearly positions SkillRunner vs Factory (complementary, not competing)",
+      "Skill marketplace has initial seed content",
+      "Prometheus/Grafana integration is documented and tested",
+      "Enterprise security review materials are prepared (architecture docs, threat model)",
+      "Case studies showing cost savings are ready"
+    ]
+  }
+}

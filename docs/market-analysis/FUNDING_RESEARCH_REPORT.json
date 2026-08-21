@@ -1,0 +1,1223 @@
+{
+  "search_summary": {
+    "platforms_searched": [
+      "github",
+      "opencollective",
+      "foundation_websites",
+      "cloud_provider_programs",
+      "accelerator_programs",
+      "government_grant_portals"
+    ],
+    "total_funding_sources_analyzed": 42,
+    "report_generated": "2025-12-03",
+    "focus": "Non-dilutive funding for solo developer building Go-based AI CLI tool"
+  },
+
+  "open_source_grants": [
+    {
+      "name": "GitHub Secure Open Source Fund",
+      "citation": "[1] GitHub. 'GitHub Secure Open Source Fund.' 2025. https://resources.github.com/github-secure-open-source-fund/",
+      "amount": "$10,000 per project + up to $150,000 Azure credits",
+      "requirements": {
+        "eligibility": [
+          "Current maintainer of open source project",
+          "Valid OSI-approved license",
+          "Located in GitHub Sponsors supported region",
+          "Can apply on rolling basis"
+        ],
+        "commitment": "3-week program (5-10 hours/week)",
+        "application_process": "Rolling applications for 2025, virtual interview required"
+      },
+      "timeline": "Rolling applications throughout 2025",
+      "success_rate": "125 projects in first round from $1.25M total funding",
+      "traction_required": "Must have existing open source project",
+      "benefits": [
+        "Direct payment via GitHub Sponsors",
+        "Security education and tools (GitHub Copilot, Copilot Autofix)",
+        "Access to security community",
+        "Bi-annual security health reviews"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://github.com/accelerator",
+      "notes": "Focuses on security and sustainability. Solo developers welcome."
+    },
+    {
+      "name": "NLnet Foundation",
+      "citation": "[2] NLnet Foundation. 'Apply for funding.' 2025. https://nlnet.nl/funding.html",
+      "amount": "€5,000 to €50,000",
+      "requirements": {
+        "eligibility": [
+          "Anyone can apply (individuals, organizations, companies)",
+          "Project contributes to Next Generation Internet",
+          "All outcomes must be free and open source"
+        ],
+        "application_process": "Short application form, low threshold",
+        "deadline": "1st of every even month (Feb, Apr, Jun, Aug, Oct, Dec)"
+      },
+      "timeline": "Next deadline: February 1, 2026",
+      "success_rate": "Over 1,000 projects funded through NGI Zero coalition",
+      "traction_required": "None specified - ideas welcome",
+      "benefits": [
+        "Security audits",
+        "Accessibility audits",
+        "Mentoring",
+        "Copyright & licensing advice"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://nlnet.nl/propose/",
+      "notes": "EU-funded. Very solo-developer friendly. Bi-monthly deadlines make it accessible."
+    },
+    {
+      "name": "Mozilla MOSS (Mozilla Open Source Support)",
+      "citation": "[3] Mozilla. 'Mozilla Open Source Support Awards.' https://www.mozilla.org/en-US/moss/",
+      "amount": "$10,000 to $250,000 (historical)",
+      "requirements": {
+        "status": "ON INDEFINITE HIATUS - Not accepting applications as of 2025",
+        "historical_requirements": [
+          "Open source project contributing to Mozilla's work",
+          "Projects supporting Internet health"
+        ]
+      },
+      "timeline": "Program suspended since 2020 restructuring",
+      "success_rate": "N/A - Program inactive",
+      "traction_required": "N/A",
+      "benefits": [],
+      "dilution": "Non-dilutive",
+      "application_url": "N/A - Check Mozilla Technology Fund instead",
+      "notes": "INACTIVE. Historical average grant was $70,000. Check Mozilla Technology Fund for current opportunities."
+    },
+    {
+      "name": "Open Collective / Open Source Collective",
+      "citation": "[4] Open Collective. 'Open Source Collective.' https://opencollective.com/opensource",
+      "amount": "Variable (community donations)",
+      "requirements": {
+        "eligibility": [
+          "Open source project",
+          "Transparent finances",
+          "Community-driven"
+        ],
+        "fees": "~10% platform fee"
+      },
+      "timeline": "Continuous fundraising",
+      "success_rate": "Over 3,000 projects hosted, $35M raised in 2024",
+      "traction_required": "Small projects can start immediately (example: ClassicPress raised $2,900/year from 38 contributors)",
+      "benefits": [
+        "Fiscal hosting",
+        "Legal structure",
+        "Accounting services",
+        "Transparent budget management"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://opencollective.com/opensource",
+      "notes": "Not a grant - community crowdfunding platform. Good for ongoing sustainability."
+    },
+    {
+      "name": "NumFOCUS Small Development Grants",
+      "citation": "[5] NumFOCUS. 'Small Development Grants.' https://numfocus.org/programs/small-development-grants",
+      "amount": "Up to $10,000 per grant",
+      "requirements": {
+        "eligibility": [
+          "NumFOCUS Fiscally Sponsored or Affiliated project",
+          "Must apply to become affiliated first",
+          "1 proposal per grant cycle",
+          "Max 2 grants per calendar year"
+        ],
+        "work_duration": "Must be achievable within one year"
+      },
+      "timeline": "3 grant cycles per year (typically March, June, September, December)",
+      "success_rate": "Unknown - competitive",
+      "traction_required": "Must be affiliated/sponsored NumFOCUS project first",
+      "benefits": [
+        "Support for usability improvements",
+        "Community growth funding",
+        "Speed up releases"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://github.com/numfocus/small-development-grant-proposals",
+      "notes": "Focus on scientific computing/data science projects. Need to join NumFOCUS ecosystem first."
+    },
+    {
+      "name": "Linux Foundation Travel Fund & Scholarships",
+      "citation": "[6] Linux Foundation. 'Scholarships & Travel Funding.' https://events.linuxfoundation.org/",
+      "amount": "Variable (travel + event registration)",
+      "requirements": {
+        "eligibility": [
+          "Open source developers and community members",
+          "Emphasis on underrepresented groups",
+          "Lower socioeconomic status"
+        ],
+        "purpose": "Attend Linux Foundation events"
+      },
+      "timeline": "~1,000 requests annually",
+      "success_rate": "Unknown",
+      "traction_required": "Active open source contribution",
+      "benefits": [
+        "Event attendance",
+        "Networking opportunities",
+        "LiFT Scholarship for training (2026 applications open April)"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://training.linuxfoundation.org/about/scholarships/",
+      "notes": "Not project funding - educational and networking support."
+    },
+    {
+      "name": "Apache Software Foundation - Tooling Initiative",
+      "citation": "[7] Apache Software Foundation. 'ASF Initiatives Fundraising Program.' March 2025. https://www.apache.org/foundation/sponsorship",
+      "amount": "$500,000 annual budget (for all projects collectively)",
+      "requirements": {
+        "eligibility": [
+          "Apache projects only",
+          "Must be part of ASF ecosystem"
+        ],
+        "commitment": "Minimum 3-year sponsorship commitment required"
+      },
+      "timeline": "Launched March 2025",
+      "success_rate": "Unknown - new program",
+      "traction_required": "Must be Apache project",
+      "benefits": [
+        "Streamlined development tools",
+        "Automated workflows",
+        "Security improvements for CRA compliance"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "fundraising@apache.org",
+      "notes": "Limited to Apache ecosystem. ASF does NOT receive government grants/funding."
+    },
+    {
+      "name": "Vercel Open Source Program",
+      "citation": "[8] Vercel. 'Open Source Program.' 2025. https://vercel.com/open-source-program",
+      "amount": "$3,600 in Vercel credits",
+      "requirements": {
+        "eligibility": [
+          "Open source project with impact",
+          "Community engagement",
+          "Growth potential"
+        ],
+        "cohort_based": "4 cohorts per year (Spring, Summer, Fall, Winter)"
+      },
+      "timeline": "Quarterly cohorts throughout 2025",
+      "success_rate": "28 projects in Summer 2025 cohort",
+      "traction_required": "Demonstrated community engagement and potential",
+      "benefits": [
+        "$3,600 Vercel credits",
+        "Partner perks (OSS Starter Pack)",
+        "Dedicated Slack community",
+        "Potential co-marketing"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "sponsorships@vercel.com",
+      "notes": "Good for web-based tooling. Developer infrastructure projects favored."
+    }
+  ],
+
+  "ai_ml_grants": [
+    {
+      "name": "Anthropic Startup Program",
+      "citation": "[9] Anthropic. 'Create with Claude today. Lead your market tomorrow.' https://www.anthropic.com/startups",
+      "amount": "Free API credits (amount varies) + highest rate limits",
+      "requirements": {
+        "eligibility": [
+          "Early-stage startup backed by Anthropic VC partners",
+          "Check with your investors if they're partners"
+        ],
+        "application": "Unique application link from partner VC required"
+      },
+      "timeline": "Ongoing",
+      "success_rate": "Limited to partner-backed startups",
+      "traction_required": "VC backing from partner firm required",
+      "benefits": [
+        "Free API credits",
+        "Priority rate limits",
+        "Founder events and workshops",
+        "Direct partnership opportunities"
+      ],
+      "dilution": "Non-dilutive (but requires existing VC backing)",
+      "application_url": "Through partner VC firms only",
+      "notes": "NOT accessible without VC backing. Alternative: $5 free credits for new accounts (14-day expiry)."
+    },
+    {
+      "name": "Anthropic Summer Fellows Grants (Students Only)",
+      "citation": "[10] Anthropic. 'Claude Campus Program.' https://www.claude.com/programs/campus",
+      "amount": "$20,000 cash + $90,000 compute credits",
+      "requirements": {
+        "eligibility": [
+          "College students only",
+          "Working on technical AI projects",
+          "Individual grants (not company)"
+        ],
+        "application": "Summer program only"
+      },
+      "timeline": "Summer 2025 (specific dates vary)",
+      "success_rate": "Unknown - competitive",
+      "traction_required": "None - for student projects",
+      "benefits": [
+        "$20,000 cash grant",
+        "$90,000 in AWS/Azure/GCP credits",
+        "Invitation to AI Startup School",
+        "YC partner advice"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "Check Anthropic announcements",
+      "notes": "STUDENTS ONLY. Not applicable for solo developers unless currently enrolled."
+    },
+    {
+      "name": "OpenAI Researcher Access Program",
+      "citation": "[11] OpenAI. 'Researcher Access Program.' https://openai.com/form/researcher-access-program/",
+      "amount": "Up to $1,000 in API credits",
+      "requirements": {
+        "eligibility": [
+          "Active academic/research affiliation",
+          "Nonprofits conducting research",
+          "Based in supported API countries",
+          "Especially interested in limited-resource researchers"
+        ],
+        "review_timeline": "Quarterly reviews (March, June, Sept, Dec)"
+      },
+      "timeline": "Applications accepted year-round, reviewed quarterly",
+      "success_rate": "4-6 weeks after quarterly review for accepted applicants",
+      "traction_required": "Research proposal focused on responsible AI",
+      "benefits": [
+        "Up to $1,000 API credits",
+        "12-month validity",
+        "Access to all public models"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://openai.smapply.org/prog/openai_researcher_access_program/",
+      "notes": "Focuses on academic/nonprofit research. Commercial developer tools may not qualify."
+    },
+    {
+      "name": "AI2 Incubator",
+      "citation": "[12] Allen Institute for AI. 'AI2 Incubator.' https://www.ai2incubator.com/",
+      "amount": "$600,000 equity + $1M cloud credits",
+      "requirements": {
+        "eligibility": [
+          "AI/ML focused startups",
+          "~15 startups per year",
+          "Personalized support model"
+        ],
+        "equity": "Takes equity at $10M cap"
+      },
+      "timeline": "Annual cohorts",
+      "success_rate": "90%+ raise VC funding, 24% acquired",
+      "traction_required": "Strong AI/ML technical foundation",
+      "benefits": [
+        "Up to $600,000 funding",
+        "$1M non-dilutive cloud credits",
+        "Access to AI2 compute infrastructure",
+        "Research collaboration"
+      ],
+      "dilution": "EQUITY INVESTMENT (not non-dilutive cash, but credits are non-dilutive)",
+      "application_url": "https://www.ai2incubator.com/",
+      "notes": "Takes equity. Cloud credits portion is non-dilutive. Very competitive."
+    },
+    {
+      "name": "Cooperative AI Foundation Research Grants",
+      "citation": "[13] Cooperative AI Foundation. 'Research Grants 2025.' https://www.cooperativeai.com/grants/2025",
+      "amount": "£10,000 to £385,000 (median ~£150,000)",
+      "requirements": {
+        "eligibility": [
+          "Research focused on multi-agent/cooperation problems with AI",
+          "Early-career track available"
+        ]
+      },
+      "timeline": "Annual grant cycles",
+      "success_rate": "Unknown",
+      "traction_required": "Research proposal",
+      "benefits": [
+        "Substantial research funding",
+        "Academic/research focus"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://www.cooperativeai.com/grants/2025",
+      "notes": "Research-focused. May not fit commercial developer tool."
+    }
+  ],
+
+  "cloud_credits_programs": [
+    {
+      "name": "AWS Activate - Founders Tier",
+      "citation": "[14] AWS. 'Apply for Activate Credits.' https://aws.amazon.com/startups/credits",
+      "amount": "$1,000 in AWS credits",
+      "requirements": {
+        "eligibility": [
+          "Self-funded or bootstrapped",
+          "Corporate business email (no Gmail/Yahoo)",
+          "Company website",
+          "Founded within last 10 years",
+          "No prior AWS Activate credits of equal/greater value"
+        ],
+        "funding_stage": "Pre-seed, angel, seed, or Series A acceptable"
+      },
+      "timeline": "Ongoing applications",
+      "success_rate": "Good for qualifying bootstrapped startups",
+      "traction_required": "Functional company website",
+      "benefits": [
+        "$1,000 AWS credits",
+        "Developer support",
+        "Technical resources and training"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://aws.amazon.com/startups/credits",
+      "notes": "Bootstrap-friendly tier. $5K-$200K available via Portfolio tier if backed by approved accelerator/VC."
+    },
+    {
+      "name": "AWS Activate - Portfolio Tier",
+      "citation": "[15] AWS. 'AWS Activate Program.' https://aws.amazon.com/startups/credits",
+      "amount": "$5,000 to $200,000",
+      "requirements": {
+        "eligibility": [
+          "Affiliated with approved AWS Activate Provider (YC, Techstars, etc.)",
+          "Not raised more than $100M",
+          "Less than 10 years old",
+          "No prior Portfolio credits"
+        ]
+      },
+      "timeline": "Ongoing",
+      "success_rate": "Good if backed by approved accelerator",
+      "traction_required": "Accelerator/VC backing required",
+      "benefits": [
+        "$5K-$200K AWS credits",
+        "12-24 month validity",
+        "Business support",
+        "Technical training"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "Through approved partners",
+      "notes": "Requires partnership/backing. AI model training projects can get up to $300K."
+    },
+    {
+      "name": "Google Cloud for Startups - Start Tier",
+      "citation": "[16] Google Cloud. 'Startups Program.' https://cloud.google.com/startup",
+      "amount": "Up to $2,000 over 1 year",
+      "requirements": {
+        "eligibility": [
+          "Early-stage, pre-funding",
+          "No equity funding required",
+          "Company website",
+          "Business email matching website domain"
+        ]
+      },
+      "timeline": "Ongoing applications",
+      "success_rate": "Good for very early stage",
+      "traction_required": "Company website",
+      "benefits": [
+        "$2,000 Google Cloud credits",
+        "Technical resources",
+        "Global startup community access"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://cloud.google.com/startup",
+      "notes": "Best for pre-funding stage. No VC required for this tier."
+    },
+    {
+      "name": "Google Cloud for Startups - Scale Tier",
+      "citation": "[17] Google Cloud. 'Startups Program Benefits.' https://cloud.google.com/startup/benefits",
+      "amount": "Up to $200,000 over 2 years",
+      "requirements": {
+        "eligibility": [
+          "Startup equity funding (pre-seed to Series A)",
+          "SAFE agreements eligible",
+          "Web3: token raises and blockchain grants accepted"
+        ],
+        "exclusions": "IPO'd, acquired, government, nonprofits, dev shops, crypto mining"
+      },
+      "timeline": "Ongoing",
+      "success_rate": "Good if funded",
+      "traction_required": "Equity funding required",
+      "benefits": [
+        "Year 1: up to $100K (100% coverage)",
+        "Year 2: up to $100K (20% coverage)",
+        "Startup Success Manager",
+        "$600/month Maps Platform credits",
+        "12 months free Google Workspace Business Plus"
+      ],
+      "dilution": "Non-dilutive (but requires VC backing)",
+      "application_url": "https://cloud.google.com/startup/benefits",
+      "notes": "Requires VC backing. AI startups can get up to $350K."
+    },
+    {
+      "name": "Microsoft for Startups - Self-Service Track",
+      "citation": "[18] Microsoft. 'Get up to $5,000 in Azure Credits.' https://learn.microsoft.com/en-us/azure/signups/overview",
+      "amount": "$1,000 immediate + up to $5,000 total",
+      "requirements": {
+        "eligibility": [
+          "New Azure customer only",
+          "Personal Microsoft Account (MSA)",
+          "Country where offer is available",
+          "Must complete business verification for additional $4K"
+        ],
+        "verification": "Within 90 days of initial redemption"
+      },
+      "timeline": "Immediate for first $1K, verification needed for additional $4K",
+      "success_rate": "Good for new Azure customers",
+      "traction_required": "Registered legal business entity for full $5K",
+      "benefits": [
+        "$1,000 immediate (90-day validity)",
+        "+$4,000 after verification (180-day validity)",
+        "Access to AI models and Azure services"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://learn.microsoft.com/en-us/azure/signups/overview",
+      "notes": "MAJOR CHANGE in July 2025: $150K program retired. Now max $5K for self-service."
+    },
+    {
+      "name": "Microsoft for Startups - Investor Network Track",
+      "citation": "[19] Microsoft. 'Microsoft for Startups Changes.' https://learn.microsoft.com/en-us/microsoft-for-startups/changes-microsoft-for-startups",
+      "amount": "$100,000+ in Azure credits",
+      "requirements": {
+        "eligibility": [
+          "Backed by affiliated investor (accelerator, VC, university)",
+          "Investor must provide unique referral code",
+          "Invite-only"
+        ]
+      },
+      "timeline": "Ongoing via investor referrals",
+      "success_rate": "Good if investor is in network",
+      "traction_required": "VC/accelerator backing required",
+      "benefits": [
+        "$100K+ Azure credits",
+        "Potential for additional awards",
+        "Enterprise support"
+      ],
+      "dilution": "Non-dilutive (but requires VC backing)",
+      "application_url": "Through affiliated investors only",
+      "notes": "Requires investor backing. July 2025 program restructure made this more restrictive."
+    },
+    {
+      "name": "DigitalOcean Open Source Sponsorship",
+      "citation": "[20] DigitalOcean. 'Credits for Projects.' https://www.digitalocean.com/open-source/credits-for-projects",
+      "amount": "$60 to $20,000 annually",
+      "requirements": {
+        "eligibility": [
+          "OSI-approved license",
+          "Active development and community",
+          "Bonus: Posted Code of Conduct"
+        ],
+        "renewal": "Annual re-application required"
+      },
+      "timeline": "Email reminders start 65 days before expiry",
+      "success_rate": "Unknown - based on tier criteria",
+      "traction_required": "Active open source project",
+      "benefits": [
+        "Infrastructure credits",
+        "Co-marketing opportunities",
+        "Hacktoberfest participation",
+        "Direct access to DO open source team"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://do.co/oss-sponsorship-form",
+      "notes": "Open source only. Annual renewal. Good for FOSS projects."
+    },
+    {
+      "name": "Cloudflare Project Alexandria",
+      "citation": "[21] Cloudflare. 'Expanding Cloudflare's support for OSS with Project Alexandria.' https://blog.cloudflare.com/expanding-our-support-for-oss-projects-with-project-alexandria/",
+      "amount": "Free access to enhanced plans",
+      "requirements": {
+        "eligibility": [
+          "Open source projects",
+          "Streamlined application process"
+        ]
+      },
+      "timeline": "Ongoing",
+      "success_rate": "Expanding eligibility",
+      "traction_required": "Open source project",
+      "benefits": [
+        "Enhanced security",
+        "Performance optimization",
+        "Developer tools",
+        "No cost access"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "Check Cloudflare OSS program page",
+      "notes": "Focus on independent browser projects and developer tools. OpenTofu uses R2 essentially free."
+    },
+    {
+      "name": "Cloudflare for Startups - Non-Profit Expansion",
+      "citation": "[22] Cloudflare. 'Free access for non-profits.' https://blog.cloudflare.com/expanding-startups-for-nonprofits/",
+      "amount": "Up to $250,000 in credits",
+      "requirements": {
+        "eligibility": [
+          "Non-profits, civil society, public interest orgs",
+          "Application period closes December 1, 2025"
+        ]
+      },
+      "timeline": "First cohort application closes Dec 1, 2025",
+      "success_rate": "New program - unknown",
+      "traction_required": "Non-profit status",
+      "benefits": [
+        "Up to $250K credits",
+        "AI, databases, security products",
+        "Developer products access"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://www.cloudflare.com/forstartups/",
+      "notes": "Non-profits only for this tier. Regular startup program has different tiers."
+    },
+    {
+      "name": "Hetzner Open Source Developer Credits",
+      "citation": "[23] Hetzner. 'Flexible Cloud Hosting.' https://www.hetzner.com/cloud",
+      "amount": "Up to €50",
+      "requirements": {
+        "eligibility": [
+          "Developing open source projects using Hetzner API"
+        ]
+      },
+      "timeline": "Ongoing",
+      "success_rate": "Unknown",
+      "traction_required": "Open source project",
+      "benefits": [
+        "Up to €50 credits",
+        "Alternative: €50 for tutorial contributions",
+        "€20 referral credits for new users"
+      ],
+      "dilution": "Non-dilutive",
+      "application_url": "https://www.hetzner.com/cloud",
+      "notes": "Modest amount but very cost-effective provider. Good for European developers."
+    }
+  ],
+
+  "revenue_based_financing": [
+    {
+      "name": "Earnest Capital (Calm Company Fund)",
+      "citation": "[24] Earnest Capital. 'Funding for Bootstrappers.' https://calmfund.com/",
+      "amount": "$75,000 to $250,000 (avg ~$100K)",
+      "requirements": {
+        "eligibility": [
+          "Profitable or near-profitable businesses",
+          "Recurring revenue SaaS preferred",
+          "High margin software businesses",
+          "Launched with paying customers"
+        ],
+        "structure": "SEAL (Shared Earnings Agreement)"
+      },
+      "timeline": "Ongoing applications",
+      "success_rate": "40+ companies funded, ~$8M invested",
+      "traction_required": "Product launched + some paying customers",
+      "benefits": [
+        "No fixed repayment schedule",
+        "Repay from founder earnings (not revenue)",
+        "150+ experienced founder mentors",
+        "Non-dilutive alternative to VC"
+      ],
+      "dilution": "Limited - can buy back most equity stake",
+      "application_url": "https://calmfund.com/for-founders",
+      "notes": "Repayment: 2x-5x cap. Founder Earnings Threshold protects founder salary. Best AFTER launch with customers."
+    },
+    {
+      "name": "Indie.vc",
+      "citation": "[25] Indie.vc. 'Independent Businesses.' https://v1.indie.vc/",
+      "amount": "$100K to $1M (avg $285K)",
+      "requirements": {
+        "eligibility": [
+          "Post-revenue companies",
+          "Average ~$250K revenue year prior",
+          "Focus on sustainable, profitable businesses"
+        ],
+        "structure": "Revenue share + equity option (can repurchase up to 90%)"
+      },
+      "timeline": "Check current status - limited activity",
+      "success_rate": "50% female founders, 20% black founders funded",
+      "traction_required": "Post-revenue (avg $250K prior year revenue)",
+      "benefits": [
+        "Can repurchase up to 90% equity via revenue share",
+        "3x cap on buyback",
+        "Founder-friendly terms",
+        "No liquidity event required"
+      ],
+      "dilution": "Starts with equity, can buy back to 10%",
+      "application_url": "https://v1.indie.vc/",
+      "notes": "V3 model allows buyback. Announced no new investments - check current status before applying."
+    },
+    {
+      "name": "TinySeed Accelerator",
+      "citation": "[26] TinySeed. 'Accelerator Program Details.' https://tinyseed.com/program",
+      "amount": "$120,000 to $220,000",
+      "requirements": {
+        "eligibility": [
+          "SaaS companies with product-market fit",
+          "Recommended >$500 MRR (can apply earlier)",
+          "Willing to incorporate as Delaware C-Corp",
+          "Solo founders welcome"
+        ],
+        "equity": "10-12% equity",
+        "program_fee": "$4,950 per founder"
+      },
+      "timeline": "Fall 2025: Applications Sept 1-9, starts Nov 1",
+      "success_rate": "15-20 companies per cohort",
+      "traction_required": ">$500 MRR recommended",
+      "benefits": [
+        "1-year remote accelerator",
+        "Funds can be salary or growth investment",
+        "Cohort of 15-20 SaaS companies",
+        "International founders accepted"
+      ],
+      "dilution": "EQUITY INVESTMENT (10-12%)",
+      "application_url": "https://apply.tinyseed.com/",
+      "notes": "Takes equity but designed for bootstrappers. NOT non-dilutive. Solo founders explicitly welcome."
+    }
+  ],
+
+  "accelerators_with_funding": [
+    {
+      "name": "Y Combinator - Summer Fellows Grants",
+      "citation": "[27] Y Combinator. 'Summer Fellows.' https://www.ycombinator.com/blog/summer-fellows",
+      "amount": "$20,000 cash + $90,000 compute credits",
+      "requirements": {
+        "eligibility": [
+          "College students only",
+          "Working on technical projects",
+          "Individual grants (not company required)",
+          "Each team member applies individually"
+        ]
+      },
+      "timeline": "Summer program annually",
+      "success_rate": "Unknown - competitive",
+      "traction_required": "None - for student projects",
+      "benefits": [
+        "$20K cash grant (personal, no company needed)",
+        "$90K in AWS/Azure/GCP credits",
+        "Invitation to AI Startup School",
+        "YC partner access",
+        "Community workspace"
+      ],
+      "dilution": "NON-DILUTIVE",
+      "application_url": "https://www.ycombinator.com/blog/summer-fellows",
+      "notes": "STUDENTS ONLY. Not for solo developers unless currently enrolled in college."
+    },
+    {
+      "name": "Y Combinator - Startup School Build Sprint",
+      "citation": "[28] Y Combinator. 'Announcing YC Build Sprint.' https://www.ycombinator.com/blog/announcing-yc-build-sprint-and-20-equity-free-grants/",
+      "amount": "$10,000 equity-free grants (20 winners)",
+      "requirements": {
+        "eligibility": [
+          "Participate in 4-week Build Sprint",
+          "Free Startup School platform",
+          "Open to all founders"
+        ]
+      },
+      "timeline": "Check Startup School for Build Sprint schedule",
+      "success_rate": "20 grants awarded per Sprint",
+      "traction_required": "Complete Build Sprint",
+      "benefits": [
+        "$10K equity-free grant",
+        "Community of thousands of founders",
+        "Free resources and education"
+      ],
+      "dilution": "NON-DILUTIVE",
+      "application_url": "https://www.startupschool.org/",
+      "notes": "Completely equity-free. Must participate in Build Sprint first."
+    },
+    {
+      "name": "South Park Commons Founder Fellowship",
+      "citation": "[29] South Park Commons. 'Founder Fellowship.' https://www.southparkcommons.com/founder-fellowship",
+      "amount": "$400,000 immediate + $600,000 guaranteed next round = $1M total",
+      "requirements": {
+        "eligibility": [
+          "Solo founders welcome (will help find co-founder)",
+          "Technical builders preferred",
+          "Must work in-person in SF or NYC during bootcamp"
+        ],
+        "equity": "7% equity",
+        "bootcamp_duration": "March 31 - May 23 (Spring), Oct 6 - early Jan (Fall)"
+      },
+      "timeline": "Spring 2025 and Fall 2025 cohorts. Fall apps closed Aug 3",
+      "success_rate": "Small cohorts - highly selective",
+      "traction_required": "Pre-revenue, pre-product, even pre-idea acceptable",
+      "benefits": [
+        "$1M total investment",
+        "1:1 partner mentorship",
+        "Small cohorts",
+        "No set deadlines after Bootcamp",
+        "SPC membership and offices",
+        "Time to find right idea"
+      ],
+      "dilution": "EQUITY INVESTMENT (7%)",
+      "application_url": "https://www.southparkcommons.com/apply",
+      "notes": "Takes equity but very founder-friendly. Solo founders explicitly welcome. Must be in SF/NYC."
+    },
+    {
+      "name": "On Deck Founder Fellowship (ODF)",
+      "citation": "[30] On Deck. 'Founder Fellowship.' https://joinodf.com",
+      "amount": "$0 - THIS IS A PAID PROGRAM ($2,990 fee)",
+      "requirements": {
+        "eligibility": [
+          "Talented, ambitious founders",
+          "Pre-idea to pre-seed stage"
+        ],
+        "fee": "$2,990 to participate",
+        "duration": "10 weeks + 1 week in SF"
+      },
+      "timeline": "Multiple cohorts per year",
+      "success_rate": "1,000+ companies launched, $2B+ raised by alumni",
+      "traction_required": "Pre-idea acceptable",
+      "benefits": [
+        "Network of 4K+ alumni",
+        "$800K worth of perks ($50K partner credits)",
+        "Co-founder matching",
+        "Non-dilutive (no equity taken)"
+      ],
+      "dilution": "NON-DILUTIVE (but costs $2,990)",
+      "application_url": "https://joinodf.com",
+      "notes": "NOT a grant - you pay to participate. Good for networking/co-founder finding, not funding."
+    },
+    {
+      "name": "Entrepreneur First",
+      "citation": "[31] Entrepreneur First. 'How it works.' https://www.joinef.com/how-it-works/",
+      "amount": "Stipend during program + $75K investment",
+      "requirements": {
+        "eligibility": [
+          "Talented individuals (pre co-founder)",
+          "Must relocate to hub city (Singapore, HK, Bangalore, London, Paris, Berlin)",
+          "In-person required (not remote)"
+        ],
+        "equity": "10% for pre-seed investment",
+        "stipend": "SGD 5K (Singapore), €2K (Berlin), £2K (London) monthly during Form"
+      },
+      "timeline": "2 cohorts per year in 6 cities",
+      "success_rate": "Must pitch Investment Committee after 12-week Form",
+      "traction_required": "None - pre co-founder acceptable",
+      "benefits": [
+        "Monthly stipend during 12-week Form (NON-DILUTIVE)",
+        "$75K for 10% after Investment Committee",
+        "Co-founder matching",
+        "Launch program support"
+      ],
+      "dilution": "Stipend is non-dilutive; Investment takes 10% equity",
+      "application_url": "https://apply.joinef.com/",
+      "notes": "Stipend phase non-dilutive. Investment phase takes equity. Must be in-person in hub city."
+    },
+    {
+      "name": "Pioneer (Discontinued)",
+      "citation": "[32] Pioneer. 'The Pioneer Tournament is ending.' https://pioneer.app/blog/the-pioneer-tournament-is-ending/",
+      "amount": "N/A - No longer operating",
+      "requirements": {
+        "status": "Tournament ended, no longer making new investments"
+      },
+      "timeline": "INACTIVE",
+      "success_rate": "N/A",
+      "traction_required": "N/A",
+      "benefits": [],
+      "dilution": "N/A",
+      "application_url": "N/A",
+      "notes": "INACTIVE. Previously offered $20K investment. No longer accepting applications."
+    }
+  ],
+
+  "government_grants": [
+    {
+      "name": "NSF SBIR/STTR Phase I",
+      "citation": "[33] NSF. 'America's Seed Fund.' https://seedfund.nsf.gov/",
+      "amount": "Up to $305,000 (Phase I)",
+      "requirements": {
+        "eligibility": [
+          "Small business (US-based)",
+          "Use-inspired R&D",
+          "Leading-edge technology",
+          "Address societal challenges"
+        ],
+        "application": "Project Pitch required first (submit anytime), then invitation to full proposal",
+        "constraint": "1 Project Pitch/proposal per deadline per organization"
+      },
+      "timeline": "Office hours: Jan 23, Feb 27, June 10, June 26, 2025",
+      "success_rate": "~400 startups funded annually from $200M+ budget",
+      "traction_required": "Proof of concept / prototype development",
+      "benefits": [
+        "Up to $305K Phase I (6-18 months)",
+        "No equity taken - retain full ownership and IP",
+        "Path to Phase II ($1.25M over 24 months)",
+        "NSF program director guidance",
+        "Covers nearly all tech areas including AI"
+      ],
+      "dilution": "NON-DILUTIVE",
+      "application_url": "https://seedfund.nsf.gov/",
+      "notes": "IMPORTANT: Congressional authority expired Sept 30, 2025. Check status before applying. No equipment purchases allowed in Phase I."
+    },
+    {
+      "name": "DARPA SBIR/STTR",
+      "citation": "[34] DARPA. 'Small Business Programs.' https://www.darpa.mil/work-with-us/communities/small-business",
+      "amount": "Up to $1,000,000+ (AIxCC Small Business Track)",
+      "requirements": {
+        "eligibility": [
+          "US small businesses",
+          "Developing technologies for defense/national security",
+          "AI Cyber Challenge: develop AI cyber reasoning systems"
+        ],
+        "topics": "Varies by solicitation (AI, battle planning, etc.)"
+      },
+      "timeline": "Check DARPA SBIR/STTR topics page for current solicitations",
+      "success_rate": "7 small businesses selected for AIxCC ($1M each)",
+      "traction_required": "Technical capability to address DARPA challenges",
+      "benefits": [
+        "Substantial funding ($1M+ for major programs)",
+        "Access to leading AI companies (Anthropic, Google, Microsoft, OpenAI)",
+        "Dual-use technology opportunities",
+        "No equity taken"
+      ],
+      "dilution": "NON-DILUTIVE",
+      "application_url": "https://www.darpa.mil/work-with-us/communities/small-business/sbir-sttr-topics",
+      "notes": "Highly technical. Focus on defense/national security applications. Dual-use software tools may qualify."
+    },
+    {
+      "name": "State Innovation Grants - Massachusetts (MassRobotics Example)",
+      "citation": "[35] MassRobotics. 'Accelerator.' https://www.massrobotics.org/",
+      "amount": "$100,000 per startup",
+      "requirements": {
+        "eligibility": [
+          "Robotics startups",
+          "Massachusetts-based program"
+        ],
+        "equity": "None - equity-free"
+      },
+      "timeline": "2-year program, $2M total awarded to 20 startups",
+      "success_rate": "20 startups funded over 2 years",
+      "traction_required": "Promising robotics technology",
+      "benefits": [
+        "$100K equity-free grant from MassTech",
+        "Accelerator support",
+        "No equity taken"
+      ],
+      "dilution": "NON-DILUTIVE",
+      "application_url": "https://www.massrobotics.org/",
+      "notes": "State-specific example. Check your state's innovation/technology office for similar programs."
+    },
+    {
+      "name": "Horizon Europe - NGI (Next Generation Internet)",
+      "citation": "[36] European Commission. 'Horizon Europe Work Programme 2025.' https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe_en",
+      "amount": "€5,000 to €120,000 (cascade grants)",
+      "requirements": {
+        "eligibility": [
+          "EU and international participants",
+          "Open source digital infrastructure projects",
+          "Community-driven platforms"
+        ],
+        "focus": "Decentralized social web, digital payments, open standards"
+      },
+      "timeline": "€7.3B total Horizon Europe 2025 budget; NGI calls throughout year",
+      "success_rate": "1,200+ projects funded via NGI (~€140M distributed)",
+      "traction_required": "Varies by call",
+      "benefits": [
+        "€5-120K grants",
+        "Support for open source",
+        "Counter to US/China tech dominance",
+        "Open to individuals and small teams"
+      ],
+      "dilution": "NON-DILUTIVE",
+      "application_url": "https://interoperable-europe.ec.europa.eu/collection/open-source-observatory-osor/funding-opportunities-open-source-software-projects-public-sector",
+      "notes": "EU program but open to international participants. Focus on public good/digital commons. NGI under threat of funding cuts - check current status."
+    }
+  ],
+
+  "other_funding_sources": [
+    {
+      "name": "Stripe Atlas",
+      "citation": "[37] Stripe. 'Stripe Atlas.' https://stripe.com/atlas",
+      "amount": "$2,500 in Stripe credits + $50K+ partner discounts",
+      "requirements": {
+        "fee": "$500 incorporation fee + $100/year registered agent",
+        "service": "Company formation, not funding"
+      },
+      "timeline": "Immediate upon incorporation",
+      "success_rate": "N/A - service, not grant",
+      "traction_required": "None",
+      "benefits": [
+        "$2,500 Stripe product credits (first year)",
+        "$5K AWS credits",
+        "Partner perks (Mercury, Xero, Carta, Brex, Notion)",
+        "Delaware C-corp or LLC formation",
+        "EIN, 83(b) filing",
+        "Templates from Cooley LLP"
+      ],
+      "dilution": "NON-DILUTIVE (but costs $500)",
+      "application_url": "https://stripe.com/atlas",
+      "notes": "Not a grant - company formation service with credits. Good for solo founders incorporating."
+    }
+  ],
+
+  "funding_strategy_recommendations": [
+    {
+      "phase": "PRE-LAUNCH (Current Phase)",
+      "priority_options": [
+        {
+          "option": "NLnet Foundation",
+          "rationale": "Accepts ideas, no traction required, €5K-50K, bi-monthly deadlines",
+          "action": "Apply by February 1, 2026 deadline",
+          "timeline": "2-3 months"
+        },
+        {
+          "option": "AWS Activate Founders",
+          "rationale": "$1K credits, bootstrap-friendly, no VC required",
+          "action": "Apply immediately with company website",
+          "timeline": "Immediate"
+        },
+        {
+          "option": "Google Cloud Start Tier",
+          "rationale": "$2K credits, pre-funding tier, no equity required",
+          "action": "Apply with business email and website",
+          "timeline": "Immediate"
+        },
+        {
+          "option": "Microsoft Azure Self-Service",
+          "rationale": "$1K immediate, $5K total with verification",
+          "action": "Create Azure account, verify business",
+          "timeline": "Immediate + 90 days for verification"
+        },
+        {
+          "option": "DigitalOcean Open Source",
+          "rationale": "$60-20K annually for OSS, Code of Conduct bonus",
+          "action": "Apply with open source project",
+          "timeline": "Rolling review"
+        }
+      ],
+      "total_potential": "$8K-$27K in cloud credits + €5K-50K grant",
+      "notes": "Focus on cloud credits (non-dilutive, no traction required) and NLnet (solo developer friendly)"
+    },
+    {
+      "phase": "POST-LAUNCH (After Initial Release)",
+      "priority_options": [
+        {
+          "option": "GitHub Secure Open Source Fund",
+          "rationale": "$10K + $150K Azure credits, rolling applications, security focus",
+          "action": "Apply with launched project on GitHub",
+          "timeline": "Rolling throughout 2025"
+        },
+        {
+          "option": "Vercel Open Source Program",
+          "rationale": "$3,600 credits + partner perks, quarterly cohorts",
+          "action": "Apply for cohort with community engagement proof",
+          "timeline": "Quarterly cohorts"
+        },
+        {
+          "option": "Y Combinator Build Sprint",
+          "rationale": "$10K equity-free grant, 20 winners per sprint",
+          "action": "Participate in 4-week Build Sprint",
+          "timeline": "Check Startup School schedule"
+        },
+        {
+          "option": "NumFOCUS Small Development Grants",
+          "rationale": "Up to $10K, if project becomes affiliated",
+          "action": "Apply for NumFOCUS affiliation first",
+          "timeline": "3 grant cycles/year"
+        },
+        {
+          "option": "Open Collective",
+          "rationale": "Community fundraising, sustainable income",
+          "action": "Set up Open Collective page, engage community",
+          "timeline": "Ongoing"
+        }
+      ],
+      "total_potential": "$13.6K-$183.6K",
+      "notes": "Requires launched project with some community engagement"
+    },
+    {
+      "phase": "WITH EARLY TRACTION (Users, Stars, Some Revenue)",
+      "priority_options": [
+        {
+          "option": "NSF SBIR Phase I",
+          "rationale": "Up to $305K non-dilutive, retain IP, no equity",
+          "action": "Submit Project Pitch, prepare full proposal if invited",
+          "timeline": "Check Congressional authority status first"
+        },
+        {
+          "option": "Earnest Capital / Calm Company Fund",
+          "rationale": "$75K-250K, designed for bootstrappers, limited dilution",
+          "action": "Apply with revenue metrics and customer validation",
+          "timeline": "Ongoing"
+        },
+        {
+          "option": "TinySeed",
+          "rationale": "$120K-220K for SaaS, solo founders welcome",
+          "action": "Apply for Fall 2025 cohort (Sept 1-9)",
+          "timeline": "Sept applications, Nov start",
+          "caveat": "Takes 10-12% equity"
+        },
+        {
+          "option": "Horizon Europe NGI",
+          "rationale": "€5K-120K, open source focus, international welcome",
+          "action": "Monitor NGI open calls",
+          "timeline": "Throughout 2025"
+        },
+        {
+          "option": "DARPA SBIR/STTR",
+          "rationale": "$1M+ for defense/dual-use tech",
+          "action": "Review SBIR/STTR topics for AI developer tools applications",
+          "timeline": "Topic-dependent"
+        }
+      ],
+      "total_potential": "$305K-$1.3M+ non-dilutive",
+      "notes": "Government grants become accessible with proof of concept. Revenue-based financing available."
+    },
+    {
+      "phase": "ONGOING SUSTAINABILITY",
+      "options": [
+        {
+          "option": "GitHub Sponsors",
+          "rationale": "Monthly recurring support from community",
+          "action": "Enable GitHub Sponsors profile",
+          "timeline": "Ongoing"
+        },
+        {
+          "option": "Open Collective",
+          "rationale": "Transparent community funding",
+          "action": "Maintain active Open Collective with updates",
+          "timeline": "Ongoing"
+        },
+        {
+          "option": "Cloud Credits Renewals",
+          "rationale": "Annual renewals for DigitalOcean, etc.",
+          "action": "Re-apply 65 days before expiry",
+          "timeline": "Annual"
+        },
+        {
+          "option": "NumFOCUS Small Grants",
+          "rationale": "Up to 2 grants/year if affiliated",
+          "action": "Apply to quarterly cycles",
+          "timeline": "3 cycles/year"
+        }
+      ],
+      "total_potential": "Variable, recurring support",
+      "notes": "Build sustainable community funding alongside one-time grants"
+    }
+  ],
+
+  "key_findings": {
+    "best_for_solo_developers": [
+      "NLnet Foundation (€5K-50K, no traction required)",
+      "GitHub Secure Open Source Fund ($10K + credits)",
+      "AWS/Google/Azure cloud credits ($3K-8K immediate)",
+      "Y Combinator Build Sprint ($10K equity-free)",
+      "DigitalOcean Open Source ($60-20K)"
+    ],
+    "no_traction_required": [
+      "NLnet Foundation",
+      "AWS Activate Founders",
+      "Google Cloud Start Tier",
+      "Microsoft Azure Self-Service",
+      "Hetzner OSS Credits (€50)"
+    ],
+    "post_launch_friendly": [
+      "GitHub Secure Open Source Fund",
+      "Vercel Open Source Program",
+      "NumFOCUS Small Development Grants",
+      "Cloudflare Project Alexandria",
+      "Open Collective"
+    ],
+    "largest_non_dilutive": [
+      "NSF SBIR Phase I (up to $305K)",
+      "DARPA SBIR ($1M+)",
+      "Horizon Europe NGI (€5K-120K)",
+      "GitHub Secure OSS ($10K + $150K Azure)",
+      "NLnet Foundation (€5K-50K)"
+    ],
+    "requires_traction": [
+      "Earnest Capital (customers + revenue)",
+      "TinySeed (>$500 MRR recommended)",
+      "NSF SBIR (proof of concept)",
+      "Anthropic/OpenAI programs (VC backing)",
+      "Google/AWS Scale Tiers (VC backing)"
+    ],
+    "inactive_programs": [
+      "Mozilla MOSS (indefinite hiatus)",
+      "Pioneer (tournament ended)",
+      "Indie.vc (announced no new investments - check current status)"
+    ],
+    "important_warnings": [
+      "NSF SBIR/STTR: Congressional authority expired Sept 30, 2025 - verify status",
+      "Microsoft Azure: Major program change July 2025 - max $5K self-service (was $150K)",
+      "Horizon Europe NGI: Under threat of funding cuts - verify current status",
+      "Most cloud credits require NEW customers only",
+      "Annual renewals required for most cloud sponsorships"
+    ]
+  },
+
+  "immediate_action_plan": {
+    "week_1_4": [
+      {
+        "action": "Set up company structure",
+        "details": "Consider Stripe Atlas ($500) for Delaware C-corp formation + $2.5K Stripe credits + $5K AWS credits",
+        "cost": "$500",
+        "return": "$7.5K+ in credits"
+      },
+      {
+        "action": "Apply for cloud credits",
+        "targets": [
+          "AWS Activate Founders ($1K)",
+          "Google Cloud Start Tier ($2K)",
+          "Microsoft Azure Self-Service ($1K immediate, $4K after verification)",
+          "DigitalOcean OSS ($60-20K depending on tier)"
+        ],
+        "total_potential": "$4K-27K",
+        "requirement": "Company website + business email"
+      },
+      {
+        "action": "Prepare NLnet application",
+        "deadline": "February 1, 2026",
+        "amount": "€5K-50K",
+        "requirement": "Project description contributing to Next Generation Internet"
+      }
+    ],
+    "pre_launch": [
+      {
+        "action": "Document open source project",
+        "details": "Create comprehensive README, Code of Conduct, contribution guidelines",
+        "purpose": "Qualify for GitHub OSS Fund, DigitalOcean, Vercel, Cloudflare programs"
+      },
+      {
+        "action": "Build in public",
+        "details": "Share progress on GitHub, social media, developer communities",
+        "purpose": "Build community for future Open Collective/GitHub Sponsors"
+      },
+      {
+        "action": "Research NSF SBIR",
+        "details": "Verify Congressional authority status, prepare Project Pitch if applicable",
+        "potential": "Up to $305K"
+      }
+    ],
+    "post_launch": [
+      {
+        "action": "Apply to GitHub Secure OSS Fund",
+        "amount": "$10K + $150K Azure",
+        "timing": "Rolling applications throughout 2025"
+      },
+      {
+        "action": "Apply to Vercel OSS Program",
+        "amount": "$3.6K credits + perks",
+        "timing": "Quarterly cohorts"
+      },
+      {
+        "action": "Set up Open Collective",
+        "purpose": "Sustainable community funding",
+        "timeline": "Ongoing"
+      },
+      {
+        "action": "Apply to YC Build Sprint",
+        "amount": "$10K equity-free grant (20 winners)",
+        "requirement": "Complete 4-week sprint"
+      }
+    ],
+    "with_traction": [
+      {
+        "action": "Apply to NSF SBIR Phase I",
+        "amount": "Up to $305K",
+        "requirement": "Project Pitch → Full proposal if invited"
+      },
+      {
+        "action": "Consider Earnest Capital",
+        "amount": "$75K-250K",
+        "requirement": "Paying customers, recurring revenue"
+      },
+      {
+        "action": "Explore Horizon Europe NGI",
+        "amount": "€5K-120K",
+        "requirement": "Open source, digital commons focus"
+      }
+    ]
+  },
+
+  "total_funding_potential": {
+    "immediate_no_traction": "$4,000 - $27,000 (cloud credits)",
+    "post_launch": "$13,600 - $183,600",
+    "with_traction_non_dilutive": "$305,000 - $1,300,000+",
+    "total_addressable": "$322,600 - $1,510,600+ non-dilutive",
+    "note": "Amounts can be combined across different categories (grants + credits + revenue-based financing)"
+  }
+}
