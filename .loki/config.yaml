@@ -1,0 +1,12 @@
+sandbox:
+  enabled: true
+  image: "asklokesh/loki-mode:latest"
+  memory_limit: "4g"
+  cpu_limit: "2"
+  network: true  # needs network for Claude Code API calls
+  mounts:
+    - "./:/workspace:rw"
+    - "~/.npm:/root/.npm:ro"
+    - "~/.claude:/home/loki/.claude:ro"
+  env:
+    - LOKI_PROVIDER

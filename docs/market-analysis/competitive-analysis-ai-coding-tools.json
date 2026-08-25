@@ -1,0 +1,920 @@
+{
+  "search_summary": {
+    "platforms_searched": [
+      "github",
+      "product_websites",
+      "developer_documentation",
+      "tech_news",
+      "hacker_news"
+    ],
+    "repositories_analyzed": 15,
+    "docs_reviewed": 20,
+    "search_date": "2025-12-03"
+  },
+  "repositories": [
+    {
+      "name": "Aider",
+      "citation": "[1] Aider-AI. \"Aider - AI pair programming in your terminal.\" GitHub, v0.86.0 (Aug 2025). https://github.com/Aider-AI/aider",
+      "platform": "github",
+      "stats": {
+        "stars": 38800,
+        "forks": 3709,
+        "contributors": "100+",
+        "last_updated": "2025-08-09",
+        "pypi_installs": "3.9M+"
+      },
+      "primary_language": "Python",
+      "key_features": [
+        "CLI-based AI pair programming",
+        "Automatic codebase mapping for large projects",
+        "Git integration with auto-commits",
+        "Supports 100+ programming languages",
+        "Local LLM support (Ollama, etc.)",
+        "Voice-to-code functionality",
+        "IDE integration via watch mode",
+        "84.9% correctness on polyglot benchmarks with o3-pro"
+      ],
+      "architecture": "Terminal-first tool that maintains codebase context through mapping. Uses LLM APIs to generate code changes and automatically commits with git. Works with any LLM provider including local models.",
+      "code_quality": {
+        "testing": "comprehensive",
+        "documentation": "excellent",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": true,
+      "pricing": "Open source (Apache 2.0), LLM API costs apply",
+      "usage_example": "aider file1.py file2.py --model claude-sonnet-4-5",
+      "limitations": [
+        "No built-in cost tracking",
+        "Terminal-only interface (no GUI)",
+        "Requires manual LLM API configuration",
+        "Not a full IDE replacement"
+      ],
+      "alternatives": [
+        "Cursor",
+        "Cline",
+        "Continue.dev"
+      ],
+      "threat_level": "HIGH",
+      "threat_rationale": "Extremely popular (38k+ stars), CLI-first like SkillRunner, supports local LLMs, strong Git integration, and excellent benchmark performance. Direct competitor in the terminal-based AI coding space."
+    },
+    {
+      "name": "Cline (formerly Claude Dev)",
+      "citation": "[2] Cline. \"Cline - Autonomous coding agent right in your IDE.\" VS Code Marketplace, 2025. https://github.com/cline/cline",
+      "platform": "vscode-extension",
+      "stats": {
+        "stars": 54100,
+        "forks": "5000+",
+        "contributors": "50+",
+        "last_updated": "2025-11",
+        "installs": "4.0M+"
+      },
+      "primary_language": "TypeScript",
+      "key_features": [
+        "Autonomous coding agent in VS Code",
+        "File creation/editing with diff view",
+        "Terminal command execution",
+        "Browser automation via Claude Computer Use",
+        "Model Context Protocol (MCP) support",
+        "Multi-provider support (OpenRouter, Anthropic, OpenAI, Gemini, AWS, Azure)",
+        "Workspace checkpoints",
+        "Cost tracking per task and request"
+      ],
+      "architecture": "VS Code extension with human-in-the-loop approval system. Integrates deeply with IDE features and provides autonomous multi-file editing capabilities. Uses MCP for extensible tool integration.",
+      "code_quality": {
+        "testing": "adequate",
+        "documentation": "good",
+        "maintenance": "active"
+      },
+      "cost_tracking": true,
+      "local_first": false,
+      "pricing": "Free extension (Apache 2.0), LLM API costs apply",
+      "usage_example": "Install extension, configure API key, use @commands in chat to interact with codebase",
+      "limitations": [
+        "VS Code only (IDE lock-in)",
+        "Requires cloud API access",
+        "No true local-first operation",
+        "Can be expensive with frontier models"
+      ],
+      "alternatives": [
+        "Cursor",
+        "Continue.dev",
+        "PearAI"
+      ],
+      "threat_level": "MEDIUM",
+      "threat_rationale": "Most popular VS Code extension (54k stars, 4M+ installs) with cost tracking feature. However, it's IDE-locked and not CLI-based like SkillRunner. Complements rather than directly competes."
+    },
+    {
+      "name": "Cursor",
+      "citation": "[3] Cursor. \"Cursor - The best way to code with AI.\" Cursor AI, 2025. https://cursor.com/",
+      "platform": "standalone-ide",
+      "stats": {
+        "stars": "N/A (proprietary)",
+        "forks": "N/A",
+        "contributors": "N/A",
+        "last_updated": "2025-11",
+        "users": "100k+"
+      },
+      "primary_language": "TypeScript (VS Code fork)",
+      "key_features": [
+        "AI-native code editor (VS Code fork)",
+        "Custom Tab autocomplete model",
+        "Agent mode for multi-file tasks",
+        "Composer multi-agent interface (v2.0)",
+        "Custom frontier coding model",
+        "Supports OpenAI, Claude, Gemini models",
+        "Background agents",
+        "Usage analytics"
+      ],
+      "architecture": "Proprietary VS Code fork with custom AI models and multi-agent orchestration. Tightly integrated IDE experience with both autocomplete and agentic capabilities.",
+      "code_quality": {
+        "testing": "unknown",
+        "documentation": "good",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "$20/mo (Pro), $60/mo (Pro+), $200/mo (Ultra), $40/user/mo (Teams)",
+      "usage_example": "Install Cursor app, use Cmd+K for inline edits or Cmd+L for chat",
+      "limitations": [
+        "Proprietary/closed source",
+        "Expensive for heavy usage ($20-200/mo)",
+        "IDE lock-in (must use Cursor)",
+        "No CLI option",
+        "Pricing changes caused community backlash"
+      ],
+      "alternatives": [
+        "Cline",
+        "Windsurf",
+        "Continue.dev"
+      ],
+      "threat_level": "MEDIUM",
+      "threat_rationale": "Highly polished commercial product with strong market presence. However, it's closed source, expensive, and IDE-only. Different target audience than SkillRunner (GUI vs CLI)."
+    },
+    {
+      "name": "Mentat",
+      "citation": "[4] AbanteAI. \"Mentat - The AI Coding Assistant.\" GitHub, 2025. https://github.com/AbanteAI/archive-old-cli-mentat",
+      "platform": "github",
+      "stats": {
+        "stars": "~2500",
+        "forks": "~200",
+        "contributors": "10+",
+        "last_updated": "2024 (archived)",
+        "status": "archived"
+      },
+      "primary_language": "Python",
+      "key_features": [
+        "CLI-based AI coding assistant",
+        "Multi-file coordination",
+        "Automatic code edits",
+        "GitHub bot integration (new version)",
+        "Natural language understanding"
+      ],
+      "architecture": "Originally a CLI tool for coordinated multi-file edits. Now transitioned to a GitHub bot service (mentat.ai) for pull request automation.",
+      "code_quality": {
+        "testing": "minimal",
+        "documentation": "fair",
+        "maintenance": "minimal"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Open source (MIT), LLM API costs apply",
+      "usage_example": "Archived CLI version no longer recommended. New version is GitHub bot integration.",
+      "limitations": [
+        "Original CLI tool archived/discontinued",
+        "Pivoted to GitHub bot service",
+        "Limited community support",
+        "Requires GPT-4 API access"
+      ],
+      "alternatives": [
+        "Aider",
+        "Sweep AI",
+        "OpenHands"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Original CLI tool archived and team pivoted to GitHub bot. No longer actively competing in the CLI coding assistant space."
+    },
+    {
+      "name": "GPT-Engineer",
+      "citation": "[5] AntonOsika. \"GPT-Engineer - CLI platform to experiment with codegen.\" GitHub, v0.3.1 (Jun 2024). https://github.com/AntonOsika/gpt-engineer",
+      "platform": "github",
+      "stats": {
+        "stars": 55100,
+        "forks": "7000+",
+        "contributors": "100+",
+        "last_updated": "2024-06-06",
+        "users": "10k+"
+      },
+      "primary_language": "Python",
+      "key_features": [
+        "CLI code generation from prompts",
+        "Natural language project specification",
+        "Supports images/diagrams as context",
+        "Customizable preprompts",
+        "Multiple LLM provider support",
+        "Benchmarking tools",
+        "New code and improve existing code modes"
+      ],
+      "architecture": "Simple CLI that generates entire codebases from prompts. Uses planning step to create shared dependencies, then generates all files. Customizable through preprompts that define agent behavior.",
+      "code_quality": {
+        "testing": "adequate",
+        "documentation": "good",
+        "maintenance": "moderate"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Open source (MIT), precursor to lovable.dev (commercial)",
+      "usage_example": "gpt-engineer projects/my-project --model anthropic/claude-3-opus",
+      "limitations": [
+        "Primarily one-shot generation",
+        "Limited iteration support",
+        "Team focused on commercial lovable.dev",
+        "Requires cloud LLM APIs",
+        "Last release June 2024"
+      ],
+      "alternatives": [
+        "Smol Developer",
+        "Bolt.new",
+        "v0.dev"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Popular for initial code generation (55k stars) but limited iteration capabilities. Team pivoted to commercial lovable.dev. More of a code scaffolding tool than workflow orchestrator."
+    },
+    {
+      "name": "Sweep AI",
+      "citation": "[6] Sweep AI. \"Sweep - AI-powered junior developer for GitHub.\" GitHub, 2025. https://github.com/sweepai/sweep",
+      "platform": "github",
+      "stats": {
+        "stars": 7610,
+        "forks": "400+",
+        "contributors": "30+",
+        "last_updated": "2023-09-11",
+        "users": "5000+"
+      },
+      "primary_language": "Python (44.8%), Jupyter Notebook (47.7%), TypeScript (6.6%)",
+      "key_features": [
+        "Transforms GitHub issues into PRs",
+        "Natural language issue processing",
+        "Automatic code changes",
+        "Unit test and formatter integration",
+        "Dependency graph understanding",
+        "Multi-language support (Python focus)"
+      ],
+      "architecture": "GitHub App that monitors issues with 'Sweep:' prefix and automatically generates pull requests. Uses codebase analysis to determine changes needed and creates PRs with proposed solutions.",
+      "code_quality": {
+        "testing": "adequate",
+        "documentation": "good",
+        "maintenance": "minimal"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Open source (Apache 2.0), now commercial JetBrains plugin",
+      "usage_example": "Install Sweep GitHub App, create issue with 'Sweep:' prefix, AI generates PR",
+      "limitations": [
+        "GitHub-only integration",
+        "Team pivoted to JetBrains plugin",
+        "Original project less active",
+        "Limited to issue → PR workflow",
+        "Not a general-purpose orchestrator"
+      ],
+      "alternatives": [
+        "OpenHands",
+        "SWE-agent",
+        "Mentat (GitHub bot)"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Specialized for GitHub issue → PR workflow. Team pivoted to JetBrains plugin. Not a general workflow orchestrator like SkillRunner."
+    },
+    {
+      "name": "OpenHands (formerly OpenDevin)",
+      "citation": "[7] All Hands AI. \"OpenHands - Open Platform for Cloud Coding Agents.\" GitHub, v1.0.7-cli (Nov 2025). https://github.com/OpenHands/OpenHands",
+      "platform": "github",
+      "stats": {
+        "stars": 65400,
+        "forks": "6000+",
+        "contributors": "331+",
+        "last_updated": "2025-11-11",
+        "users": "50k+"
+      },
+      "primary_language": "Python (77.1%), TypeScript (19.9%)",
+      "key_features": [
+        "Software Agent SDK for custom agents",
+        "CLI interface (similar to Claude Code)",
+        "Local GUI with REST API",
+        "Cloud deployment with integrations (Slack, Jira, Linear)",
+        "Enterprise self-hosting via Kubernetes",
+        "Multi-user with RBAC",
+        "Model-agnostic (Claude, GPT, etc.)",
+        "GitHub/GitLab/Bitbucket integration"
+      ],
+      "architecture": "Comprehensive platform offering SDK, CLI, GUI, and cloud deployment options. Designed for building and scaling AI coding agents from local development to enterprise production.",
+      "code_quality": {
+        "testing": "comprehensive",
+        "documentation": "excellent",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": true,
+      "pricing": "Open source (MIT), enterprise licensing for production use after 1 month",
+      "usage_example": "openhands --model anthropic/claude-sonnet-4-5",
+      "limitations": [
+        "No built-in cost tracking",
+        "Complex setup for full platform",
+        "Enterprise features require licensing",
+        "Resource-intensive for full deployment"
+      ],
+      "alternatives": [
+        "Aider",
+        "SWE-agent",
+        "Devin alternatives"
+      ],
+      "threat_level": "HIGH",
+      "threat_rationale": "Most popular open-source coding agent (65k+ stars), offers CLI interface, local-first capable, and actively maintained. Comprehensive platform that can scale from local to enterprise. Direct competitor to SkillRunner."
+    },
+    {
+      "name": "Continue.dev",
+      "citation": "[8] Continue. \"Continue - Open-source autopilot for software development.\" GitHub, v1.34.0 (Dec 2025). https://github.com/continuedev/continue",
+      "platform": "github",
+      "stats": {
+        "stars": 30100,
+        "forks": "2000+",
+        "contributors": "200+",
+        "last_updated": "2025-12-02",
+        "users": "hundreds of thousands"
+      },
+      "primary_language": "TypeScript (83.5%)",
+      "key_features": [
+        "Cloud agents (PR opens, schedules, custom triggers)",
+        "CLI agents with real-time execution",
+        "IDE extensions (VS Code, JetBrains)",
+        "Open-source (Apache 2.0)",
+        "Multi-LLM provider support",
+        "Custom AI assistant sharing via Continue Hub"
+      ],
+      "architecture": "Multi-interface platform: cloud agents for automation, CLI for terminal workflows, and IDE extensions for in-editor assistance. Hub allows sharing custom AI assistants across teams.",
+      "code_quality": {
+        "testing": "good",
+        "documentation": "excellent",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Open source (Apache 2.0), commercial Continue Cloud offering",
+      "usage_example": "Install IDE extension or use CLI: continue agent run",
+      "limitations": [
+        "No built-in cost tracking",
+        "Primarily cloud-based for agent features",
+        "Requires API access",
+        "CLI agents less mature than IDE features"
+      ],
+      "alternatives": [
+        "Cline",
+        "Cursor",
+        "Aider"
+      ],
+      "threat_level": "MEDIUM",
+      "threat_rationale": "Growing rapidly (30k stars) with CLI + cloud agent capabilities. However, primarily IDE-focused with cloud dependencies. Competes in automation space but different architecture than SkillRunner."
+    },
+    {
+      "name": "Goose (by Block/Square)",
+      "citation": "[9] Block. \"Goose - Open source extensible AI agent.\" GitHub, v1.15.0 (Nov 2025). https://github.com/block/goose",
+      "platform": "github",
+      "stats": {
+        "stars": 22600,
+        "forks": "1500+",
+        "contributors": "331",
+        "last_updated": "2025-11-19",
+        "users": "5000+ (internal Block users)"
+      },
+      "primary_language": "Rust (59.6%), TypeScript (32.7%)",
+      "key_features": [
+        "Local on-machine AI agent",
+        "Multi-LLM support with flexible config",
+        "MCP (Model Context Protocol) integration",
+        "Desktop app and CLI",
+        "Code execution, debugging, testing",
+        "Project generation from scratch",
+        "Plug-and-play extensible architecture",
+        "Used by 5000 Block employees weekly"
+      ],
+      "architecture": "Local-first agent built on Model Context Protocol (MCP) developed with Anthropic. Transforms natural language into actions across tools and services. Designed for extensibility and local operation.",
+      "code_quality": {
+        "testing": "good",
+        "documentation": "excellent",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": true,
+      "pricing": "Open source (Apache 2.0)",
+      "usage_example": "goose session start --profile dev",
+      "limitations": [
+        "No built-in cost tracking",
+        "Relatively new (early 2025)",
+        "Less ecosystem than established tools",
+        "Rust/TypeScript vs Python ecosystem"
+      ],
+      "alternatives": [
+        "Aider",
+        "OpenHands",
+        "Devin alternatives"
+      ],
+      "threat_level": "HIGH",
+      "threat_rationale": "Backed by major fintech company (Block), local-first design, MCP integration, 22k+ stars, and production use by 5000 employees. Strong enterprise validation and similar CLI-first approach to SkillRunner."
+    },
+    {
+      "name": "Devika",
+      "citation": "[10] Stition AI. \"Devika - Agentic AI Software Engineer (now Opcode).\" GitHub, 2025. https://github.com/stitionai/devika",
+      "platform": "github",
+      "stats": {
+        "stars": 19500,
+        "forks": "2500+",
+        "contributors": "50+",
+        "last_updated": "2025",
+        "status": "transitioning to Opcode"
+      },
+      "primary_language": "Python (57.5%)",
+      "key_features": [
+        "Agentic AI software engineer",
+        "High-level instruction understanding",
+        "Multi-step planning and execution",
+        "Web research capabilities",
+        "Multi-language code writing",
+        "Supports Claude 3, GPT-4, Gemini, Mistral, Groq",
+        "Local LLM support via Ollama"
+      ],
+      "architecture": "Autonomous agent that breaks down high-level objectives into steps, researches information, and writes code. Designed as open-source alternative to Devin with modular architecture for planning, research, and code generation.",
+      "code_quality": {
+        "testing": "minimal",
+        "documentation": "fair",
+        "maintenance": "moderate"
+      },
+      "cost_tracking": false,
+      "local_first": true,
+      "pricing": "Open source (MIT)",
+      "usage_example": "python app.py (now transitioning to opcode.sh)",
+      "limitations": [
+        "Early development/experimental",
+        "Team transitioning to Opcode",
+        "Many features unimplemented",
+        "Less production-ready than alternatives",
+        "No releases published"
+      ],
+      "alternatives": [
+        "OpenHands",
+        "SWE-agent",
+        "Goose"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Popular (19k stars) but experimental and transitioning to new product (Opcode). Not production-ready. Potential future competitor but currently not a direct threat."
+    },
+    {
+      "name": "SWE-agent",
+      "citation": "[11] Princeton NLP. \"SWE-agent - Agent Computer Interfaces Enable Software Engineering Language Models.\" GitHub, v1.1.0 (May 2025). https://github.com/SWE-agent/SWE-agent",
+      "platform": "github",
+      "stats": {
+        "stars": 17900,
+        "forks": "1500+",
+        "contributors": "50+",
+        "last_updated": "2025-05-22",
+        "users": "research + production"
+      },
+      "primary_language": "Python (94.6%)",
+      "key_features": [
+        "Autonomously fixes GitHub issues",
+        "State of the art on SWE-bench",
+        "Single YAML configuration",
+        "Research-focused, hackable architecture",
+        "EnIGMA mode for cybersecurity CTF challenges",
+        "Competitive coding support",
+        "Simple, documented codebase"
+      ],
+      "architecture": "Academic research project focused on agent-computer interfaces for software engineering. Designed to automatically resolve GitHub issues using LLMs with specialized tooling and interfaces optimized for coding tasks.",
+      "code_quality": {
+        "testing": "comprehensive",
+        "documentation": "excellent",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Open source (MIT)",
+      "usage_example": "python run.py --model_name gpt4 --data_path path/to/issue.json",
+      "limitations": [
+        "Research-oriented vs production-ready",
+        "Primarily GitHub issue resolution",
+        "Not a general workflow orchestrator",
+        "Requires cloud LLM APIs",
+        "Academic project (may have limited long-term support)"
+      ],
+      "alternatives": [
+        "OpenHands",
+        "Sweep AI",
+        "Mini-SWE-agent"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Academic research project (Princeton/Stanford) with excellent benchmark results but limited scope (GitHub issue resolution). Not designed as general workflow orchestrator like SkillRunner."
+    },
+    {
+      "name": "Bolt.new (by StackBlitz)",
+      "citation": "[12] StackBlitz. \"Bolt.new - AI full-stack web app builder.\" GitHub, 2025. https://github.com/stackblitz/bolt.new",
+      "platform": "github",
+      "stats": {
+        "stars": 16000,
+        "forks": "3000+",
+        "contributors": "100+",
+        "last_updated": "2025",
+        "deployments": "1M+ websites"
+      },
+      "primary_language": "TypeScript (89.9%), SCSS (9.5%)",
+      "key_features": [
+        "Full-stack in-browser development",
+        "AI control over filesystem, terminal, browser",
+        "Deploy directly from chat",
+        "Share projects via URL",
+        "WebContainers (Node.js in browser)",
+        "Supports Vite, Next.js, etc.",
+        "Integrated with Claude 3.5 Sonnet"
+      ],
+      "architecture": "Browser-based development environment powered by WebContainers. AI has complete control over development environment including filesystem, server, package manager, and terminal. Tightly coupled with StackBlitz infrastructure.",
+      "code_quality": {
+        "testing": "good",
+        "documentation": "good",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "$20/mo (Pro, 10M tokens), $200/mo (120M tokens)",
+      "usage_example": "Visit bolt.new, describe app, AI builds and deploys it",
+      "limitations": [
+        "Browser-only (not local)",
+        "Credit/token-based consumption",
+        "Limited to web applications",
+        "Vendor lock-in to StackBlitz",
+        "Not a CLI tool",
+        "Expensive for heavy usage"
+      ],
+      "alternatives": [
+        "v0.dev",
+        "Replit Agent",
+        "Lovable.dev"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Different category - browser-based web app builder vs local CLI orchestrator. Serves rapid prototyping market. 1M+ deployments show market validation but different target audience than SkillRunner."
+    },
+    {
+      "name": "Smol Developer",
+      "citation": "[13] Smol AI. \"Smol Developer - Junior developer agent library.\" GitHub, 2025. https://github.com/smol-ai/developer",
+      "platform": "github",
+      "stats": {
+        "stars": 12200,
+        "forks": "1000+",
+        "contributors": "30+",
+        "last_updated": "2025",
+        "status": "alpha"
+      },
+      "primary_language": "Python",
+      "key_features": [
+        "Embeddable developer agent library",
+        "Scaffolds entire codebases from specs",
+        "Simple codebase (<200 lines)",
+        "Three modes: Git repo, Library, API",
+        "Multi-language support",
+        "Tight loop iteration",
+        "Easy to understand and customize"
+      ],
+      "architecture": "Minimalist library focused on whole-program synthesis from natural language specs. Philosophy of 'simple, safe, and smol' - easy to understand and modify core codebase.",
+      "code_quality": {
+        "testing": "minimal",
+        "documentation": "good",
+        "maintenance": "moderate"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Free/Open source (alpha)",
+      "usage_example": "pip install smol_dev && smol_dev",
+      "limitations": [
+        "Alpha stage",
+        "One-shot generation focus",
+        "Limited iteration capabilities",
+        "Requires cloud LLM APIs",
+        "Small community compared to alternatives"
+      ],
+      "alternatives": [
+        "GPT-Engineer",
+        "Aider",
+        "OpenHands"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Interesting minimal approach (12k stars) but alpha stage and limited to code generation. Not a workflow orchestrator. Philosophy of simplicity is appealing but lacks production features."
+    },
+    {
+      "name": "PearAI",
+      "citation": "[14] PearAI. \"PearAI - Open Source AI Code Editor (Fork of VSCode).\" GitHub, v1.8.9 (May 2025). https://github.com/trypear/pearai-app",
+      "platform": "github",
+      "stats": {
+        "stars": 655,
+        "forks": "100+",
+        "contributors": "20+",
+        "last_updated": "2025-05-02",
+        "controversy": "license controversy 2024"
+      },
+      "primary_language": "TypeScript (95.5%)",
+      "key_features": [
+        "VS Code fork with AI integration",
+        "Fork of Continue for AI features",
+        "Local code storage",
+        "Familiar VS Code UX",
+        "Multi-model AI support"
+      ],
+      "architecture": "VS Code fork with Continue integration for AI capabilities. Emphasizes local storage and privacy while maintaining familiar IDE experience.",
+      "code_quality": {
+        "testing": "adequate",
+        "documentation": "fair",
+        "maintenance": "moderate"
+      },
+      "cost_tracking": false,
+      "local_first": true,
+      "pricing": "Open source (Apache 2.0)",
+      "usage_example": "Download PearAI app, configure AI provider",
+      "limitations": [
+        "Fork of forks (VS Code + Continue)",
+        "License controversy damaged reputation",
+        "Small community (655 stars)",
+        "Limited differentiation from Continue",
+        "IDE lock-in"
+      ],
+      "alternatives": [
+        "Continue.dev",
+        "Cline",
+        "Cursor"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Small community, fork of existing tools with limited differentiation. License controversy hurt adoption. Not a significant competitive threat."
+    },
+    {
+      "name": "v0.dev / v0.app (by Vercel)",
+      "citation": "[15] Vercel. \"v0 - AI builder for everyone.\" Vercel, 2025. https://v0.app/",
+      "platform": "commercial-saas",
+      "stats": {
+        "stars": "N/A (proprietary)",
+        "forks": "N/A",
+        "contributors": "N/A",
+        "last_updated": "2025-08",
+        "users": "100k+"
+      },
+      "primary_language": "TypeScript (proprietary)",
+      "key_features": [
+        "AI app builder with UI, content, backend, logic",
+        "Agentic research, reasoning, debugging",
+        "Direct GitHub integration",
+        "Deploy to production from prompts",
+        "Custom composite model (v0-1.5)",
+        "AutoFix model for error correction",
+        "Platform API for headless usage"
+      ],
+      "architecture": "Commercial SaaS platform using custom composite AI architecture. Combines RAG, reasoning LLMs, and custom AutoFix model. Generates React/Next.js code with shadcn/ui and Tailwind CSS.",
+      "code_quality": {
+        "testing": "good",
+        "documentation": "excellent",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Credit-based consumption model (details vary)",
+      "usage_example": "Visit v0.app, describe app, iterate with AI, deploy to Vercel",
+      "limitations": [
+        "Proprietary/closed source",
+        "Credit consumption concerns",
+        "Web app focus (Next.js)",
+        "Vercel ecosystem lock-in",
+        "Not CLI-based",
+        "Security concerns with AI-generated code"
+      ],
+      "alternatives": [
+        "Bolt.new",
+        "Replit Agent",
+        "Lovable.dev"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Commercial web app builder targeting rapid prototyping and marketing sites. Different category than CLI workflow orchestrator. Large user base but serves different use case than SkillRunner."
+    },
+    {
+      "name": "Replit Agent",
+      "citation": "[16] Replit. \"Replit Agent - AI app builder.\" Replit, 2025. https://replit.com/agent3",
+      "platform": "commercial-saas",
+      "stats": {
+        "stars": "N/A (proprietary)",
+        "forks": "N/A",
+        "contributors": "N/A",
+        "last_updated": "2025-09",
+        "users": "millions"
+      },
+      "primary_language": "Proprietary",
+      "key_features": [
+        "Agent 3: 200-minute autonomous sessions",
+        "Test-driven development loop",
+        "Spawn new specialized agents",
+        "Integration with Slack, email, Telegram",
+        "3x faster, 10x more cost-effective testing",
+        "Full app creation from natural language"
+      ],
+      "architecture": "Commercial cloud-based IDE with autonomous AI agents. Agent 3 can operate continuously for extended periods, testing and refining code in reflection loops. Can spawn specialized sub-agents for workflows.",
+      "code_quality": {
+        "testing": "good",
+        "documentation": "excellent",
+        "maintenance": "active"
+      },
+      "cost_tracking": false,
+      "local_first": false,
+      "pricing": "Subscription-based (details on replit.com)",
+      "usage_example": "Visit replit.com, describe app, Agent builds and deploys it",
+      "limitations": [
+        "Cloud-only (no local option)",
+        "Proprietary platform",
+        "Vendor lock-in to Replit",
+        "Not open source",
+        "Not CLI-based"
+      ],
+      "alternatives": [
+        "Bolt.new",
+        "v0.dev",
+        "Cursor"
+      ],
+      "threat_level": "LOW",
+      "threat_rationale": "Cloud-based IDE platform for beginners and rapid prototyping. Different market segment than local-first CLI orchestrators. Strong in education market but not competing directly with SkillRunner."
+    }
+  ],
+  "technical_insights": {
+    "common_patterns": [
+      "Terminal/CLI interfaces gaining popularity over IDE-only solutions",
+      "Local LLM support increasingly important for privacy and cost",
+      "Git integration essential for all coding agents",
+      "Multi-provider support (Claude, GPT, Gemini, local) becoming standard",
+      "Cost tracking still rare but increasingly requested by users",
+      "Human-in-the-loop approval remains critical safety feature",
+      "MCP (Model Context Protocol) emerging as standard for agent extensibility",
+      "Transition from autocomplete to autonomous multi-file agents"
+    ],
+    "best_practices": [
+      "Provide both CLI and GUI options for different workflows",
+      "Support local LLMs (Ollama, etc.) for cost-conscious users",
+      "Implement cost tracking to prevent bill shock",
+      "Use git for automatic change tracking and rollback",
+      "Make configuration simple (single YAML or JSON file)",
+      "Design for extensibility (plugins, MCP, etc.)",
+      "Focus on developer experience (DX) over feature count",
+      "Provide clear documentation and examples"
+    ],
+    "pitfalls": [
+      "Complex setup processes reduce adoption",
+      "Credit/token systems without clear pricing confuse users",
+      "IDE lock-in limits tool adoption",
+      "Closed-source tools face community resistance",
+      "Experimental features in production hurt reliability",
+      "Poor license choices damage reputation (PearAI example)",
+      "Pivot away from open-source reduces trust (Sweep, Mentat)",
+      "Expensive pricing pushes users to alternatives"
+    ],
+    "emerging_trends": [
+      "Shift from code completion to autonomous agents (2024-2025)",
+      "Multi-agent orchestration for complex tasks",
+      "Local-first tools gaining traction for privacy/cost",
+      "Academic research projects (SWE-agent) influencing production tools",
+      "Enterprise backing of open-source tools (Block/Goose)",
+      "Platform consolidation (Continue Hub, OpenHands SDK)",
+      "Custom AI models for coding (Cursor Composer, v0 composite)",
+      "Integration of computer use capabilities (browser automation)",
+      "CLI tools matching IDE capabilities",
+      "Cost optimization becoming competitive differentiator"
+    ]
+  },
+  "implementation_recommendations": [
+    {
+      "scenario": "Individual developer wants local-first AI coding assistant",
+      "recommended_solution": "Aider or Goose",
+      "rationale": "Both offer excellent local LLM support, CLI-first interfaces, and strong Git integration. Aider more mature, Goose backed by major company."
+    },
+    {
+      "scenario": "Team wants IDE-integrated coding agent with cost visibility",
+      "recommended_solution": "Cline (VS Code extension)",
+      "rationale": "Only major tool with built-in cost tracking, 4M+ installs, active development, human-in-the-loop safety, and multi-provider support."
+    },
+    {
+      "scenario": "Enterprise needs scalable agent platform with self-hosting",
+      "recommended_solution": "OpenHands",
+      "rationale": "Comprehensive platform with SDK, CLI, GUI, and enterprise features. 65k stars, MIT license, Kubernetes deployment, RBAC, multi-user support."
+    },
+    {
+      "scenario": "Research team exploring agent-computer interfaces",
+      "recommended_solution": "SWE-agent",
+      "rationale": "State-of-the-art benchmark results, hackable architecture, academic backing, comprehensive documentation, research-focused design."
+    },
+    {
+      "scenario": "Startup wants rapid web app prototyping",
+      "recommended_solution": "Bolt.new or v0.dev",
+      "rationale": "Browser-based, instant deployment, no setup required. Bolt for general web apps, v0 for Next.js/React focus. 1M+ deployments validate market fit."
+    },
+    {
+      "scenario": "Developer wants workflow orchestration with cost control",
+      "recommended_solution": "SkillRunner (your product)",
+      "rationale": "Only tool combining multi-agent orchestration, built-in cost tracking, local-first architecture, and workflow automation. Direct CLI interface with intelligent agent delegation."
+    }
+  ],
+  "community_insights": {
+    "popular_solutions": [
+      "Aider (38k stars) - terminal power users",
+      "Cline (54k stars) - VS Code users wanting agents",
+      "OpenHands (65k stars) - comprehensive agent platform",
+      "GPT-Engineer (55k stars) - quick code generation",
+      "Continue.dev (30k stars) - IDE integration lovers"
+    ],
+    "controversial_topics": [
+      "Cost transparency: Many tools hide LLM costs until bills arrive",
+      "Open source vs proprietary: Community prefers open-source but polished commercial tools gain traction",
+      "License changes: PearAI controversy shows importance of proper licensing",
+      "Pivot concerns: Teams pivoting from open source to commercial (Sweep, Mentat) lose community trust",
+      "IDE lock-in: Debate over standalone editors (Cursor) vs extensions (Cline)",
+      "Benchmark gaming: Questions about whether benchmark performance translates to real-world usefulness"
+    ],
+    "expert_opinions": [
+      "Swyx (continuous AI advocate): 'The future is autonomous agents, not autocomplete'",
+      "StackBlitz CEO on Claude 3.5: 'The enabling technology that made this product possible, period'",
+      "Block on local-first: 'Open-source AI that pays for itself through productivity gains'",
+      "YC on agent market: 'Backing experimental projects but some like PearAI face community backlash'",
+      "Academic researchers: 'Agent-computer interfaces (ACI) critical for LLM effectiveness in software engineering'"
+    ]
+  },
+  "skillrunner_competitive_advantages": {
+    "unique_differentiators": [
+      "Built-in cost tracking (only Cline has this, and it's IDE-only)",
+      "Multi-agent orchestration with intelligent delegation",
+      "Local-first architecture with cloud optional",
+      "CLI-native design (not an IDE extension)",
+      "Workflow automation focus (not just coding assistance)",
+      "Python ecosystem compatibility",
+      "Simple YAML-based agent configuration"
+    ],
+    "market_gaps_addressed": [
+      "No major tool combines cost tracking + orchestration + local-first",
+      "CLI tools lack orchestration capabilities (Aider, GPT-Engineer)",
+      "Orchestration tools require cloud infrastructure (OpenHands, AutoGen)",
+      "IDE tools have vendor lock-in (Cursor, Cline)",
+      "Commercial tools lack transparency (Cursor, Replit, v0.dev)"
+    ],
+    "target_audiences": [
+      "Cost-conscious developers tired of surprise LLM bills",
+      "Teams needing workflow automation without enterprise complexity",
+      "Privacy-focused developers wanting local-first tools",
+      "Python developers seeking ecosystem integration",
+      "Power users wanting CLI-first workflows",
+      "Open-source advocates seeking transparent tooling"
+    ]
+  },
+  "threat_matrix": {
+    "high_threat": [
+      {
+        "tool": "Aider",
+        "reason": "Popular CLI tool (38k stars), local LLM support, excellent Git integration, strong benchmark performance",
+        "mitigation": "Focus on orchestration capabilities and cost tracking which Aider lacks"
+      },
+      {
+        "tool": "OpenHands",
+        "reason": "Most popular agent platform (65k stars), CLI + SDK + GUI, local-first capable, comprehensive features",
+        "mitigation": "Emphasize simplicity, cost tracking, and workflow focus vs their platform complexity"
+      },
+      {
+        "tool": "Goose",
+        "reason": "Enterprise-backed (Block), local-first, MCP integration, production use by 5000 employees",
+        "mitigation": "Highlight cost tracking and multi-agent orchestration. Goose is agent library, SkillRunner is workflow orchestrator"
+      }
+    ],
+    "medium_threat": [
+      {
+        "tool": "Cline",
+        "reason": "Most popular VS Code extension (54k stars, 4M installs), has cost tracking",
+        "mitigation": "Different category (IDE vs CLI). Target developers wanting terminal workflows and orchestration"
+      },
+      {
+        "tool": "Cursor",
+        "reason": "Polished commercial product, custom models, strong brand",
+        "mitigation": "Open-source vs proprietary, local-first vs cloud-dependent, transparent cost vs subscription"
+      },
+      {
+        "tool": "Continue.dev",
+        "reason": "Growing CLI capabilities, cloud agents, good momentum (30k stars)",
+        "mitigation": "Focus on local-first, cost tracking, and workflow orchestration depth"
+      }
+    ],
+    "low_threat": [
+      "Mentat (archived CLI, pivoted to GitHub bot)",
+      "GPT-Engineer (limited to code generation, team focused on commercial product)",
+      "Sweep AI (specialized GitHub issue → PR workflow, pivoted to JetBrains)",
+      "SWE-agent (academic research project, narrow scope)",
+      "Bolt.new (browser-based web app builder, different market)",
+      "Smol Developer (alpha stage, limited scope)",
+      "PearAI (small community, reputation issues)",
+      "v0.dev (web app prototyping, different category)",
+      "Replit Agent (cloud-only IDE, different market)",
+      "Devika (experimental, transitioning to new product)"
+    ]
+  }
+}

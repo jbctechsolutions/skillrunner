@@ -3,25 +3,41 @@ package workflow
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"text/template"
 	"time"
 
+	mcpAdapter "github.com/jbctechsolutions/skillrunner/internal/adapters/mcp"
+	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/confidence"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/mcp"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
 )
 
+// maxToolIterations caps the number of tool-calling turns per phase to avoid infinite loops.
+const maxToolIterations = 10
+
 // phaseExecutor handles the execution of a single phase.
 type phaseExecutor struct {
-	provider      ports.ProviderPort
-	memoryContent string
+	provider                 ports.ProviderPort
+	memoryContent            string
+	mcpRegistry              ports.MCPToolRegistryPort // nil when tool calling is disabled
+	allowedTools             []string                  // skill-declared tool allowlist; empty = none
+	compressor               *compression.Compressor   // nil means no compression
+	modelHints               map[string]string         // v1.3: profile→model overrides; nil = use defaults
+	confidenceThresholds     map[string]float64        // v1.4: profile→confidence threshold
+	skipConfidenceEscalation bool                      // v1.4: disable auto-escalation
+	skipPostCompletionReview bool                      // v1.4: disable post-completion review
 }
 
-// newPhaseExecutor creates a new phase executor with the given provider and memory content.
-func newPhaseExecutor(provider ports.ProviderPort, memoryContent string) *phaseExecutor {
+// newPhaseExecutor creates a new phase executor with the given provider, memory content, and optional MCP registry.
+func newPhaseExecutor(provider ports.ProviderPort, memoryContent string, mcpRegistry ports.MCPToolRegistryPort) *phaseExecutor {
 	return &phaseExecutor{
 		provider:      provider,
 		memoryContent: memoryContent,
+		mcpRegistry:   mcpRegistry,
 	}
 }
 
@@ -45,34 +61,237 @@ func (e *phaseExecutor) Execute(ctx context.Context, phase *skill.Phase, depende
 		return result
 	}
 
-	// Build the completion request
-	req := ports.CompletionRequest{
-		ModelID:     e.selectModel(phase.RoutingProfile),
-		Messages:    e.buildMessages(prompt, dependencyOutputs),
-		MaxTokens:   phase.MaxTokens,
-		Temperature: phase.Temperature,
+	// Apply context compression if enabled
+	if e.compressor != nil {
+		cr := e.compressor.Compress(prompt)
+		prompt = cr.Compressed
+		result.CompressionRatio = cr.Ratio
 	}
 
-	// Call the provider
-	resp, err := e.provider.Complete(ctx, req)
-	if err != nil {
-		result.Status = PhaseStatusFailed
-		result.Error = err
-		result.EndTime = time.Now()
-		result.Duration = result.EndTime.Sub(result.StartTime)
-		return result
+	// Fetch MCP tools if this phase allows tool calling, filtered to the skill's declared allowlist.
+	var tools []ports.Tool
+	if phase.AllowTools && e.mcpRegistry != nil && len(e.allowedTools) > 0 {
+		mcpTools, err := e.mcpRegistry.GetAllTools(ctx)
+		if err == nil && len(mcpTools) > 0 {
+			mcpTools = e.filterAllowedTools(mcpTools)
+			if len(mcpTools) > 0 {
+				tools = mcpAdapter.ToProviderTools(mcpTools, false)
+			}
+		}
+	}
+
+	// Build initial messages
+	messages := e.buildMessages(prompt, dependencyOutputs)
+
+	// Build the completion request
+	req := ports.CompletionRequest{
+		ModelID:     e.selectModel(ctx, phase.RoutingProfile),
+		Messages:    messages,
+		MaxTokens:   phase.MaxTokens,
+		Temperature: phase.Temperature,
+		Tools:       tools,
+	}
+
+	// Execute with tool calling loop
+	var totalInput, totalOutput int
+	var finalContent string
+	var modelUsed string
+
+	for i := 0; i < maxToolIterations; i++ {
+		resp, err := e.provider.Complete(ctx, req)
+		if err != nil {
+			result.Status = PhaseStatusFailed
+			result.Error = err
+			result.EndTime = time.Now()
+			result.Duration = result.EndTime.Sub(result.StartTime)
+			return result
+		}
+
+		totalInput += resp.InputTokens
+		totalOutput += resp.OutputTokens
+		if modelUsed == "" {
+			modelUsed = resp.ModelUsed
+		}
+
+		// If the model didn't call any tools, we're done
+		if resp.FinishReason != ports.FinishReasonToolUse || len(resp.ToolCalls) == 0 {
+			finalContent = resp.Content
+			break
+		}
+
+		// Append the assistant's tool_use message to conversation
+		req.Messages = append(req.Messages, ports.Message{
+			Role:      "assistant",
+			Content:   resp.Content,
+			ToolCalls: resp.ToolCalls,
+		})
+
+		// Execute each tool and collect results
+		toolResults := make([]ports.ToolResult, 0, len(resp.ToolCalls))
+		for _, tc := range resp.ToolCalls {
+			toolResult := e.executeToolCall(ctx, tc)
+			toolResults = append(toolResults, toolResult)
+		}
+
+		// Append the tool results as a user message
+		req.Messages = append(req.Messages, ports.Message{
+			Role:        "user",
+			ToolResults: toolResults,
+		})
+
+		// If this is the last iteration and the model is still calling tools,
+		// fail the phase to avoid silently succeeding with incomplete output.
+		if i == maxToolIterations-1 {
+			result.Status = PhaseStatusFailed
+			result.Error = fmt.Errorf("max tool iterations (%d) exceeded without producing final content", maxToolIterations)
+			result.EndTime = time.Now()
+			result.Duration = result.EndTime.Sub(result.StartTime)
+			return result
+		}
+	}
+
+	// v1.4: Confidence check — escalate to next-tier model if below threshold
+	if !e.skipConfidenceEscalation && finalContent != "" {
+		threshold := e.confidenceThresholdFor(phase.RoutingProfile)
+		score := confidence.Detect(finalContent)
+		if confidence.NeedsEscalation(score, phase.RoutingProfile, threshold) {
+			escalatedProfile := confidence.EscalateProfile(phase.RoutingProfile)
+			if escalatedProfile != phase.RoutingProfile {
+				// Build escalated request with the higher-tier model
+				escalatedReq := req
+				escalatedReq.ModelID = e.selectModel(ctx, escalatedProfile)
+				if resp, err := e.provider.Complete(ctx, escalatedReq); err == nil {
+					finalContent = resp.Content
+					totalInput += resp.InputTokens
+					totalOutput += resp.OutputTokens
+					if resp.ModelUsed != "" {
+						modelUsed = resp.ModelUsed
+					}
+				}
+			}
+		}
+	}
+
+	// v1.4: Post-completion review — run a quality check and retry on rejection (max 2 retries).
+	if phase.PostCompletionReview && finalContent != "" && !e.skipPostCompletionReview {
+		finalContent, totalInput, totalOutput = e.runPostCompletionReview(
+			ctx, req, finalContent, totalInput, totalOutput,
+		)
 	}
 
 	// Populate the result
 	result.Status = PhaseStatusCompleted
-	result.Output = resp.Content
-	result.InputTokens = resp.InputTokens
-	result.OutputTokens = resp.OutputTokens
-	result.ModelUsed = resp.ModelUsed
+	result.Output = finalContent
+	result.InputTokens = totalInput
+	result.OutputTokens = totalOutput
+	result.ModelUsed = modelUsed
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(result.StartTime)
 
 	return result
+}
+
+// runPostCompletionReview asks the model to review its own output and retries if it is rejected.
+// It returns the (possibly revised) content and updated token totals.
+func (e *phaseExecutor) runPostCompletionReview(
+	ctx context.Context,
+	req ports.CompletionRequest,
+	content string,
+	totalInput, totalOutput int,
+) (string, int, int) {
+	const maxRetries = 2
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Build a review request: append the generated content and ask for feedback
+		reviewReq := req
+		reviewReq.Messages = append(reviewReq.Messages,
+			ports.Message{Role: "assistant", Content: content},
+			ports.Message{
+				Role: "user",
+				Content: "Review the response above. " +
+					"If it is correct and complete, reply with exactly: APPROVED\n" +
+					"If it has errors or is incomplete, reply with: REJECTED\n" +
+					"followed by a corrected version.",
+			},
+		)
+
+		resp, err := e.provider.Complete(ctx, reviewReq)
+		if err != nil {
+			return content, totalInput, totalOutput // keep current on error
+		}
+		totalInput += resp.InputTokens
+		totalOutput += resp.OutputTokens
+
+		reviewText := strings.TrimSpace(resp.Content)
+		if strings.HasPrefix(reviewText, "APPROVED") {
+			return content, totalInput, totalOutput
+		}
+
+		// Extract corrected content after the REJECTED line
+		if strings.HasPrefix(reviewText, "REJECTED") {
+			corrected := strings.TrimSpace(strings.TrimPrefix(reviewText, "REJECTED"))
+			if corrected != "" {
+				content = corrected
+			}
+			// Loop again to re-review the corrected version
+		}
+	}
+
+	return content, totalInput, totalOutput
+}
+
+// confidenceThresholdFor returns the configured or default confidence threshold for a profile.
+func (e *phaseExecutor) confidenceThresholdFor(profile string) float64 {
+	if e.confidenceThresholds != nil {
+		if t, ok := e.confidenceThresholds[profile]; ok && t > 0 {
+			return t
+		}
+	}
+	return confidence.ThresholdForProfile(profile)
+}
+
+// executeToolCall executes a single tool call via the MCP registry and returns the result.
+func (e *phaseExecutor) executeToolCall(ctx context.Context, tc ports.ToolCall) ports.ToolResult {
+	if e.mcpRegistry == nil {
+		return ports.ToolResult{
+			ToolCallID: tc.ID,
+			Content:    "error: MCP registry not available",
+			IsError:    true,
+		}
+	}
+
+	callResult, err := e.mcpRegistry.CallToolByFullName(ctx, tc.Name, tc.Arguments)
+	if err != nil {
+		return ports.ToolResult{
+			ToolCallID: tc.ID,
+			Content:    fmt.Sprintf("error: %v", err),
+			IsError:    true,
+		}
+	}
+
+	return ports.ToolResult{
+		ToolCallID: tc.ID,
+		Content:    callResult.TextContent(),
+		IsError:    callResult.IsError,
+	}
+}
+
+// filterAllowedTools returns only the tools whose FullName matches the executor's allowedTools list.
+func (e *phaseExecutor) filterAllowedTools(tools []*mcp.Tool) []*mcp.Tool {
+	if len(e.allowedTools) == 0 {
+		return nil
+	}
+	allowed := make(map[string]struct{}, len(e.allowedTools))
+	for _, name := range e.allowedTools {
+		allowed[name] = struct{}{}
+	}
+	var filtered []*mcp.Tool
+	for _, t := range tools {
+		if _, ok := allowed[t.FullName()]; ok {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered
 }
 
 // buildPrompt renders the phase's prompt template with the dependency outputs.
@@ -167,8 +386,26 @@ func (e *phaseExecutor) buildMessages(prompt string, dependencyOutputs map[strin
 }
 
 // selectModel returns a model ID based on the routing profile.
-// Maps routing profiles to actual Ollama model names.
-func (e *phaseExecutor) selectModel(routingProfile string) string {
+// If model hints are configured for this executor, the hinted model is used with
+// automatic fallback to the default if the hint is not available.
+func (e *phaseExecutor) selectModel(ctx context.Context, routingProfile string) string {
+	defaultModel := e.defaultModel(routingProfile)
+
+	// Check skill-level hint for this profile
+	if len(e.modelHints) > 0 {
+		if hinted, ok := e.modelHints[routingProfile]; ok && hinted != "" {
+			// Verify the hinted model is actually available; fall back if not.
+			if ok, err := e.provider.SupportsModel(ctx, hinted); err == nil && ok {
+				return hinted
+			}
+		}
+	}
+
+	return defaultModel
+}
+
+// defaultModel returns the default model for a routing profile.
+func (e *phaseExecutor) defaultModel(routingProfile string) string {
 	switch routingProfile {
 	case skill.RoutingProfileCheap:
 		return "llama3.2:3b"

@@ -17,6 +17,9 @@ type Config struct {
 	Cache         CacheConfig         `yaml:"cache"`
 	Observability ObservabilityConfig `yaml:"observability"`
 	Memory        MemoryConfig        `yaml:"memory"`
+	Budget        BudgetConfig        `yaml:"budget"`
+	Context       ContextConfig       `yaml:"context"`
+	Session       SessionConfig       `yaml:"session"`
 }
 
 // ProviderConfigs holds configuration for all supported LLM providers.
@@ -44,8 +47,10 @@ type CloudConfig struct {
 
 // RoutingConfig holds configuration for model routing.
 type RoutingConfig struct {
-	DefaultProfile string                           `yaml:"default_profile"`
-	Profiles       map[string]*ProfileConfiguration `yaml:"profiles,omitempty"`
+	DefaultProfile      string                           `yaml:"default_profile"`
+	Profiles            map[string]*ProfileConfiguration `yaml:"profiles,omitempty"`
+	SkillModelHints     map[string]map[string]string     `yaml:"skill_model_hints,omitempty"`    // v1.3: per-skill model overrides
+	ConfidenceThreshold map[string]float64               `yaml:"confidence_threshold,omitempty"` // v1.4: per-profile escalation threshold
 }
 
 // LoggingConfig holds configuration for application logging.
@@ -104,6 +109,24 @@ type TracingConfig struct {
 type MemoryConfig struct {
 	Enabled   bool `yaml:"enabled"`    // Whether memory injection is enabled (default: true)
 	MaxTokens int  `yaml:"max_tokens"` // Maximum tokens for memory content (default: 2000)
+}
+
+// BudgetConfig holds configuration for cost budget enforcement.
+// ContextConfig holds context pre-processing configuration.
+type ContextConfig struct {
+	// CompressionEnabled enables context compression before provider calls.
+	CompressionEnabled bool `yaml:"compression_enabled"`
+}
+
+type BudgetConfig struct {
+	DailyLimit   float64 `yaml:"daily_limit"`   // Max USD per day (0 = disabled)
+	MonthlyLimit float64 `yaml:"monthly_limit"` // Max USD per month (0 = disabled)
+}
+
+// SessionConfig holds session continuity configuration.
+type SessionConfig struct {
+	// ResumeTTL is the maximum age of a checkpoint that can be resumed (default: 24h).
+	ResumeTTL time.Duration `yaml:"resume_ttl"`
 }
 
 // Default configuration values.

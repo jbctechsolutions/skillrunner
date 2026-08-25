@@ -234,24 +234,24 @@ func runAsk(cmd *cobra.Command, args []string) error {
 
 	// Text output for terminal (skip if streaming already printed)
 	if !askOpts.Stream {
-		formatter.Header("Ask")
-		formatter.Item("Skill", s.Name())
-		formatter.Item("Phase", phase.Name)
-		formatter.Item("Profile", askOpts.Profile)
-		formatter.Item("Model", response.ModelUsed)
-		formatter.Item("Provider", provider.Info().Name)
+		_ = formatter.Header("Ask")
+		_ = formatter.Item("Skill", s.Name())
+		_ = formatter.Item("Phase", phase.Name)
+		_ = formatter.Item("Profile", askOpts.Profile)
+		_ = formatter.Item("Model", response.ModelUsed)
+		_ = formatter.Item("Provider", provider.Info().Name)
 		if modelSelection.IsFallback {
-			formatter.Warning("Using fallback model")
+			_ = formatter.Warning("Using fallback model")
 		}
-		formatter.Println("")
-		formatter.Success("Answer:")
-		formatter.Println(response.Content)
-		formatter.Println("")
-		formatter.Item("Tokens", fmt.Sprintf("in=%d out=%d", response.InputTokens, response.OutputTokens))
+		_ = formatter.Println("")
+		_ = formatter.Success("Answer:")
+		_ = formatter.Println(response.Content)
+		_ = formatter.Println("")
+		_ = formatter.Item("Tokens", fmt.Sprintf("in=%d out=%d", response.InputTokens, response.OutputTokens))
 	} else {
 		// For streaming, just show summary at the end
-		formatter.Println("")
-		formatter.Item("Tokens", fmt.Sprintf("in=%d out=%d", response.InputTokens, response.OutputTokens))
+		_ = formatter.Println("")
+		_ = formatter.Item("Tokens", fmt.Sprintf("in=%d out=%d", response.InputTokens, response.OutputTokens))
 	}
 
 	return nil
@@ -322,8 +322,8 @@ func buildMessagesForAsk(prompt, question string) []ports.Message {
 
 // executeWithStreaming executes the request with streaming output.
 func executeWithStreaming(ctx context.Context, provider ports.ProviderPort, req ports.CompletionRequest, formatter *output.Formatter) (*ports.CompletionResponse, error) {
-	formatter.Header("Ask (Streaming)")
-	formatter.Success("Answer:")
+	_ = formatter.Header("Ask (Streaming)")
+	_ = formatter.Success("Answer:")
 
 	// Create streaming callback
 	callback := func(chunk string) error {

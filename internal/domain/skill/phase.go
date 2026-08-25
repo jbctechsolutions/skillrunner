@@ -35,13 +35,15 @@ var (
 // It is a value object that defines how a particular phase should be executed,
 // including its prompt template, routing preferences, and dependencies.
 type Phase struct {
-	ID             string
-	Name           string
-	PromptTemplate string
-	RoutingProfile string   // cheap, balanced, premium
-	DependsOn      []string // phase IDs this depends on
-	MaxTokens      int
-	Temperature    float32
+	ID                   string
+	Name                 string
+	PromptTemplate       string
+	RoutingProfile       string   // cheap, balanced, premium
+	DependsOn            []string // phase IDs this depends on
+	MaxTokens            int
+	Temperature          float32
+	AllowTools           bool // whether this phase may invoke MCP tools
+	PostCompletionReview bool // v1.4: run a review step after completion; retry on rejection
 }
 
 // NewPhase creates a new Phase with the required fields and default values for optional fields.
@@ -101,6 +103,18 @@ func (p *Phase) WithMaxTokens(max int) *Phase {
 // WithTemperature sets the temperature for LLM inference.
 func (p *Phase) WithTemperature(temp float32) *Phase {
 	p.Temperature = temp
+	return p
+}
+
+// WithAllowTools enables or disables MCP tool invocation for this phase.
+func (p *Phase) WithAllowTools(allow bool) *Phase {
+	p.AllowTools = allow
+	return p
+}
+
+// WithPostCompletionReview enables the post-completion review quality gate for this phase.
+func (p *Phase) WithPostCompletionReview(enabled bool) *Phase {
+	p.PostCompletionReview = enabled
 	return p
 }
 

@@ -28,7 +28,7 @@ type CachingConfig struct {
 // NewCachingPhaseExecutor creates a new caching phase executor.
 func NewCachingPhaseExecutor(provider ports.ProviderPort, cache ports.ResponseCachePort, cfg CachingConfig, memoryContent string) *CachingPhaseExecutor {
 	return &CachingPhaseExecutor{
-		delegate:   newPhaseExecutor(provider, memoryContent),
+		delegate:   newPhaseExecutor(provider, memoryContent, nil),
 		cache:      cache,
 		enabled:    cfg.Enabled,
 		defaultTTL: cfg.DefaultTTL,
@@ -60,7 +60,7 @@ func (e *CachingPhaseExecutor) Execute(ctx context.Context, phase *skill.Phase, 
 
 	// Build the completion request
 	req := ports.CompletionRequest{
-		ModelID:     e.delegate.selectModel(phase.RoutingProfile),
+		ModelID:     e.delegate.selectModel(ctx, phase.RoutingProfile),
 		Messages:    e.delegate.buildMessages(prompt, dependencyOutputs),
 		MaxTokens:   phase.MaxTokens,
 		Temperature: phase.Temperature,
@@ -145,7 +145,7 @@ type CachingStreamingPhaseExecutor struct {
 // NewCachingStreamingPhaseExecutor creates a new caching streaming phase executor.
 func NewCachingStreamingPhaseExecutor(provider ports.ProviderPort, cache ports.ResponseCachePort, cfg CachingConfig, memoryContent string) *CachingStreamingPhaseExecutor {
 	return &CachingStreamingPhaseExecutor{
-		delegate:   newStreamingPhaseExecutor(provider, memoryContent),
+		delegate:   newStreamingPhaseExecutor(provider, memoryContent, nil),
 		cache:      cache,
 		enabled:    cfg.Enabled,
 		defaultTTL: cfg.DefaultTTL,
@@ -182,7 +182,7 @@ func (e *CachingStreamingPhaseExecutor) ExecuteWithStreaming(
 
 	// Build the completion request
 	req := ports.CompletionRequest{
-		ModelID:     e.delegate.selectModel(phase.RoutingProfile),
+		ModelID:     e.delegate.selectModel(ctx, phase.RoutingProfile),
 		Messages:    e.delegate.buildMessages(prompt, dependencyOutputs),
 		MaxTokens:   phase.MaxTokens,
 		Temperature: phase.Temperature,

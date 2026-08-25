@@ -181,7 +181,7 @@ func (b *Backend) InjectFile(ctx context.Context, sessionID, path string) error 
 	}
 
 	// Read file content and inject
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(path) // #nosec G304 -- trusted config path from backend configuration
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
@@ -245,14 +245,14 @@ func (b *Backend) SupportsModelControl() bool {
 // ensureHooks ensures hooks are installed in ~/.claude/hooks/.
 func (b *Backend) ensureHooks(config session.BackendConfig) error {
 	// Create hooks directory if it doesn't exist
-	if err := os.MkdirAll(b.hooksDir, 0755); err != nil {
+	if err := os.MkdirAll(b.hooksDir, 0750); err != nil {
 		return fmt.Errorf("failed to create hooks directory: %w", err)
 	}
 
 	// Install SessionStart.sh if specified
 	if config.ClaudeSessionHook != "" {
 		hookPath := filepath.Join(b.hooksDir, "SessionStart.sh")
-		if err := os.WriteFile(hookPath, []byte(config.ClaudeSessionHook), 0755); err != nil {
+		if err := os.WriteFile(hookPath, []byte(config.ClaudeSessionHook), 0600); err != nil {
 			return fmt.Errorf("failed to write SessionStart hook: %w", err)
 		}
 	}
@@ -260,7 +260,7 @@ func (b *Backend) ensureHooks(config session.BackendConfig) error {
 	// Install PreCompact.sh if specified
 	if config.ClaudePreCompact != "" {
 		hookPath := filepath.Join(b.hooksDir, "PreCompact.sh")
-		if err := os.WriteFile(hookPath, []byte(config.ClaudePreCompact), 0755); err != nil {
+		if err := os.WriteFile(hookPath, []byte(config.ClaudePreCompact), 0600); err != nil {
 			return fmt.Errorf("failed to write PreCompact hook: %w", err)
 		}
 	}
@@ -271,14 +271,14 @@ func (b *Backend) ensureHooks(config session.BackendConfig) error {
 // syncRules syncs CLAUDE.md rules to the workspace.
 func (b *Backend) syncRules(workspace, rulesFile string) error {
 	// Read rules file
-	content, err := os.ReadFile(rulesFile)
+	content, err := os.ReadFile(rulesFile) // #nosec G304 -- trusted config path from backend configuration
 	if err != nil {
 		return fmt.Errorf("failed to read rules file: %w", err)
 	}
 
 	// Write to workspace CLAUDE.md
 	claudeMD := filepath.Join(workspace, "CLAUDE.md")
-	if err := os.WriteFile(claudeMD, content, 0644); err != nil {
+	if err := os.WriteFile(claudeMD, content, 0600); err != nil {
 		return fmt.Errorf("failed to write CLAUDE.md: %w", err)
 	}
 

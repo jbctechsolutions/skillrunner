@@ -40,6 +40,9 @@ func applyMigrations(db *sql.DB) error {
 		// Crash Recovery: Workflow checkpoints
 		{14, "create_workflow_checkpoints_table", createWorkflowCheckpointsTable},
 		{15, "create_workflow_checkpoint_indices", createWorkflowCheckpointIndices},
+		// v1.4: Outcome tracking
+		{16, "create_outcomes_table", createOutcomesTable},
+		{17, "create_outcomes_indices", createOutcomesIndices},
 	}
 
 	for _, m := range migrations {
@@ -342,4 +345,28 @@ CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_status ON workflow_checkpoints(stat
 CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_machine ON workflow_checkpoints(machine_id);
 CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_updated ON workflow_checkpoints(updated_at);
 CREATE INDEX IF NOT EXISTS idx_wf_checkpoint_created ON workflow_checkpoints(created_at);
+`
+
+// v1.4: Outcome tracking table
+const createOutcomesTable = `
+CREATE TABLE outcomes (
+	id TEXT PRIMARY KEY,
+	skill_id TEXT NOT NULL,
+	skill_name TEXT NOT NULL,
+	phase_id TEXT NOT NULL,
+	phase_name TEXT NOT NULL,
+	profile TEXT NOT NULL,
+	model TEXT NOT NULL,
+	success BOOLEAN NOT NULL DEFAULT 1,
+	quality_score REAL DEFAULT 0,
+	retry_count INTEGER DEFAULT 0,
+	duration_ms INTEGER DEFAULT 0,
+	recorded_at TIMESTAMP NOT NULL
+);
+`
+
+const createOutcomesIndices = `
+CREATE INDEX IF NOT EXISTS idx_outcomes_skill ON outcomes(skill_id);
+CREATE INDEX IF NOT EXISTS idx_outcomes_skill_profile ON outcomes(skill_id, profile);
+CREATE INDEX IF NOT EXISTS idx_outcomes_recorded ON outcomes(recorded_at);
 `

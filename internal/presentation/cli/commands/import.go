@@ -106,20 +106,20 @@ func runImport(cmd *cobra.Command, args []string) error {
 
 	// Text output
 	if result.Success {
-		formatter.Success("Skill imported successfully")
-		formatter.Item("Source", result.Source)
-		formatter.Item("Type", result.SourceType)
-		formatter.Item("Skill Name", result.SkillName)
-		formatter.Item("Destination", result.Destination)
+		_ = formatter.Success("Skill imported successfully")
+		_ = formatter.Item("Source", result.Source)
+		_ = formatter.Item("Type", result.SourceType)
+		_ = formatter.Item("Skill Name", result.SkillName)
+		_ = formatter.Item("Destination", result.Destination)
 		if len(result.Skills) > 0 {
-			formatter.Println("")
-			formatter.Info("Imported %d skill(s):", len(result.Skills))
+			_ = formatter.Println("")
+			_ = formatter.Info("Imported %d skill(s):", len(result.Skills))
 			for _, s := range result.Skills {
-				formatter.BulletItem(s)
+				_ = formatter.BulletItem(s)
 			}
 		}
 	} else {
-		formatter.Error("Import failed: %s", result.Message)
+		_ = formatter.Error("Import failed: %s", result.Message)
 	}
 
 	return nil
@@ -163,7 +163,7 @@ func ensureSkillsDir() (string, error) {
 		return "", err
 	}
 
-	if err := os.MkdirAll(skillsDir, 0755); err != nil {
+	if err := os.MkdirAll(skillsDir, 0750); err != nil {
 		return "", fmt.Errorf("could not create skills directory: %w", err)
 	}
 
@@ -210,7 +210,7 @@ func importFromURL(source string) (ImportResult, error) {
 	}
 
 	// Download the file
-	resp, err := http.Get(source)
+	resp, err := http.Get(source) // #nosec G107 -- URL is intentionally user-provided for skill import
 	if err != nil {
 		result.Message = fmt.Sprintf("failed to download: %v", err)
 		return result, fmt.Errorf("failed to download skill: %w", err)
@@ -230,7 +230,7 @@ func importFromURL(source string) (ImportResult, error) {
 	}
 
 	// Write to file
-	if err := os.WriteFile(destPath, content, 0644); err != nil {
+	if err := os.WriteFile(destPath, content, 0600); err != nil {
 		result.Message = fmt.Sprintf("failed to write file: %v", err)
 		return result, fmt.Errorf("failed to write skill file: %w", err)
 	}
@@ -268,7 +268,7 @@ func importFromGit(source string) (ImportResult, error) {
 	defer os.RemoveAll(tempDir)
 
 	// Clone the repository
-	cmd := exec.Command("git", "clone", "--depth", "1", source, tempDir)
+	cmd := exec.Command("git", "clone", "--depth", "1", source, tempDir) // #nosec G204 -- git binary with user-provided repo URL for skill import
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Run(); err != nil {
@@ -324,12 +324,12 @@ func importFromGit(source string) (ImportResult, error) {
 		}
 
 		// Read and copy
-		content, err := os.ReadFile(skillFile)
+		content, err := os.ReadFile(skillFile) // #nosec G304 -- reading skill files from cloned git repository
 		if err != nil {
 			continue
 		}
 
-		if err := os.WriteFile(destPath, content, 0644); err != nil {
+		if err := os.WriteFile(destPath, content, 0600); err != nil {
 			continue
 		}
 
@@ -408,14 +408,14 @@ func importFromLocalFile(source, destDir string, result ImportResult) (ImportRes
 	}
 
 	// Read source file
-	content, err := os.ReadFile(source)
+	content, err := os.ReadFile(source) // #nosec G304 -- user-provided local path for skill import
 	if err != nil {
 		result.Message = fmt.Sprintf("failed to read source file: %v", err)
 		return result, fmt.Errorf("failed to read source file: %w", err)
 	}
 
 	// Write to destination
-	if err := os.WriteFile(destPath, content, 0644); err != nil {
+	if err := os.WriteFile(destPath, content, 0600); err != nil {
 		result.Message = fmt.Sprintf("failed to write skill file: %v", err)
 		return result, fmt.Errorf("failed to write skill file: %w", err)
 	}
@@ -465,12 +465,12 @@ func importFromLocalDir(source, destDir string, result ImportResult) (ImportResu
 		}
 
 		// Read and copy
-		content, err := os.ReadFile(skillFile)
+		content, err := os.ReadFile(skillFile) // #nosec G304 -- user-provided local path for skill import
 		if err != nil {
 			continue
 		}
 
-		if err := os.WriteFile(destPath, content, 0644); err != nil {
+		if err := os.WriteFile(destPath, content, 0600); err != nil {
 			continue
 		}
 

@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jbctechsolutions/skillrunner/internal/application/compression"
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/errors"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
@@ -73,10 +74,17 @@ func NewStreamingExecutor(provider ports.ProviderPort, config ExecutorConfig) St
 		config.Timeout = DefaultExecutorConfig().Timeout
 	}
 
+	spe := newStreamingPhaseExecutor(provider, config.MemoryContent, config.MCPRegistry)
+	if config.CompressionEnabled {
+		spe.compressor = compression.NewFromProfile(config.RoutingProfile)
+	}
+	spe.modelHints = config.ModelHints
+	spe.allowedTools = config.AllowedTools
+
 	return &streamingExecutor{
 		provider:               provider,
 		config:                 config,
-		streamingPhaseExecutor: newStreamingPhaseExecutor(provider, config.MemoryContent),
+		streamingPhaseExecutor: spe,
 	}
 }
 

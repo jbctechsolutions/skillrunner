@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "startup-competitors": {
+      "source": "ferdinandobons/startup-skill",
+      "sourceType": "github",
+      "computedHash": "04f4a4d97efd4a1b579a31b727308306bd09c37e6ee7c6b58e89ca0d96ef9889"
+    },
+    "startup-design": {
+      "source": "ferdinandobons/startup-skill",
+      "sourceType": "github",
+      "computedHash": "3677657527156f75bb3ecb21e6bcc490b27f2d7906a28ca1c3fe71dcd4c0afc1"
+    }
+  }
+}

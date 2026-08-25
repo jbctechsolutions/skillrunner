@@ -30,8 +30,8 @@ func TestApplyMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("QueryRow() error = %v", err)
 	}
-	if count != 15 {
-		t.Errorf("migrations count = %d, want 15", count)
+	if count != 17 {
+		t.Errorf("migrations count = %d, want 17", count)
 	}
 }
 
@@ -47,14 +47,14 @@ func TestApplyMigrations_Idempotent(t *testing.T) {
 		t.Fatalf("second applyMigrations() error = %v", err)
 	}
 
-	// Verify migrations count is still 15 (not duplicated)
+	// Verify migrations count is still 17 (not duplicated)
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM migrations").Scan(&count)
 	if err != nil {
 		t.Fatalf("QueryRow() error = %v", err)
 	}
-	if count != 15 {
-		t.Errorf("migrations count = %d after idempotent run, want 15", count)
+	if count != 17 {
+		t.Errorf("migrations count = %d after idempotent run, want 17", count)
 	}
 }
 

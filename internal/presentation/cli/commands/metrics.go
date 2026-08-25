@@ -96,11 +96,11 @@ func runMetrics(since string) error {
 	usageMetrics, err := getRealMetrics(duration)
 	if err != nil {
 		// Fall back to mock data if metrics unavailable
-		formatter.Println("%s Could not retrieve metrics: %v",
+		_ = formatter.Println("%s Could not retrieve metrics: %v",
 			formatter.Colorize("Warning:", output.ColorYellow), err)
-		formatter.Println("%s Showing mock data for demonstration purposes",
+		_ = formatter.Println("%s Showing mock data for demonstration purposes",
 			formatter.Colorize("Info:", output.ColorBlue))
-		formatter.Println("")
+		_ = formatter.Println("")
 		usageMetrics = getMockMetrics(duration)
 	}
 
@@ -327,19 +327,19 @@ func getMockMetrics(duration time.Duration) UsageMetrics {
 // printMetricsText prints the metrics in human-readable format.
 func printMetricsText(formatter *output.Formatter, metrics UsageMetrics) error {
 	// Header
-	formatter.Header("Skillrunner Metrics")
-	formatter.Println("")
+	_ = formatter.Header("Skillrunner Metrics")
+	_ = formatter.Println("")
 
 	// Time period
-	formatter.Println("  %s  %s to %s",
+	_ = formatter.Println("  %s  %s to %s",
 		formatter.Dim("Period:"),
 		formatDateTime(metrics.StartDate),
 		formatDateTime(metrics.EndDate))
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Overall summary
-	formatter.SubHeader("Summary")
-	formatter.Println("")
+	_ = formatter.SubHeader("Summary")
+	_ = formatter.Println("")
 
 	successRateColor := output.ColorGreen
 	if metrics.SuccessRate < 90 {
@@ -349,24 +349,24 @@ func printMetricsText(formatter *output.Formatter, metrics UsageMetrics) error {
 		successRateColor = output.ColorRed
 	}
 
-	formatter.Println("  %s  %d", formatter.Dim("Total Requests:"), metrics.TotalRequests)
-	formatter.Println("  %s  %s (%d successful, %d failed)",
+	_ = formatter.Println("  %s  %d", formatter.Dim("Total Requests:"), metrics.TotalRequests)
+	_ = formatter.Println("  %s  %s (%d successful, %d failed)",
 		formatter.Dim("Success Rate:"),
 		formatter.Colorize(fmt.Sprintf("%.1f%%", metrics.SuccessRate), successRateColor),
 		metrics.SuccessfulCount,
 		metrics.FailedCount)
-	formatter.Println("  %s  %s input, %s output",
+	_ = formatter.Println("  %s  %s input, %s output",
 		formatter.Dim("Total Tokens:"),
 		formatNumber(metrics.TotalTokensInput),
 		formatNumber(metrics.TotalTokensOutput))
-	formatter.Println("  %s  %s",
+	_ = formatter.Println("  %s  %s",
 		formatter.Dim("Estimated Cost:"),
 		formatter.Colorize(fmt.Sprintf("$%.2f", metrics.TotalEstimatedCost), output.ColorYellow))
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Provider breakdown
-	formatter.SubHeader("Provider Usage")
-	formatter.Println("")
+	_ = formatter.SubHeader("Provider Usage")
+	_ = formatter.Println("")
 
 	// Table for providers
 	tableData := output.TableData{
@@ -410,11 +410,11 @@ func printMetricsText(formatter *output.Formatter, metrics UsageMetrics) error {
 		return err
 	}
 
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Top skills
-	formatter.SubHeader("Top Skills")
-	formatter.Println("")
+	_ = formatter.SubHeader("Top Skills")
+	_ = formatter.Println("")
 
 	skillTableData := output.TableData{
 		Columns: []output.TableColumn{
@@ -439,7 +439,7 @@ func printMetricsText(formatter *output.Formatter, metrics UsageMetrics) error {
 		return err
 	}
 
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	return nil
 }

@@ -31,7 +31,7 @@ func (h *RulesFileHandler) Read(repoPath string) (map[string]string, error) {
 		return make(map[string]string), nil
 	}
 
-	file, err := os.Open(rulesPath)
+	file, err := os.Open(rulesPath) // #nosec G304 -- trusted workspace path derived from application config
 	if err != nil {
 		return nil, fmt.Errorf("failed to open rules file: %w", err)
 	}
@@ -89,11 +89,11 @@ func (h *RulesFileHandler) Write(repoPath string, rules map[string]string) error
 
 	// Ensure directory exists
 	dir := filepath.Dir(rulesPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("failed to create rules directory: %w", err)
 	}
 
-	file, err := os.Create(rulesPath)
+	file, err := os.Create(rulesPath) // #nosec G304 -- trusted workspace path derived from application config
 	if err != nil {
 		return fmt.Errorf("failed to create rules file: %w", err)
 	}

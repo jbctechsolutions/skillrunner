@@ -2,6 +2,7 @@ package anthropic
 
 import (
 	"context"
+	"encoding/json"
 	"slices"
 	"strings"
 	"time"
@@ -173,6 +174,48 @@ func (p *Provider) buildRequest(req ports.CompletionRequest) *MessagesRequest {
 		if msg.Role == "system" {
 			continue
 		}
+
+		// Handle assistant messages that contain tool calls
+		if msg.Role == "assistant" && len(msg.ToolCalls) > 0 {
+			var content MessageContent
+			if msg.Content != "" {
+				content = append(content, ContentBlock{Type: "text", Text: msg.Content})
+			}
+			for _, tc := range msg.ToolCalls {
+				inputJSON, _ := json.Marshal(tc.Arguments)
+				content = append(content, ContentBlock{
+					Type:  "tool_use",
+					ID:    tc.ID,
+					Name:  tc.Name,
+					Input: inputJSON,
+				})
+			}
+			messages = append(messages, Message{
+				Role:    RoleAssistant,
+				Content: content,
+			})
+			continue
+		}
+
+		// Handle user messages that contain tool results
+		if msg.Role == "user" && len(msg.ToolResults) > 0 {
+			var content MessageContent
+			for _, tr := range msg.ToolResults {
+				block := ContentBlock{
+					Type:      "tool_result",
+					ToolUseID: tr.ToolCallID,
+					Content:   tr.Content,
+				}
+				content = append(content, block)
+			}
+			messages = append(messages, Message{
+				Role:    RoleUser,
+				Content: content,
+			})
+			continue
+		}
+
+		// Standard text message
 		messages = append(messages, Message{
 			Role: MessageRole(msg.Role),
 			Content: MessageContent{
@@ -206,15 +249,42 @@ func (p *Provider) buildRequest(req ports.CompletionRequest) *MessagesRequest {
 		anthropicReq.Temperature = &temp
 	}
 
+	// Convert provider tools
+	if len(req.Tools) > 0 {
+		tools := make([]Tool, len(req.Tools))
+		for i, t := range req.Tools {
+			tools[i] = Tool{
+				Name:         t.Name,
+				Description:  t.Description,
+				InputSchema:  t.InputSchema,
+				DeferLoading: t.DeferLoading,
+			}
+		}
+		anthropicReq.Tools = tools
+	}
+
 	return anthropicReq
 }
 
 // buildResponse converts an Anthropic MessagesResponse to a ports.CompletionResponse.
 func (p *Provider) buildResponse(resp *MessagesResponse, startTime time.Time) *ports.CompletionResponse {
 	var content strings.Builder
+	var toolCalls []ports.ToolCall
+
 	for _, block := range resp.Content {
-		if block.Type == "text" {
+		switch block.Type {
+		case "text":
 			content.WriteString(block.Text)
+		case "tool_use":
+			var args map[string]any
+			if len(block.Input) > 0 {
+				_ = json.Unmarshal(block.Input, &args)
+			}
+			toolCalls = append(toolCalls, ports.ToolCall{
+				ID:        block.ID,
+				Name:      block.Name,
+				Arguments: args,
+			})
 		}
 	}
 
@@ -225,5 +295,6 @@ func (p *Provider) buildResponse(resp *MessagesResponse, startTime time.Time) *p
 		FinishReason: string(resp.StopReason),
 		ModelUsed:    resp.Model,
 		Duration:     time.Since(startTime),
+		ToolCalls:    toolCalls,
 	}
 }

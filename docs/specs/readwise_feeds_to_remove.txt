@@ -1,0 +1,30 @@
+# Readwise Reader Feeds to REMOVE
+# Generated: December 5, 2025
+#
+# Instructions: Go to https://read.readwise.io/feed and unsubscribe from these feeds
+
+## HIGH NOISE (remove - too much general content)
+1. Gizmodo (16,896 items)
+2. Lifehacker (7,750 items)
+3. Wirecutter: Reviews for the Real World (1,934 items)
+4. The Official Google Blog (1,569 items)
+5. Longreads (1,499 items)
+6. The Fieldston News (583 items)
+7. xkcd.com (333 items) - optional, keep if you enjoy it
+
+## INACTIVE >3 MONTHS (dead feeds)
+8. Signal v. Noise - last updated almost 2 years ago
+9. Multiple services (N. Virginia) Service Status - last updated over 2 years ago
+10. Feedly Blog - last updated over 2 years ago
+11. sysadvent - last updated almost 3 years ago
+12. CommitStrip - last updated almost 3 years ago
+13. Stories by Cindy Sridharan on Medium - last updated over 3 years ago
+14. Increment - last updated almost 4 years ago
+
+## LOW VALUE
+15. YC Startup Job Guide (14 items) - job listings, not content
+
+---
+
+TOTAL FEEDS TO REMOVE: 15
+ESTIMATED NOISE REDUCTION: ~30,000+ items

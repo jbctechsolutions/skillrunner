@@ -101,11 +101,11 @@ Examples:
 
 			// Display session info
 			formatter := GetFormatter()
-			formatter.Success("Session started: %s", sess.ID)
-			formatter.Info("Backend: %s", sess.Backend)
-			formatter.Info("Status: %s", sess.Status)
+			_ = formatter.Success("Session started: %s", sess.ID)
+			_ = formatter.Info("Backend: %s", sess.Backend)
+			_ = formatter.Info("Status: %s", sess.Status)
 			if bg {
-				formatter.Info("Running in background. Use 'sr session attach %s' to connect.", sess.ID)
+				_ = formatter.Info("Running in background. Use 'sr session attach %s' to connect.", sess.ID)
 			}
 
 			return nil
@@ -162,7 +162,7 @@ By default, shows only active sessions. Use --all to see all sessions.`,
 
 			if len(sessions) == 0 {
 				formatter := GetFormatter()
-				formatter.Info("No sessions found")
+				_ = formatter.Info("No sessions found")
 				return nil
 			}
 
@@ -231,7 +231,7 @@ This will connect your terminal to the session's interactive interface.`,
 
 			// Attach should block until detached, so if we get here, the session ended
 			formatter := GetFormatter()
-			formatter.Info("Detached from session %s", shortenID(sessionID))
+			_ = formatter.Info("Detached from session %s", shortenID(sessionID))
 
 			return nil
 		},
@@ -292,8 +292,8 @@ If SESSION_ID is not provided, attempts to find an active session in the current
 			}
 
 			formatter := GetFormatter()
-			formatter.Success("Detached from session %s", shortenID(sessionID))
-			formatter.Info("Session is now running in background. Use 'sr session attach %s' to reconnect.", shortenID(sessionID))
+			_ = formatter.Success("Detached from session %s", shortenID(sessionID))
+			_ = formatter.Info("Session is now running in background. Use 'sr session attach %s' to reconnect.", shortenID(sessionID))
 
 			return nil
 		},
@@ -349,7 +349,7 @@ You can inject:
 			}
 
 			formatter := GetFormatter()
-			formatter.Success("Injected %s into session %s", content.Type, shortenID(sessionID))
+			_ = formatter.Success("Injected %s into session %s", content.Type, shortenID(sessionID))
 
 			return nil
 		},
@@ -394,7 +394,7 @@ This is useful for checking on background sessions.`,
 
 			if len(output) == 0 {
 				formatter := GetFormatter()
-				formatter.Info("No output available for session %s", shortenID(sessionID))
+				_ = formatter.Info("No output available for session %s", shortenID(sessionID))
 				return nil
 			}
 
@@ -444,9 +444,9 @@ Use --force to forcefully kill the session (SIGKILL instead of graceful shutdown
 
 			formatter := GetFormatter()
 			if force {
-				formatter.Success("Session %s forcefully terminated", shortenID(sessionID))
+				_ = formatter.Success("Session %s forcefully terminated", shortenID(sessionID))
 			} else {
-				formatter.Success("Session %s terminated", shortenID(sessionID))
+				_ = formatter.Success("Session %s terminated", shortenID(sessionID))
 			}
 
 			return nil

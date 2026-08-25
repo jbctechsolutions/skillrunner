@@ -42,7 +42,7 @@ func NewManager(storage ports.WorkspaceStateStoragePort, machineID, baseDir stri
 		baseDir = filepath.Join(homeDir, ".skillrunner", "workspaces")
 	}
 
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
+	if err := os.MkdirAll(baseDir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create base directory: %w", err)
 	}
 
@@ -106,7 +106,7 @@ func (m *Manager) Create(ctx context.Context, opts workspace.CreateOptions) (*wo
 // createDirectory creates a simple directory workspace.
 func (m *Manager) createDirectory(ctx context.Context, id, name, path, description string) (*workspace.Workspace, error) {
 	// Create directory
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(path, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create workspace directory: %w", err)
 	}
 

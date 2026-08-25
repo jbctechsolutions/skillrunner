@@ -53,7 +53,7 @@ func (e *Estimator) Estimate(text string) int {
 // EstimateFromFile reads a file and estimates its token count.
 // Returns an error if the file cannot be read.
 func (e *Estimator) EstimateFromFile(path string) (int, error) {
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(path) // #nosec G304 -- trusted file path from application context
 	if err != nil {
 		return 0, err
 	}

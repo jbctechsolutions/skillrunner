@@ -77,6 +77,9 @@ type Container struct {
 	costCalculator       *provider.CostCalculator
 	observabilityService *observability.Service
 
+	// v1.4: Outcome tracking
+	outcomeRepo ports.OutcomeStoragePort
+
 	// Machine ID for session tracking
 	machineID string
 }
@@ -368,6 +371,11 @@ func (c *Container) initObservability() error {
 		c.metricsRepo = storage.NewMetricsRepository(c.db)
 	}
 
+	// v1.4: Outcome repository (always enabled when DB is available)
+	if c.db != nil {
+		c.outcomeRepo = storage.NewOutcomeRepository(c.db)
+	}
+
 	// Initialize cost calculator with default model pricing
 	c.costCalculator = provider.NewCostCalculator()
 	provider.PopulateCostCalculator(c.costCalculator)
@@ -575,6 +583,12 @@ func (c *Container) Tracer() *tracing.Tracer {
 // Returns nil if metrics are not enabled.
 func (c *Container) MetricsRepository() ports.MetricsStoragePort {
 	return c.metricsRepo
+}
+
+// OutcomeRepository returns the outcome storage repository.
+// Returns nil if the database is not available.
+func (c *Container) OutcomeRepository() ports.OutcomeStoragePort {
+	return c.outcomeRepo
 }
 
 // CostCalculator returns the cost calculator for provider pricing.

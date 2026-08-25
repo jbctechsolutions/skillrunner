@@ -213,7 +213,7 @@ func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, bo
 
 		// Retry on rate limit (429) or server errors (5xx)
 		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
 			continue
 		}

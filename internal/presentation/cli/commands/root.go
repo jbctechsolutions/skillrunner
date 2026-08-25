@@ -97,6 +97,17 @@ Key features:
 	// Wave 10: Cache management
 	rootCmd.AddCommand(NewCacheCmd())
 
+	// v1.2: MCP server management
+	rootCmd.AddCommand(NewMCPCmd())
+
+	// v1.3: Budget alerts and status
+	rootCmd.AddCommand(NewBudgetCmd())
+	rootCmd.AddCommand(NewModelsCmd())    // v1.3: Model recommendations
+	rootCmd.AddCommand(NewCostCmd())      // v1.3: Cost analytics
+	rootCmd.AddCommand(NewOutcomesCmd())  // v1.4: Outcome tracking
+	rootCmd.AddCommand(NewWorktreesCmd()) // v1.4: Worktree management
+	rootCmd.AddCommand(NewResumeCmd())    // v1.4: Session continuity
+
 	return rootCmd
 }
 
@@ -118,7 +129,7 @@ func initializeApp() error {
 	cfg, err := loadConfig(globalFlags.ConfigFile)
 	if err != nil {
 		if globalFlags.Verbose {
-			formatter.Warning("Could not load config: %v, using defaults", err)
+			_ = formatter.Warning("Could not load config: %v, using defaults", err)
 		}
 		cfg = config.NewDefaultConfig()
 	}
@@ -234,13 +245,13 @@ func Execute() {
 	case err := <-errChan:
 		if err != nil {
 			formatter := GetFormatter()
-			formatter.Error("%s", err.Error())
+			_ = formatter.Error("%s", err.Error())
 			Shutdown()
 			os.Exit(1)
 		}
 	case sig := <-sigChan:
 		formatter := GetFormatter()
-		formatter.Warning("Received signal %v, shutting down...", sig)
+		_ = formatter.Warning("Received signal %v, shutting down...", sig)
 		Shutdown()
 		os.Exit(130) // Standard exit code for SIGINT
 	}

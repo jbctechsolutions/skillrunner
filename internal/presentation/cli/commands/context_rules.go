@@ -88,8 +88,8 @@ Active rules are included in the headline context for skill executions.`,
 				return fmt.Errorf("failed to save rule: %w", err)
 			}
 
-			formatter.Success("Added %s rule: %s", scope, name)
-			formatter.Info("ID: %s", id)
+			_ = formatter.Success("Added %s rule: %s", scope, name)
+			_ = formatter.Info("ID: %s", id)
 
 			return nil
 		},
@@ -145,15 +145,15 @@ Active rules are included in the headline context for skill executions.`,
 			}
 
 			if len(rules) == 0 {
-				formatter.Header("Rules")
+				_ = formatter.Header("Rules")
 				if scopeStr != "" {
-					formatter.Info("Scope: %s", scopeStr)
+					_ = formatter.Info("Scope: %s", scopeStr)
 				}
 				if activeOnly {
-					formatter.Info("Active rules only")
+					_ = formatter.Info("Active rules only")
 				}
-				formatter.Println("")
-				formatter.Info("No rules found")
+				_ = formatter.Println("")
+				_ = formatter.Info("No rules found")
 				return nil
 			}
 
@@ -204,17 +204,17 @@ Active rules are included in the headline context for skill executions.`,
 				return fmt.Errorf("failed to find rule: %w", err)
 			}
 
-			formatter.Header("Rule: " + name)
-			formatter.Info("ID: %s", rule.ID())
-			formatter.Info("Scope: %s", rule.Scope())
+			_ = formatter.Header("Rule: " + name)
+			_ = formatter.Info("ID: %s", rule.ID())
+			_ = formatter.Info("Scope: %s", rule.Scope())
 			active := "No"
 			if rule.IsActive() {
 				active = "Yes"
 			}
-			formatter.Info("Active: %s", active)
-			formatter.Println("")
-			formatter.Info("Content:")
-			formatter.Println(rule.Content())
+			_ = formatter.Info("Active: %s", active)
+			_ = formatter.Println("")
+			_ = formatter.Info("Content:")
+			_ = formatter.Println(rule.Content())
 
 			return nil
 		},
@@ -249,7 +249,7 @@ Active rules are included in the headline context for skill executions.`,
 				return fmt.Errorf("failed to activate rule: %w", err)
 			}
 
-			formatter.Success("Activated rule: %s", name)
+			_ = formatter.Success("Activated rule: %s", name)
 
 			return nil
 		},
@@ -284,7 +284,7 @@ Active rules are included in the headline context for skill executions.`,
 				return fmt.Errorf("failed to deactivate rule: %w", err)
 			}
 
-			formatter.Success("Deactivated rule: %s", name)
+			_ = formatter.Success("Deactivated rule: %s", name)
 
 			return nil
 		},
@@ -318,7 +318,7 @@ Active rules are included in the headline context for skill executions.`,
 				return fmt.Errorf("failed to remove rule: %w", err)
 			}
 
-			formatter.Success("Removed rule: %s", name)
+			_ = formatter.Success("Removed rule: %s", name)
 
 			return nil
 		},

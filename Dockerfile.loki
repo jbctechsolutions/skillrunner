@@ -1,0 +1,52 @@
+FROM golang:1.24-bookworm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    make \
+    gcc \
+    g++ \
+    libsqlite3-dev \
+    sqlite3 \
+    ca-certificates \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Claude Code CLI
+RUN npm install -g @anthropic-ai/claude-code
+
+# Install golangci-lint (matches local toolchain version)
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+    | sh -s -- -b /usr/local/bin v1.64.8
+
+# Create loki user with home directory
+RUN useradd -m -s /bin/bash -u 1001 loki
+
+# Trust the mounted workspace directory (avoids git dubious ownership errors)
+RUN git config --global --add safe.directory /workspace
+
+WORKDIR /workspace
+
+# Pre-warm the Go module cache directory (owned by loki)
+RUN mkdir -p /home/loki/go/pkg/mod && chown -R loki:loki /home/loki/go
+
+# Switch to loki user for runtime
+USER loki
+
+# Set Go env for loki user
+ENV GOPATH=/home/loki/go
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+ENV CGO_ENABLED=1
+
+# Trust workspace for git (user-level)
+RUN git config --global --add safe.directory /workspace \
+    && git config --global user.email "loki@skillrunner.local" \
+    && git config --global user.name "Loki Mode"
+
+ENTRYPOINT ["claude", "--dangerously-skip-permissions"]

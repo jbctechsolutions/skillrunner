@@ -2,10 +2,15 @@
 package skill
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/jbctechsolutions/skillrunner/internal/domain/errors"
 )
+
+// toolNamePattern validates MCP tool names in mcp__server__tool format.
+var toolNamePattern = regexp.MustCompile(`^mcp__[a-zA-Z0-9_-]+__[a-zA-Z0-9_-]+$`)
 
 // Skill is the aggregate root representing a skill definition.
 // A skill consists of one or more phases that execute in order based on dependencies,
@@ -18,6 +23,7 @@ type Skill struct {
 	phases      []Phase
 	routing     RoutingConfig
 	metadata    map[string]any
+	tools       []string // MCP tool names this skill may use (mcp__server__tool format)
 }
 
 // NewSkill creates a new Skill with the required fields.
@@ -108,6 +114,35 @@ func (s *Skill) SetRouting(r RoutingConfig) {
 // SetMetadata sets a metadata value for the skill.
 func (s *Skill) SetMetadata(key string, value any) {
 	s.metadata[key] = value
+}
+
+// Tools returns a copy of the MCP tool names declared by this skill.
+// Tool names are in mcp__server__tool format.
+func (s *Skill) Tools() []string {
+	if len(s.tools) == 0 {
+		return nil
+	}
+	t := make([]string, len(s.tools))
+	copy(t, s.tools)
+	return t
+}
+
+// SetTools sets the MCP tool names this skill may use.
+// Returns an error if any tool name does not match mcp__server__tool format.
+func (s *Skill) SetTools(tools []string) error {
+	for _, name := range tools {
+		if !toolNamePattern.MatchString(name) {
+			return fmt.Errorf("invalid tool name %q: must match mcp__server__tool format", name)
+		}
+	}
+	s.tools = make([]string, len(tools))
+	copy(s.tools, tools)
+	return nil
+}
+
+// HasTools returns true if the skill declares any MCP tools.
+func (s *Skill) HasTools() bool {
+	return len(s.tools) > 0
 }
 
 // GetPhase returns the phase with the given ID, or an error if not found.

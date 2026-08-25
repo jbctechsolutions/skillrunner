@@ -242,7 +242,7 @@ func (c *Client) doRequestWithRetry(ctx context.Context, method, path string, bo
 					delay = time.Duration(seconds) * time.Second
 				}
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
 			continue
 		}

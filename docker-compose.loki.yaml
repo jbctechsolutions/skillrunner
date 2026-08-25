@@ -1,0 +1,84 @@
+# Docker Compose for Loki Mode
+#
+# Usage:
+#   docker compose -f docker-compose.loki.yaml run --rm loki
+#
+# Then inside the container, say: "Loki Mode" or "Loki Mode with PRD at docs/specs/prd.md"
+#
+# Prerequisites:
+#   - Claude Code authenticated locally (run 'claude' once to set up ~/.claude)
+#   - Docker with at least 4GB memory available
+#   - First run: docker compose -f docker-compose.loki.yaml build
+
+services:
+  loki:
+    build:
+      context: .
+      dockerfile: Dockerfile.loki
+    image: skillrunner-loki:latest
+
+    # Interactive mode required for Claude Code CLI
+    stdin_open: true
+    tty: true
+
+    working_dir: /workspace
+
+    volumes:
+      # Project workspace (read-write so loki can commit, build, etc.)
+      - type: bind
+        source: .
+        target: /workspace
+
+      # Claude credentials, skills, and settings
+      # Read-write so Claude Code can write session state and caches
+      - type: bind
+        source: ${HOME}/.claude
+        target: /home/loki/.claude
+      - type: bind
+        source: ${HOME}/.claude.json
+        target: /home/loki/.claude.json
+
+      # npm cache - speeds up repeated installs
+      - type: bind
+        source: ${HOME}/.npm
+        target: /home/loki/.npm
+        read_only: true
+
+      # Go module cache - persists between runs
+      - go-mod-cache:/home/loki/go/pkg/mod
+
+    environment:
+      # Optional: Anthropic API key (not needed with Max subscription - ~/.claude handles auth)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+      # Loki mode provider selection
+      LOKI_PROVIDER: ${LOKI_PROVIDER:-claude}
+
+      # Allow haiku model if desired (default: disabled for quality)
+      LOKI_ALLOW_HAIKU: ${LOKI_ALLOW_HAIKU:-false}
+
+      # Enable prompt injection via HUMAN_INPUT.md (disabled by default for security)
+      LOKI_PROMPT_INJECTION: ${LOKI_PROMPT_INJECTION:-false}
+
+      # Git identity inside container (overrides Dockerfile defaults if set)
+      GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME:-Loki Mode}
+      GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL:-loki@skillrunner.local}
+      GIT_COMMITTER_NAME: ${GIT_COMMITTER_NAME:-Loki Mode}
+      GIT_COMMITTER_EMAIL: ${GIT_COMMITTER_EMAIL:-loki@skillrunner.local}
+
+      # Go environment
+      CGO_ENABLED: "1"
+      GOPATH: /home/loki/go
+
+    # Resource limits from .loki/config.yaml
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "2"
+        reservations:
+          memory: 1g
+
+volumes:
+  go-mod-cache:
+    driver: local

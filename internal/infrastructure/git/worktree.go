@@ -62,7 +62,7 @@ func (wm *WorktreeManager) Create(ctx context.Context, repoPath, worktreePath, b
 		args = append(args, branch)
 	}
 
-	cmd := exec.CommandContext(ctx, wm.gitPath, args...)
+	cmd := exec.CommandContext(ctx, wm.gitPath, args...) // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = repoPath
 
 	var stderr bytes.Buffer
@@ -90,7 +90,7 @@ func (wm *WorktreeManager) Remove(ctx context.Context, repoPath, worktreePath st
 	}
 	args = append(args, worktreePath)
 
-	cmd := exec.CommandContext(ctx, wm.gitPath, args...)
+	cmd := exec.CommandContext(ctx, wm.gitPath, args...) // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = repoPath
 
 	var stderr bytes.Buffer
@@ -109,7 +109,7 @@ func (wm *WorktreeManager) List(ctx context.Context, repoPath string) ([]Worktre
 		return nil, fmt.Errorf("repository path is required")
 	}
 
-	cmd := exec.CommandContext(ctx, wm.gitPath, "worktree", "list", "--porcelain")
+	cmd := exec.CommandContext(ctx, wm.gitPath, "worktree", "list", "--porcelain") // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = repoPath
 
 	var stdout bytes.Buffer
@@ -193,7 +193,7 @@ func (wm *WorktreeManager) Prune(ctx context.Context, repoPath string) error {
 		return fmt.Errorf("repository path is required")
 	}
 
-	cmd := exec.CommandContext(ctx, wm.gitPath, "worktree", "prune")
+	cmd := exec.CommandContext(ctx, wm.gitPath, "worktree", "prune") // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = repoPath
 
 	if err := cmd.Run(); err != nil {
@@ -218,7 +218,7 @@ func (wm *WorktreeManager) Lock(ctx context.Context, repoPath, worktreePath, rea
 	}
 	args = append(args, worktreePath)
 
-	cmd := exec.CommandContext(ctx, wm.gitPath, args...)
+	cmd := exec.CommandContext(ctx, wm.gitPath, args...) // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = repoPath
 
 	if err := cmd.Run(); err != nil {
@@ -237,7 +237,7 @@ func (wm *WorktreeManager) Unlock(ctx context.Context, repoPath, worktreePath st
 		return fmt.Errorf("worktree path is required")
 	}
 
-	cmd := exec.CommandContext(ctx, wm.gitPath, "worktree", "unlock", worktreePath)
+	cmd := exec.CommandContext(ctx, wm.gitPath, "worktree", "unlock", worktreePath) // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = repoPath
 
 	if err := cmd.Run(); err != nil {
@@ -249,7 +249,7 @@ func (wm *WorktreeManager) Unlock(ctx context.Context, repoPath, worktreePath st
 
 // IsGitRepository checks if a path is a Git repository.
 func (wm *WorktreeManager) IsGitRepository(ctx context.Context, path string) (bool, error) {
-	cmd := exec.CommandContext(ctx, wm.gitPath, "rev-parse", "--git-dir")
+	cmd := exec.CommandContext(ctx, wm.gitPath, "rev-parse", "--git-dir") // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = path
 
 	err := cmd.Run()
@@ -267,7 +267,7 @@ func (wm *WorktreeManager) IsGitRepository(ctx context.Context, path string) (bo
 
 // GetCurrentBranch returns the current branch name.
 func (wm *WorktreeManager) GetCurrentBranch(ctx context.Context, path string) (string, error) {
-	cmd := exec.CommandContext(ctx, wm.gitPath, "branch", "--show-current")
+	cmd := exec.CommandContext(ctx, wm.gitPath, "branch", "--show-current") // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = path
 
 	var stdout bytes.Buffer
@@ -282,7 +282,7 @@ func (wm *WorktreeManager) GetCurrentBranch(ctx context.Context, path string) (s
 
 // GetRepositoryRoot returns the root directory of the Git repository.
 func (wm *WorktreeManager) GetRepositoryRoot(ctx context.Context, path string) (string, error) {
-	cmd := exec.CommandContext(ctx, wm.gitPath, "rev-parse", "--show-toplevel")
+	cmd := exec.CommandContext(ctx, wm.gitPath, "rev-parse", "--show-toplevel") // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = path
 
 	var stdout bytes.Buffer
@@ -305,7 +305,7 @@ func (wm *WorktreeManager) BranchExists(ctx context.Context, repoPath, branch st
 	}
 
 	// Check if local branch exists using git show-ref
-	cmd := exec.CommandContext(ctx, wm.gitPath, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	cmd := exec.CommandContext(ctx, wm.gitPath, "show-ref", "--verify", "--quiet", "refs/heads/"+branch) // #nosec G204 -- gitPath resolved via exec.LookPath, not user input
 	cmd.Dir = repoPath
 
 	err := cmd.Run()

@@ -14,20 +14,34 @@ import (
 
 	"github.com/jbctechsolutions/skillrunner/internal/application/ports"
 	"github.com/jbctechsolutions/skillrunner/internal/application/workflow"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/budget"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/complexity"
+	domainExport "github.com/jbctechsolutions/skillrunner/internal/domain/export"
+	"github.com/jbctechsolutions/skillrunner/internal/domain/isolation"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/provider"
 	"github.com/jbctechsolutions/skillrunner/internal/domain/skill"
+	fileContext "github.com/jbctechsolutions/skillrunner/internal/infrastructure/context"
+	infraGit "github.com/jbctechsolutions/skillrunner/internal/infrastructure/git"
 	infraMemory "github.com/jbctechsolutions/skillrunner/internal/infrastructure/memory"
+	infraStorage "github.com/jbctechsolutions/skillrunner/internal/infrastructure/storage"
 	"github.com/jbctechsolutions/skillrunner/internal/presentation/cli/output"
 )
 
 // runFlags holds the flags for the run command.
 type runFlags struct {
-	Profile      string
-	Stream       bool
-	NoMemory     bool
-	Resume       bool
-	NoCheckpoint bool
-	Force        bool
+	Profile         string
+	Stream          bool
+	NoMemory        bool
+	Resume          bool
+	NoCheckpoint    bool
+	Force           bool
+	AutoApprove     bool    // skip tool permission prompts (-y / --yes)
+	Budget          float64 // per-workflow spend cap in USD (0 = use global config)
+	SkipEscalation  bool    // disable auto-escalation on low-confidence responses
+	SkipReview      bool    // disable post-completion review phases
+	ExportFormat    string  // export result in this format (json, claude-code, aider, cursor)
+	Isolate         bool    // run in a git worktree, show diff and prompt merge/discard
+	profileExplicit bool    // set to true when --profile was provided by the user
 }
 
 var runOpts runFlags
@@ -80,12 +94,23 @@ mode for long-running tasks that may need crash recovery.`,
 
 	// Define flags
 	cmd.Flags().StringVarP(&runOpts.Profile, "profile", "p", skill.ProfileBalanced,
-		fmt.Sprintf("routing profile: %s, %s, %s", skill.ProfileCheap, skill.ProfileBalanced, skill.ProfilePremium))
+		fmt.Sprintf("routing profile: %s, %s, %s (default: auto-detected from complexity)", skill.ProfileCheap, skill.ProfileBalanced, skill.ProfilePremium))
+	// Track whether the user explicitly set --profile so we know not to override it.
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		runOpts.profileExplicit = cmd.Flags().Changed("profile")
+		return nil
+	}
 	cmd.Flags().BoolVarP(&runOpts.Stream, "stream", "s", false, "enable streaming output")
 	cmd.Flags().BoolVar(&runOpts.NoMemory, "no-memory", false, "disable memory injection (MEMORY.md/CLAUDE.md)")
 	cmd.Flags().BoolVar(&runOpts.Resume, "resume", false, "resume from last checkpoint if available")
 	cmd.Flags().BoolVar(&runOpts.NoCheckpoint, "no-checkpoint", false, "disable checkpoint persistence")
 	cmd.Flags().BoolVarP(&runOpts.Force, "force", "f", false, "start new execution even if checkpoint exists")
+	cmd.Flags().BoolVarP(&runOpts.AutoApprove, "yes", "y", false, "auto-approve MCP tool execution (skip permission prompts)")
+	cmd.Flags().Float64Var(&runOpts.Budget, "budget", 0, "per-workflow spend cap in USD (overrides global config)")
+	cmd.Flags().BoolVar(&runOpts.SkipEscalation, "skip-escalation", false, "disable auto-escalation on low-confidence responses")
+	cmd.Flags().BoolVar(&runOpts.SkipReview, "skip-review", false, "disable post-completion review on phases that declare it")
+	cmd.Flags().StringVar(&runOpts.ExportFormat, "export-format", "", "export result format: json, claude-code, aider, cursor")
+	cmd.Flags().BoolVar(&runOpts.Isolate, "isolate", false, "run in a git worktree; show diff and prompt merge or discard")
 
 	return cmd
 }
@@ -129,6 +154,17 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no providers configured. Run 'sr init' to set up providers")
 	}
 
+	// Auto-detect complexity profile unless the user set --profile explicitly.
+	if !runOpts.profileExplicit {
+		analyzer := complexity.NewAnalyzer()
+		score, _ := analyzer.Analyze(request)
+		autoProfile := score.Profile()
+		if autoProfile != runOpts.Profile {
+			runOpts.Profile = autoProfile
+		}
+		_ = formatter.Info("Complexity: %.2f → %s profile", float64(score), runOpts.Profile)
+	}
+
 	// Select provider based on profile
 	provider := selectProvider(providers, runOpts.Profile)
 	if provider == nil {
@@ -136,6 +172,9 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := context.Background()
+
+	// Show pre-execution budget alerts (non-fatal — informational only).
+	showBudgetAlerts(ctx, formatter, request, runOpts.Profile)
 
 	// Load memory content (unless disabled)
 	var memoryContent string
@@ -153,6 +192,68 @@ func runSkill(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Worktree isolation: create a temporary git worktree for the execution.
+	var isolMgr *infraGit.IsolationManager
+	var isolSess *isolation.Session
+	if runOpts.Isolate {
+		cwd, cwdErr := os.Getwd()
+		if cwdErr != nil {
+			return fmt.Errorf("--isolate requires a working directory: %w", cwdErr)
+		}
+		im, imErr := infraGit.NewIsolationManager("")
+		if imErr != nil {
+			return fmt.Errorf("--isolate requires git to be installed: %w", imErr)
+		}
+		wm, wmErr := infraGit.NewWorktreeManager()
+		if wmErr != nil {
+			return fmt.Errorf("--isolate requires git: %w", wmErr)
+		}
+		repoRoot, rootErr := wm.GetRepositoryRoot(ctx, cwd)
+		if rootErr != nil {
+			return fmt.Errorf("--isolate requires a git repository: %w", rootErr)
+		}
+		sess, sessErr := im.Setup(ctx, repoRoot, sk.Name())
+		if sessErr != nil {
+			return fmt.Errorf("failed to create isolation worktree: %w", sessErr)
+		}
+		isolMgr = im
+		isolSess = sess
+		_ = formatter.Info("Isolation worktree: %s", sess.WorktreePath)
+		// Inject worktree path as context so LLM tools operate on the isolated copy.
+		if memoryContent != "" {
+			memoryContent += "\n\n"
+		}
+		memoryContent += fmt.Sprintf("Working directory for file operations: %s", sess.WorktreePath)
+	}
+
+	// Check tool permissions if the skill declares MCP tools
+	if sk.HasTools() {
+		mcpReg := container.MCPRegistry()
+		var toolInfos []fileContext.ToolInfo
+		if mcpReg != nil {
+			// Collect descriptions from the registry for declared tools
+			mcpTools, _ := mcpReg.GetAllTools(ctx)
+			descByName := make(map[string]string, len(mcpTools))
+			for _, t := range mcpTools {
+				descByName[t.FullName()] = t.Description()
+			}
+			for _, name := range sk.Tools() {
+				toolInfos = append(toolInfos, fileContext.ToolInfo{
+					Name:        name,
+					Description: descByName[name],
+				})
+			}
+		} else {
+			for _, name := range sk.Tools() {
+				toolInfos = append(toolInfos, fileContext.ToolInfo{Name: name})
+			}
+		}
+		prompter := fileContext.NewToolPermissionPrompt(runOpts.AutoApprove)
+		if err := prompter.PromptForTools(toolInfos); err != nil {
+			return fmt.Errorf("tool permission denied: %w", err)
+		}
+	}
+
 	// Build checkpoint config
 	cpConfig := workflow.CheckpointConfig{
 		Enabled:   !runOpts.NoCheckpoint,
@@ -165,8 +266,8 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	if cpConfig.Enabled && !runOpts.Resume && !runOpts.Force && cpConfig.Port != nil {
 		existingCP, _ := workflow.GetExistingCheckpoint(ctx, cpConfig.Port, sk.ID(), request)
 		if existingCP != nil {
-			formatter.Warning("An incomplete execution exists for this skill/input (progress: %s).", existingCP.Progress())
-			formatter.Warning("Use --resume to continue, or --force to start fresh.")
+			_ = formatter.Warning("An incomplete execution exists for this skill/input (progress: %s).", existingCP.Progress())
+			_ = formatter.Warning("Use --resume to continue, or --force to start fresh.")
 			return fmt.Errorf("checkpoint exists; use --resume or --force")
 		}
 	}
@@ -174,29 +275,168 @@ func runSkill(cmd *cobra.Command, args []string) error {
 	// Get cost calculator for pricing
 	costCalc := container.CostCalculator()
 
+	// Budget check: enforce global and per-workflow limits
+	if err := checkBudget(ctx, formatter, runOpts.Budget); err != nil {
+		return err
+	}
+
+	// Build executor config (shared base)
+	baseConfig := workflow.DefaultExecutorConfig()
+	baseConfig.MemoryContent = memoryContent
+	baseConfig.AutoApproveTools = runOpts.AutoApprove
+	baseConfig.RoutingProfile = runOpts.Profile
+	baseConfig.SkillID = sk.ID()
+	baseConfig.SkillName = sk.Name()
+	if appCtx != nil && appCtx.Config != nil {
+		baseConfig.CompressionEnabled = appCtx.Config.Context.CompressionEnabled
+		// Resolve skill-level model hints for this skill
+		if hints := appCtx.Config.Routing.SkillModelHints; len(hints) > 0 {
+			skillID := sk.ID()
+			skillName := sk.Name()
+			if perSkill, ok := hints[skillID]; ok {
+				baseConfig.ModelHints = perSkill
+			} else if perSkill, ok := hints[skillName]; ok {
+				baseConfig.ModelHints = perSkill
+			}
+		}
+		baseConfig.ConfidenceThresholds = appCtx.Config.Routing.ConfidenceThreshold
+	}
+	baseConfig.SkipConfidenceEscalation = runOpts.SkipEscalation
+	baseConfig.SkipPostCompletionReview = runOpts.SkipReview
+	if outcomeRepo := container.OutcomeRepository(); outcomeRepo != nil {
+		baseConfig.OutcomePort = outcomeRepo
+	}
+	if mcpReg := container.MCPRegistry(); mcpReg != nil {
+		baseConfig.MCPRegistry = mcpReg
+	}
+	baseConfig.AllowedTools = sk.Tools()
+
+	// Validate export format early
+	if runOpts.ExportFormat != "" {
+		if !domainExport.Format(runOpts.ExportFormat).IsValid() {
+			return fmt.Errorf("invalid --export-format %q: must be one of json, claude-code, aider, cursor", runOpts.ExportFormat)
+		}
+	}
+
 	// JSON output for scripting (non-streaming)
 	if formatter.Format() == output.FormatJSON {
-		executorConfig := workflow.DefaultExecutorConfig()
-		executorConfig.MemoryContent = memoryContent
-		executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
-		return runSkillJSON(ctx, executor, sk, request, provider, costCalc)
+		executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
+		execErr := runSkillJSON(ctx, executor, sk, request, provider, costCalc)
+		if isolSess != nil {
+			handleIsolationResult(ctx, formatter, isolMgr, isolSess, execErr)
+		}
+		return execErr
 	}
 
 	// Streaming output mode
 	// Note: Checkpointing is not supported in streaming mode. For long-running
 	// tasks that need crash recovery, use standard (non-streaming) mode.
 	if runOpts.Stream {
-		streamingConfig := workflow.DefaultExecutorConfig()
-		streamingConfig.MemoryContent = memoryContent
-		streamingExecutor := workflow.NewStreamingExecutor(provider, streamingConfig)
-		return runSkillStreaming(ctx, streamingExecutor, sk, request, provider, formatter)
+		streamingExecutor := workflow.NewStreamingExecutor(provider, baseConfig)
+		execErr := runSkillStreaming(ctx, streamingExecutor, sk, request, provider, formatter)
+		if isolSess != nil {
+			handleIsolationResult(ctx, formatter, isolMgr, isolSess, execErr)
+		}
+		return execErr
 	}
 
 	// Standard text output with progress display
-	executorConfig := workflow.DefaultExecutorConfig()
-	executorConfig.MemoryContent = memoryContent
-	executor := workflow.NewCheckpointingExecutor(provider, executorConfig, cpConfig)
-	return runSkillText(ctx, executor, sk, request, provider, formatter, costCalc)
+	executor := workflow.NewCheckpointingExecutor(provider, baseConfig, cpConfig)
+	result, execErr := runSkillTextWithResult(ctx, executor, sk, request, provider, formatter, costCalc)
+	if isolSess != nil {
+		handleIsolationResult(ctx, formatter, isolMgr, isolSess, execErr)
+	}
+
+	// Export result if requested
+	if execErr == nil && result != nil && runOpts.ExportFormat != "" {
+		if exportErr := exportResult(result, sk.Name(), sk.ID(), request, runOpts.Profile, runOpts.ExportFormat, formatter); exportErr != nil {
+			_ = formatter.Warning("Export failed: %v", exportErr)
+		}
+	}
+	return execErr
+}
+
+// exportResult serialises the execution result in the requested format and prints to stdout.
+func exportResult(result *workflow.ExecutionResult, skillName, skillID, input, profile, format string, formatter *output.Formatter) error {
+	we := &domainExport.WorkflowExport{
+		SkillID:     skillID,
+		SkillName:   skillName,
+		Input:       input,
+		Output:      result.FinalOutput,
+		Profile:     profile,
+		Status:      string(result.Status),
+		TotalCost:   result.TotalCost,
+		TotalTokens: result.TotalTokens,
+		Duration:    fmt.Sprintf("%d", result.Duration.Milliseconds()),
+		ExportedAt:  result.EndTime,
+	}
+	for _, pr := range result.PhaseResults {
+		we.Phases = append(we.Phases, domainExport.PhaseExport{
+			ID:     pr.PhaseID,
+			Name:   pr.PhaseName,
+			Model:  pr.ModelUsed,
+			Output: pr.Output,
+			Tokens: pr.InputTokens + pr.OutputTokens,
+			Cost:   pr.Cost,
+			Status: string(pr.Status),
+		})
+	}
+
+	data, err := we.Marshal(domainExport.Format(format))
+	if err != nil {
+		return err
+	}
+
+	_ = formatter.Println("")
+	_ = formatter.SubHeader(fmt.Sprintf("Export (%s)", format))
+	fmt.Println(string(data))
+	return nil
+}
+
+// handleIsolationResult presents the worktree diff and prompts the user to merge or discard.
+// In JSON output mode, changes are auto-discarded to avoid blocking non-interactive scripts.
+func handleIsolationResult(ctx context.Context, formatter *output.Formatter, im *infraGit.IsolationManager, sess *isolation.Session, execErr error) {
+	if execErr != nil {
+		_ = formatter.Warning("Execution failed — discarding worktree (%s)", sess.WorktreePath)
+		_ = im.Discard(ctx, sess)
+		return
+	}
+
+	diff, err := im.Diff(ctx, sess)
+	if err != nil || strings.TrimSpace(diff) == "" {
+		_ = formatter.Info("No file changes detected in isolation worktree.")
+		_ = im.Discard(ctx, sess)
+		return
+	}
+
+	// In JSON mode, auto-discard to avoid blocking non-interactive scripts.
+	if formatter.Format() == output.FormatJSON {
+		_ = im.Discard(ctx, sess)
+		return
+	}
+
+	_ = formatter.Println("")
+	_ = formatter.SubHeader("Isolation Diff")
+	_ = formatter.Println(diff)
+
+	// Prompt user to apply or discard
+	fmt.Print("Apply changes to working tree? [y/N] ")
+	var answer string
+	if _, scanErr := fmt.Scanln(&answer); scanErr != nil {
+		answer = "n"
+	}
+
+	if strings.ToLower(strings.TrimSpace(answer)) == "y" {
+		if applyErr := im.Apply(ctx, sess); applyErr != nil {
+			_ = formatter.Error("Failed to apply changes: %v", applyErr)
+		} else {
+			_ = formatter.Success("Changes applied to working tree.")
+		}
+		_ = im.Discard(ctx, sess)
+	} else {
+		_ = formatter.Info("Changes discarded. Worktree removed.")
+		_ = im.Discard(ctx, sess)
+	}
 }
 
 // selectProvider chooses a provider based on the routing profile.
@@ -333,37 +573,47 @@ func runSkillStreaming(ctx context.Context, executor workflow.StreamingExecutor,
 }
 
 // runSkillText executes the skill with text output and progress display.
+// runSkillTextWithResult executes the skill with text output and returns both the result and any error.
+func runSkillTextWithResult(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) (*workflow.ExecutionResult, error) {
+	return runSkillTextImpl(ctx, executor, sk, request, prov, formatter, costCalc)
+}
+
 func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) error {
+	_, err := runSkillTextImpl(ctx, executor, sk, request, prov, formatter, costCalc)
+	return err
+}
+
+func runSkillTextImpl(ctx context.Context, executor workflow.Executor, sk *skill.Skill, request string, prov ports.ProviderPort, formatter *output.Formatter, costCalc *provider.CostCalculator) (*workflow.ExecutionResult, error) {
 	// Display execution header
-	formatter.Header("Skill Execution")
-	formatter.Item("Skill", sk.Name())
-	formatter.Item("Version", sk.Version())
-	formatter.Item("Profile", runOpts.Profile)
-	formatter.Item("Provider", prov.Info().Name)
+	_ = formatter.Header("Skill Execution")
+	_ = formatter.Item("Skill", sk.Name())
+	_ = formatter.Item("Version", sk.Version())
+	_ = formatter.Item("Profile", runOpts.Profile)
+	_ = formatter.Item("Provider", prov.Info().Name)
 	if runOpts.Stream {
-		formatter.Item("Mode", "streaming")
+		_ = formatter.Item("Mode", "streaming")
 	}
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Display the request (truncate if too long)
 	requestDisplay := request
 	if len(requestDisplay) > 100 {
 		requestDisplay = requestDisplay[:97] + "..."
 	}
-	formatter.Item("Request", requestDisplay)
-	formatter.Println("")
+	_ = formatter.Item("Request", requestDisplay)
+	_ = formatter.Println("")
 
 	// Show phase information
 	phases := sk.Phases()
-	formatter.SubHeader(fmt.Sprintf("Phases (%d)", len(phases)))
+	_ = formatter.SubHeader(fmt.Sprintf("Phases (%d)", len(phases)))
 	for i, phase := range phases {
 		deps := ""
 		if len(phase.DependsOn) > 0 {
 			deps = fmt.Sprintf(" (depends: %s)", strings.Join(phase.DependsOn, ", "))
 		}
-		formatter.BulletItem(fmt.Sprintf("%d. %s%s", i+1, phase.Name, deps))
+		_ = formatter.BulletItem(fmt.Sprintf("%d. %s%s", i+1, phase.Name, deps))
 	}
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Start spinner for execution
 	spinner := output.NewSpinner("Executing workflow...")
@@ -377,51 +627,51 @@ func runSkillText(ctx context.Context, executor workflow.Executor, sk *skill.Ski
 	spinner.Stop()
 
 	if err != nil {
-		formatter.Error("Execution failed: %v", err)
-		return err
+		_ = formatter.Error("Execution failed: %v", err)
+		return nil, err
 	}
 
 	// Calculate costs for each phase using model pricing
 	calculateCostsForResult(result, costCalc)
 
 	// Display results
-	formatter.Println("")
-	formatter.Header("Execution Results")
+	_ = formatter.Println("")
+	_ = formatter.Header("Execution Results")
 
 	// Phase results
-	formatter.SubHeader("Phase Results")
+	_ = formatter.SubHeader("Phase Results")
 	displayPhaseResults(formatter, result)
-	formatter.Println("")
+	_ = formatter.Println("")
 
 	// Summary statistics
-	formatter.SubHeader("Summary")
-	formatter.Item("Status", formatStatus(result.Status))
-	formatter.Item("Total Duration", formatDuration(executionTime))
-	formatter.Item("Total Tokens", fmt.Sprintf("%d", result.TotalTokens))
-	formatter.Item("Total Cost", formatCost(result.TotalCost))
-	formatter.Println("")
+	_ = formatter.SubHeader("Summary")
+	_ = formatter.Item("Status", formatStatus(result.Status))
+	_ = formatter.Item("Total Duration", formatDuration(executionTime))
+	_ = formatter.Item("Total Tokens", fmt.Sprintf("%d", result.TotalTokens))
+	_ = formatter.Item("Total Cost", formatCost(result.TotalCost))
+	_ = formatter.Println("")
 
 	// Final output
 	if result.FinalOutput != "" {
-		formatter.SubHeader("Output")
-		formatter.Println("")
+		_ = formatter.SubHeader("Output")
+		_ = formatter.Println("")
 		// Print output with proper formatting
 		outputLines := strings.Split(result.FinalOutput, "\n")
 		for _, line := range outputLines {
-			formatter.Println("%s", line)
+			_ = formatter.Println("%s", line)
 		}
 	}
 
 	// Success message
 	if result.Status == workflow.PhaseStatusCompleted {
-		formatter.Println("")
-		formatter.Success("Skill execution completed successfully")
+		_ = formatter.Println("")
+		_ = formatter.Success("Skill execution completed successfully")
 	} else if result.Error != nil {
-		formatter.Println("")
-		formatter.Error("Skill execution failed: %v", result.Error)
+		_ = formatter.Println("")
+		_ = formatter.Error("Skill execution failed: %v", result.Error)
 	}
 
-	return nil
+	return result, nil
 }
 
 // displayPhaseResults displays the results of each phase in a table with cost breakdown.
@@ -623,6 +873,104 @@ func calculateCostsForResult(result *workflow.ExecutionResult, costCalc *provide
 	}
 
 	result.TotalCost = totalCost
+}
+
+// checkBudget enforces configured budget limits before execution.
+// It warns at 80% of any limit and blocks at 100%.
+// workflowCap > 0 is treated as a per-workflow daily cap for this check.
+func checkBudget(ctx context.Context, formatter *output.Formatter, workflowCap float64) error {
+	appContainer := GetContainer()
+	if appContainer == nil {
+		return nil
+	}
+	appCtxVal := GetAppContext()
+	if appCtxVal == nil || appCtxVal.Config == nil {
+		return nil
+	}
+
+	budgetCfg := appCtxVal.Config.Budget
+	limits := budget.NewLimits(budgetCfg.DailyLimit, budgetCfg.MonthlyLimit)
+	if workflowCap > 0 {
+		limits.DailyLimit = workflowCap
+	}
+	if !limits.Enabled() {
+		return nil
+	}
+
+	repo, err := infraStorage.NewBudgetRepository(appContainer.DB())
+	if err != nil {
+		_ = formatter.Warning("Budget check unavailable: %v", err)
+		return nil
+	}
+
+	usage, err := repo.GetUsage(ctx)
+	if err != nil {
+		_ = formatter.Warning("Could not retrieve budget usage: %v", err)
+		return nil
+	}
+
+	if limits.DailyLimit > 0 {
+		pct := (usage.DailySpend / limits.DailyLimit) * 100
+		_ = formatter.Item("Daily budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.DailySpend, limits.DailyLimit, pct))
+	}
+	if limits.MonthlyLimit > 0 {
+		pct := (usage.MonthlySpend / limits.MonthlyLimit) * 100
+		_ = formatter.Item("Monthly budget", fmt.Sprintf("$%.4f / $%.2f (%.0f%%)", usage.MonthlySpend, limits.MonthlyLimit, pct))
+	}
+
+	if err := budget.CheckLimit(limits, usage, 0); err != nil {
+		switch err {
+		case budget.ErrBudgetExceeded:
+			_ = formatter.Println("")
+			return fmt.Errorf("budget limit exceeded — use 'sr config set budget.daily_limit' to adjust or --budget=0 to disable")
+		case budget.ErrBudgetWarning:
+			_ = formatter.Warning("Budget warning: spending is at ≥80%% of configured limit")
+		}
+	}
+	return nil
+}
+
+// showBudgetAlerts prints pre-execution budget alerts and cost estimates.
+// Non-fatal — execution proceeds regardless.
+func showBudgetAlerts(ctx context.Context, formatter *output.Formatter, request, profile string) {
+	appCtxVal := GetAppContext()
+	appContainer := GetContainer()
+	if appCtxVal == nil || appContainer == nil {
+		return
+	}
+
+	budgetCfg := appCtxVal.Config.Budget
+	limits := budget.NewLimits(budgetCfg.DailyLimit, budgetCfg.MonthlyLimit)
+	if !limits.Enabled() {
+		return
+	}
+
+	repo, err := infraStorage.NewBudgetRepository(appContainer.DB())
+	if err != nil {
+		return
+	}
+	usage, err := repo.GetUsage(ctx)
+	if err != nil {
+		return
+	}
+
+	// Show threshold alerts
+	for _, alert := range budget.CheckAlerts(limits, usage) {
+		if alert.IsError() {
+			_ = formatter.Error("Budget Alert: %s", alert.Message())
+		} else {
+			_ = formatter.Warning("Budget Alert: %s", alert.Message())
+		}
+	}
+
+	// Show cost estimate + savings tip for non-cheap profiles
+	est := budget.EstimateCost(len(request), profile)
+	if est.EstimatedUSD > 0 {
+		_ = formatter.Info("Estimated cost: ~$%.4f", est.EstimatedUSD)
+		if profile != "cheap" && est.CheapSavingsPct > 10 {
+			_ = formatter.Info("Tip: --profile cheap saves ~%.0f%% (~$%.4f)", est.CheapSavingsPct, est.CheapSavingsUSD)
+		}
+	}
 }
 
 // init registers the run command with the root command.
